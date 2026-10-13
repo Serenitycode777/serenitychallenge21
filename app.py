@@ -48,13 +48,21 @@ DB = sqlite3.connect(HERE / "data" / "signups.sqlite", check_same_thread=False)
 DB.row_factory = sqlite3.Row
 DB.execute("""CREATE TABLE IF NOT EXISTS signups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT, email TEXT, email_norm TEXT, instagram TEXT,
+    name TEXT, email TEXT, email_norm TEXT, instagram TEXT, phone TEXT, comment TEXT,
     method TEXT,                 -- stripe | venmo | zelle
     amount REAL,
     status TEXT DEFAULT 'ждёт',  -- ждёт | оплачено
     invite_sent INTEGER DEFAULT 0,
     created REAL, confirmed REAL
 )""")
+try:
+    DB.execute("ALTER TABLE signups ADD COLUMN phone TEXT")
+except sqlite3.OperationalError:
+    pass
+try:
+    DB.execute("ALTER TABLE signups ADD COLUMN comment TEXT")
+except sqlite3.OperationalError:
+    pass
 DB.execute("CREATE INDEX IF NOT EXISTS idx_email_norm ON signups(email_norm)")
 DB.commit()
 
@@ -220,18 +228,20 @@ th{{text-align:left;padding:12px 16px;background:#F2EEF7;font-size:13px}}
 
 # ---------- обработчики ----------
 async def register(request):
-    """Форма Venmo/Zelle с лендинга: имя, почта, инстаграм, способ."""
+    """Форма Venmo/Zelle с лендинга: name, email, phone, ig, pay, msg (реальные поля сайта)."""
     data = await request.post()
     name = str(data.get("name", "")).strip()
     email = str(data.get("email", "")).strip()
-    instagram = str(data.get("instagram", "")).strip()
-    method = str(data.get("method", "")).strip().lower()
+    phone = str(data.get("phone", "")).strip()
+    instagram = str(data.get("ig", "")).strip()
+    comment = str(data.get("msg", "")).strip()
+    method = str(data.get("pay", "")).strip().lower()
     if method not in ("venmo", "zelle") or not email:
         return web.json_response({"ok": False, "error": "bad_request"}, status=400)
     DB.execute(
-        "INSERT INTO signups (name, email, email_norm, instagram, method, status, created) "
-        "VALUES (?,?,?,?,?,?,?)",
-        (name, email, normalize_email(email), instagram, method, "ждёт", time.time()),
+        "INSERT INTO signups (name, email, email_norm, instagram, phone, comment, method, status, created) "
+        "VALUES (?,?,?,?,?,?,?,?,?)",
+        (name, email, normalize_email(email), instagram, phone, comment, method, "ждёт", time.time()),
     )
     DB.commit()
     return web.json_response({"ok": True})
