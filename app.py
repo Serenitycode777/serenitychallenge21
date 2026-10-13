@@ -5,7 +5,7 @@
 - приём вебхука Stripe (POST /webhook/stripe)
 - админ-табличка со списком и кнопкой "отметить оплаченным" (GET /admin)
 
-Настройки: .env (см. .env.example). Без реальных ключей Stripe/Mandrill
+Настройки: .env (см. .env.example). Без реальных ключей Stripe/Resend
 всё работает в тестовом режиме — только без реальной отправки.
 """
 import base64
@@ -39,7 +39,7 @@ SESSION_DAYS = 14
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")  # обычный текст, задаётся в Render → Environment
 
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-MANDRILL_API_KEY = os.environ.get("MANDRILL_API_KEY", "")  # Mailchimp Transactional Email
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")  # resend.com
 MAIL_FROM = os.environ.get("MAIL_FROM", "")  # напр. marathon@serenitymoonevents.com
 CHANNEL_INVITE_LINK = os.environ.get("CHANNEL_INVITE_LINK", "")  # обычная (не одноразовая) ссылка на телеграм-канал
 
@@ -78,26 +78,22 @@ async def send_access_email(to_email: str, name: str):
             f"Спасибо за оплату марафона «Начни сегодня».\n"
             f"Ссылка на телеграм-канал марафона:\n{invite}\n\n"
             f"Ближе к старту (9 ноября) на эту же почту придёт доступ к платформе.")
-    if not (MANDRILL_API_KEY and MAIL_FROM):
-        print(f"[DEV] письмо для {to_email} не отправлено (нет MANDRILL_API_KEY/MAIL_FROM):\n{body}")
+    if not (RESEND_API_KEY and MAIL_FROM):
+        print(f"[DEV] письмо для {to_email} не отправлено (нет RESEND_API_KEY/MAIL_FROM):\n{body}")
         return
     async with ClientSession() as s:
         async with s.post(
-            "https://mandrillapp.com/api/1.0/messages/send.json",
-            headers={"Content-Type": "application/json"},
+            "https://api.resend.com/emails",
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {RESEND_API_KEY}"},
             data=json.dumps({
-                "key": MANDRILL_API_KEY,
-                "message": {
-                    "from_email": MAIL_FROM,
-                    "to": [{"email": to_email, "type": "to"}],
-                    "subject": "Serenity Moon — доступ к марафону",
-                    "text": body,
-                },
+                "from": MAIL_FROM,
+                "to": [to_email],
+                "subject": "Serenity Moon — доступ к марафону",
+                "text": body,
             }),
         ) as resp:
-            data = await resp.json()
-            status = (data[0].get("status") if isinstance(data, list) and data else None)
-            if resp.status >= 300 or status in ("rejected", "invalid"):
+            if resp.status >= 300:
+                data = await resp.text()
                 print(f"[ПРЕДУПРЕЖДЕНИЕ] письмо не ушло ({resp.status}): {data}")
 
 
