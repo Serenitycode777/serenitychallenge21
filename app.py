@@ -5,7 +5,7 @@
 - приём вебхука Stripe (POST /webhook/stripe)
 - админ-табличка со списком и кнопкой "отметить оплаченным" (GET /admin)
 
-Настройки: .env (см. .env.example). Без реальных ключей Stripe/Resend/Telegram
+Настройки: .env (см. .env.example). Без реальных ключей Stripe/Mandrill
 всё работает в тестовом режиме — только без реальной отправки.
 """
 import base64
@@ -30,8 +30,8 @@ if ENV.exists():
             os.environ.setdefault(k.strip(), v.strip())
 
 SECRET = os.environ.get("PLATFORM_SECRET", "").encode()
-HOST = os.environ.get("PLATFORM_HOST", "127.0.0.1")
-PORT = int(os.environ.get("PLATFORM_PORT", "8091"))
+HOST = os.environ.get("PLATFORM_HOST", "0.0.0.0")
+PORT = int(os.environ.get("PORT", os.environ.get("PLATFORM_PORT", "8091")))  # Render задаёт PORT сам
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "0") == "1"
 COOKIE = "mila_admin"
 SESSION_DAYS = 14
@@ -39,7 +39,7 @@ SESSION_DAYS = 14
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")  # обычный текст, задаётся в Render → Environment
 
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+MANDRILL_API_KEY = os.environ.get("MANDRILL_API_KEY", "")  # Mailchimp Transactional Email
 MAIL_FROM = os.environ.get("MAIL_FROM", "")  # напр. marathon@serenitymoonevents.com
 CHANNEL_INVITE_LINK = os.environ.get("CHANNEL_INVITE_LINK", "")  # обычная (не одноразовая) ссылка на телеграм-канал
 
@@ -70,22 +70,27 @@ async def send_access_email(to_email: str, name: str):
             f"Спасибо за оплату марафона «Начни сегодня».\n"
             f"Ссылка на телеграм-канал марафона:\n{invite}\n\n"
             f"Ближе к старту (9 ноября) на эту же почту придёт доступ к платформе.")
-    if not (RESEND_API_KEY and MAIL_FROM):
-        print(f"[DEV] письмо для {to_email} не отправлено (нет RESEND_API_KEY/MAIL_FROM):\n{body}")
+    if not (MANDRILL_API_KEY and MAIL_FROM):
+        print(f"[DEV] письмо для {to_email} не отправлено (нет MANDRILL_API_KEY/MAIL_FROM):\n{body}")
         return
     async with ClientSession() as s:
         async with s.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            "https://mandrillapp.com/api/1.0/messages/send.json",
+            headers={"Content-Type": "application/json"},
             data=json.dumps({
-                "from": MAIL_FROM,
-                "to": [to_email],
-                "subject": "Serenity Moon — доступ к марафону",
-                "text": body,
+                "key": MANDRILL_API_KEY,
+                "message": {
+                    "from_email": MAIL_FROM,
+                    "to": [{"email": to_email, "type": "to"}],
+                    "subject": "Serenity Moon — доступ к марафону",
+                    "text": body,
+                },
             }),
         ) as resp:
-            if resp.status >= 300:
-                print(f"[ПРЕДУПРЕЖДЕНИЕ] письмо не ушло ({resp.status}): {await resp.text()}")
+            data = await resp.json()
+            status = (data[0].get("status") if isinstance(data, list) and data else None)
+            if resp.status >= 300 or status in ("rejected", "invalid"):
+                print(f"[ПРЕДУПРЕЖДЕНИЕ] письмо не ушло ({resp.status}): {data}")
 
 
 # ---------- сессия админа ----------
@@ -232,9 +237,26 @@ async def register(request):
     return web.json_response({"ok": True})
 
 
+def verify_stripe_signature(payload: str, sig_header: str) -> bool:
+    """Проверка, что вебхук реально от Stripe (см. Stripe Webhook signing)."""
+    if not STRIPE_WEBHOOK_SECRET:
+        return True  # тестовый режим без секрета — пропускаем без проверки
+    try:
+        parts = dict(p.split("=", 1) for p in sig_header.split(","))
+        timestamp, v1 = parts["t"], parts["v1"]
+        if abs(time.time() - int(timestamp)) > 300:  # защита от повторной отправки старого запроса
+            return False
+        signed = f"{timestamp}.{payload}"
+        expected = hmac.new(STRIPE_WEBHOOK_SECRET.encode(), signed.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, v1)
+    except Exception:
+        return False
+
+
 async def stripe_webhook(request):
-    """Приём события Stripe. Проверка подписи — когда будет реальный STRIPE_WEBHOOK_SECRET."""
     payload = await request.text()
+    if not verify_stripe_signature(payload, request.headers.get("Stripe-Signature", "")):
+        return web.Response(text="bad signature", status=400)
     event = json.loads(payload)
     if event.get("type") != "checkout.session.completed":
         return web.Response(text="ignored")

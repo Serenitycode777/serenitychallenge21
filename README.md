@@ -21,14 +21,13 @@ Stripe Dashboard → Developers → Webhooks → Add endpoint:
 `https://your-service.onrender.com/webhook/stripe`, событие `checkout.session.completed`.
 Скопировать "Signing secret" в переменную `STRIPE_WEBHOOK_SECRET`.
 
-## Подключение почты (Resend)
+## Подключение почты (Mailchimp Transactional Email / Mandrill)
 
-1. Зарегистрироваться на resend.com.
-2. Domains → Add Domain → указать свой домен.
-3. Resend покажет несколько TXT/CNAME записей — добавить их в DNS домена
+1. В Mailchimp → Transactional Email → Try for free.
+2. Подтвердить домен — покажет TXT/CNAME записи, добавить их в DNS домена
    (у регистратора, где куплен домен).
-4. После проверки домена (обычно несколько минут — часов) создать API Key,
-   вписать в `RESEND_API_KEY`, а в `MAIL_FROM` — адрес на этом домене.
+3. После проверки домена создать API Key в разделе Transactional Email,
+   вписать в `MANDRILL_API_KEY`, а в `MAIL_FROM` — адрес на этом домене.
 
 ## Телеграм-канал
 
