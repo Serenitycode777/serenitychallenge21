@@ -15,12 +15,12 @@ import html
 import json
 import os
 import re
-import sqlite3
 import time
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import asyncpg
 from aiohttp import web, ClientSession
 
 HERE = Path(__file__).parent
@@ -45,33 +45,34 @@ RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")  # resend.com
 MAIL_FROM = os.environ.get("MAIL_FROM", "")  # напр. marathon@serenitymoonevents.com
 MAIL_REPLY_TO = os.environ.get("MAIL_REPLY_TO", "")  # куда попадают ответы участниц
 CHANNEL_INVITE_LINK = os.environ.get("CHANNEL_INVITE_LINK", "")  # обычная (не одноразовая) ссылка на телеграм-канал
+DATABASE_URL = os.environ.get("DATABASE_URL", "")  # supabase/postgres connection string
 
-(HERE / "data").mkdir(exist_ok=True)
-DB = sqlite3.connect(HERE / "data" / "signups.sqlite", check_same_thread=False)
-DB.row_factory = sqlite3.Row
-DB.execute("""CREATE TABLE IF NOT EXISTS signups (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT, email TEXT, email_norm TEXT, instagram TEXT, phone TEXT, comment TEXT,
-    method TEXT,                 -- stripe | venmo | zelle
-    amount REAL,
-    status TEXT DEFAULT 'ждёт',  -- ждёт | оплачено
-    invite_sent INTEGER DEFAULT 0,
-    created REAL, confirmed REAL
-)""")
-try:
-    DB.execute("ALTER TABLE signups ADD COLUMN phone TEXT")
-except sqlite3.OperationalError:
-    pass
-try:
-    DB.execute("ALTER TABLE signups ADD COLUMN comment TEXT")
-except sqlite3.OperationalError:
-    pass
-try:
-    DB.execute("ALTER TABLE signups ADD COLUMN note TEXT")
-except sqlite3.OperationalError:
-    pass
-DB.execute("CREATE INDEX IF NOT EXISTS idx_email_norm ON signups(email_norm)")
-DB.commit()
+# пул подключений к базе — создаётся асинхронно при старте (см. on_startup), пока сервер
+# не поднялся — DB_POOL == None
+DB_POOL: asyncpg.Pool | None = None
+
+
+async def init_db(app):
+    global DB_POOL
+    if not DATABASE_URL:
+        raise SystemExit("Нет DATABASE_URL в .env — нужна строка подключения к supabase/postgres, см. .env.example")
+    DB_POOL = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5, statement_cache_size=0)
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS signups (
+        id SERIAL PRIMARY KEY,
+        name TEXT, email TEXT, email_norm TEXT, instagram TEXT, phone TEXT, comment TEXT,
+        method TEXT,                 -- stripe | venmo | zelle
+        amount REAL,
+        status TEXT DEFAULT 'ждёт',  -- ждёт | оплачено
+        invite_sent INTEGER DEFAULT 0,
+        note TEXT,
+        created DOUBLE PRECISION, confirmed DOUBLE PRECISION
+    )""")
+    await DB_POOL.execute("CREATE INDEX IF NOT EXISTS idx_email_norm ON signups(email_norm)")
+
+
+async def close_db(app):
+    if DB_POOL:
+        await DB_POOL.close()
 
 
 def normalize_email(e: str) -> str:
@@ -472,12 +473,11 @@ async def register(request):
     method = str(data.get("pay", "")).strip().lower()
     if method not in ("venmo", "zelle") or not email:
         return web.json_response({"ok": False, "error": "bad_request"}, status=400)
-    DB.execute(
+    await DB_POOL.execute(
         "INSERT INTO signups (name, email, email_norm, instagram, phone, comment, method, status, created) "
-        "VALUES (?,?,?,?,?,?,?,?,?)",
-        (name, email, normalize_email(email), instagram, phone, comment, method, "ждёт", time.time()),
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+        name, email, normalize_email(email), instagram, phone, comment, method, "ждёт", time.time(),
     )
-    DB.commit()
     return web.json_response({"ok": True})
 
 
@@ -510,18 +510,16 @@ async def stripe_webhook(request):
     name = session.get("customer_details", {}).get("name", "")
     amount = (session.get("amount_total") or 0) / 100
 
-    row = DB.execute("SELECT id, status FROM signups WHERE email_norm=? AND method='stripe'",
-                      (email,)).fetchone()
+    row = await DB_POOL.fetchrow("SELECT id, status FROM signups WHERE email_norm=$1 AND method='stripe'", email)
     if row:
-        DB.execute("UPDATE signups SET status='оплачено', confirmed=? WHERE id=?",
-                   (time.time(), row["id"]))
+        await DB_POOL.execute("UPDATE signups SET status='оплачено', confirmed=$1 WHERE id=$2",
+                               time.time(), row["id"])
     else:
-        DB.execute(
+        await DB_POOL.execute(
             "INSERT INTO signups (name, email, email_norm, method, amount, status, created, confirmed) "
-            "VALUES (?,?,?,?,?,?,?,?)",
-            (name, email, email, "stripe", amount, "оплачено", time.time(), time.time()),
+            "VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+            name, email, email, "stripe", amount, "оплачено", time.time(), time.time(),
         )
-    DB.commit()
     await send_access_email(email, name)
     return web.Response(text="ok")
 
@@ -551,7 +549,7 @@ async def admin_login_post(request):
 async def admin(request):
     if not authed(request):
         raise web.HTTPFound("/admin/login")
-    rows = DB.execute("SELECT * FROM signups ORDER BY created DESC").fetchall()
+    rows = await DB_POOL.fetch("SELECT * FROM signups ORDER BY created DESC")
     return html_response(admin_page(rows))
 
 
@@ -559,11 +557,10 @@ async def admin_confirm(request):
     if not authed(request):
         raise web.HTTPFound("/admin/login")
     row_id = int(request.match_info["id"])
-    row = DB.execute("SELECT * FROM signups WHERE id=?", (row_id,)).fetchone()
+    row = await DB_POOL.fetchrow("SELECT * FROM signups WHERE id=$1", row_id)
     if row and row["status"] != "оплачено":
-        DB.execute("UPDATE signups SET status='оплачено', confirmed=? WHERE id=?",
-                   (time.time(), row_id))
-        DB.commit()
+        await DB_POOL.execute("UPDATE signups SET status='оплачено', confirmed=$1 WHERE id=$2",
+                               time.time(), row_id)
         await send_access_email(row["email"], row["name"])
     raise web.HTTPFound("/admin")
 
@@ -573,8 +570,7 @@ async def admin_note(request):
         raise web.HTTPFound("/admin/login")
     row_id = int(request.match_info["id"])
     data = await request.post()
-    DB.execute("UPDATE signups SET note=? WHERE id=?", (str(data.get("note", "")).strip(), row_id))
-    DB.commit()
+    await DB_POOL.execute("UPDATE signups SET note=$1 WHERE id=$2", str(data.get("note", "")).strip(), row_id)
     raise web.HTTPFound("/admin")
 
 
@@ -582,8 +578,7 @@ async def admin_delete(request):
     if not authed(request):
         raise web.HTTPFound("/admin/login")
     row_id = int(request.match_info["id"])
-    DB.execute("DELETE FROM signups WHERE id=?", (row_id,))
-    DB.commit()
+    await DB_POOL.execute("DELETE FROM signups WHERE id=$1", row_id)
     raise web.HTTPFound("/admin")
 
 
@@ -595,14 +590,13 @@ async def admin_add(request):
     if not email:
         raise web.HTTPFound("/admin")
     status = str(data.get("status", "ждёт")).strip()
-    DB.execute(
+    await DB_POOL.execute(
         "INSERT INTO signups (name, email, email_norm, method, status, note, created, confirmed) "
-        "VALUES (?,?,?,?,?,?,?,?)",
-        (str(data.get("name", "")).strip(), email, normalize_email(email),
-         str(data.get("method", "venmo")).strip(), status, str(data.get("note", "")).strip(),
-         time.time(), time.time() if status == "оплачено" else None),
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+        str(data.get("name", "")).strip(), email, normalize_email(email),
+        str(data.get("method", "venmo")).strip(), status, str(data.get("note", "")).strip(),
+        time.time(), time.time() if status == "оплачено" else None,
     )
-    DB.commit()
     raise web.HTTPFound("/admin")
 
 
@@ -619,7 +613,7 @@ async def materials(request):
 
 
 async def health(request):
-    DB.execute("SELECT 1").fetchone()
+    await DB_POOL.fetchval("SELECT 1")
     return web.Response(text="ok")
 
 
@@ -629,6 +623,8 @@ def make_app():
     if not ADMIN_PASSWORD:
         print("[ПРЕДУПРЕЖДЕНИЕ] ADMIN_PASSWORD не задан — вход в /admin не сработает, см. .env.example")
     app = web.Application()
+    app.on_startup.append(init_db)
+    app.on_cleanup.append(close_db)
     app.add_routes([
         web.post("/register", register),
         web.post("/webhook/stripe", stripe_webhook),
