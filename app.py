@@ -715,6 +715,7 @@ def make_app():
         web.post("/admin/delete/{id}", admin_delete),
         web.post("/admin/add", admin_add),
         web.get("/admin/logout", admin_logout),
+        web.get("/materials", materials),
         web.get("/health", health),
     ])
     return app
