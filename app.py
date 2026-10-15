@@ -617,15 +617,35 @@ async def health(request):
     return web.Response(text="ok")
 
 
+@web.middleware
+async def cors_middleware(request, handler):
+    """Лендинг (gh-pages / свой домен) и сервер — разные источники для браузера,
+    без этих заголовков браузер блокирует ответ на fetch('/register', ...) с
+    фронта даже если сам запрос реально дошёл до сервера."""
+    if request.method == "OPTIONS":
+        resp = web.Response()
+    else:
+        resp = await handler(request)
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    resp.headers["Access-Control-Allow-Headers"] = "*"
+    return resp
+
+
+async def cors_preflight(request):
+    return web.Response()
+
+
 def make_app():
     if not SECRET:
         raise SystemExit("Нет PLATFORM_SECRET в .env — см. .env.example")
     if not ADMIN_PASSWORD:
         print("[ПРЕДУПРЕЖДЕНИЕ] ADMIN_PASSWORD не задан — вход в /admin не сработает, см. .env.example")
-    app = web.Application()
+    app = web.Application(middlewares=[cors_middleware])
     app.on_startup.append(init_db)
     app.on_cleanup.append(close_db)
     app.add_routes([
+        web.options("/register", cors_preflight),
         web.post("/register", register),
         web.post("/webhook/stripe", stripe_webhook),
         web.get("/admin", admin),
