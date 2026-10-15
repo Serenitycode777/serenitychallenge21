@@ -899,7 +899,9 @@ setTimeout(function(){(function(d,w,k,o,g) {var n=d.getElementsByTagName(o)[0],s
   if(payBtn){
     payBtn.addEventListener('click',function(){
       var dlg = document.getElementById('regDialog');
-      if(dlg) dlg.showModal();
+      if(dlg && !dlg.open){
+        try{ dlg.showModal(); }catch(err){}
+      }
     });
   }
 })();
