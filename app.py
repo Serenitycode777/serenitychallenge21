@@ -289,11 +289,12 @@ async def send_payment_qr_email(to_email: str, name: str, method: str):
     человек закроет страницу до оплаты и потеряет код."""
     greet_name = name if name else "дорогая участница"
     method_title = "Venmo" if method == "venmo" else "Zelle"
-    body = (f"Привет, {greet_name}!\n\n"
-            f"Спасибо за заявку на марафон «Начни сегодня» — высылаем код оплаты через {method_title} "
-            f"отдельным письмом на всякий случай (вдруг потеряется вкладка с сайтом).\n\n"
-            f"QR-код во вложении. После оплаты пришли, пожалуйста, чек в личные сообщения Миле @milaserenity.\n\n"
-            f"До скорой встречи!\nМила и команда Serenity Moon")
+    body = (f"Привет, {greet_name}! \n\n"
+            f"Спасибо за заявку на марафон «Начни сегодня» 💗 \n\n"
+            f"Высылаю код оплаты через {method_title}. QR-код во вложении. \n"
+            f"После оплаты пришли, пожалуйста, чек в личные сообщения Миле @milaserenity в Телеграм.\n\n"
+            f"До скорой встречи! ✨\n"
+            f"Мила и команда Serenity Moon")
     if not (RESEND_API_KEY and MAIL_FROM):
         print(f"[DEV] письмо с qr для {to_email} не отправлено (нет RESEND_API_KEY/MAIL_FROM)")
         return
