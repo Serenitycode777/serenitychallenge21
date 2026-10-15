@@ -353,7 +353,8 @@ header{backdrop-filter:none!important;background:var(--bg)!important}
 .qr-pick p{margin:0;font-size:13.5px;line-height:1.5;color:var(--text)}
 fieldset:has(input[value="Venmo"]:checked) .qr-pick-venmo,fieldset:has(input[value="Zelle"]:checked) .qr-pick-zelle{display:flex}
 @media (max-width:600px){.qr-pick{flex-direction:column;margin-left:0}.qr-pick .qr-tile{flex:none;width:180px}}
-.tg-chat{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;flex-direction:column;align-items:flex-end;gap:10px;font-family:Montserrat,sans-serif}
+.tg-chat{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;flex-direction:column;align-items:flex-end;gap:10px;font-family:Montserrat,sans-serif;pointer-events:none}
+.tg-chat>*{pointer-events:auto}
 .tg-fab{width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;color:#fff;background:linear-gradient(135deg,#37AEE2,#1E96C8);box-shadow:0 12px 28px -8px rgba(30,150,200,.6),0 0 0 4px rgba(255,255,255,.9);display:grid;place-items:center;position:relative;transition:transform .2s ease}
 .tg-fab:hover{transform:scale(1.06)}
 .tg-fab::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(55,174,226,.5);animation:tgPing 2.6s ease-out infinite}
