@@ -281,6 +281,49 @@ renderGrid();
 
 
 # ---------- почта (не падает без ключей — просто логирует) ----------
+QR_PATHS = {"venmo": HERE / "qr-venmo.jpg", "zelle": HERE / "qr-zelle.jpg"}
+
+
+async def send_payment_qr_email(to_email: str, name: str, method: str):
+    """Дублирует QR-код на почту сразу после заявки (venmo/zelle) — на случай если
+    человек закроет страницу до оплаты и потеряет код."""
+    greet_name = name if name else "дорогая участница"
+    method_title = "Venmo" if method == "venmo" else "Zelle"
+    body = (f"Привет, {greet_name}!\n\n"
+            f"Спасибо за заявку на марафон «Начни сегодня» — высылаем код оплаты через {method_title} "
+            f"отдельным письмом на всякий случай (вдруг потеряется вкладка с сайтом).\n\n"
+            f"QR-код во вложении. После оплаты пришли, пожалуйста, чек в личные сообщения Миле @milaserenity.\n\n"
+            f"До скорой встречи!\nМила и команда Serenity Moon")
+    if not (RESEND_API_KEY and MAIL_FROM):
+        print(f"[DEV] письмо с qr для {to_email} не отправлено (нет RESEND_API_KEY/MAIL_FROM)")
+        return
+    qr_path = QR_PATHS.get(method)
+    attachments = []
+    if qr_path and qr_path.exists():
+        attachments.append({
+            "filename": f"{method}-qr.jpg",
+            "content": base64.b64encode(qr_path.read_bytes()).decode(),
+        })
+    payload = {
+        "from": MAIL_FROM,
+        "to": [to_email],
+        "subject": f"Serenity Moon — QR-код для оплаты ({method_title})",
+        "text": body,
+        "attachments": attachments,
+    }
+    if MAIL_REPLY_TO:
+        payload["reply_to"] = MAIL_REPLY_TO
+    async with ClientSession() as s:
+        async with s.post(
+            "https://api.resend.com/emails",
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {RESEND_API_KEY}"},
+            data=json.dumps(payload),
+        ) as resp:
+            if resp.status >= 300:
+                data = await resp.text()
+                print(f"[ПРЕДУПРЕЖДЕНИЕ] письмо с qr не ушло ({resp.status}): {data}")
+
+
 async def send_access_email(to_email: str, name: str):
     invite = CHANNEL_INVITE_LINK or "[DEV] ссылка появится, как только настроим CHANNEL_INVITE_LINK"
     greet_name = name if name else "дорогая участница"
@@ -486,6 +529,10 @@ async def register(request):
         "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
         name, email, normalize_email(email), instagram, phone, comment, method, "ждёт", time.time(),
     )
+    try:
+        await send_payment_qr_email(email, name, method)
+    except Exception as e:
+        print(f"[ПРЕДУПРЕЖДЕНИЕ] не удалось отправить дубль qr на почту: {e}")
     return web.json_response({"ok": True})
 
 
