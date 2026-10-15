@@ -286,7 +286,7 @@ async def send_access_email(to_email: str, name: str):
     body = (f"Здравствуйте{', ' + name if name else ''}!\n\n"
             f"Спасибо за оплату марафона «Начни сегодня».\n"
             f"Ссылка на телеграм-канал марафона:\n{invite}\n\n"
-            f"Ближе к старту (9 ноября) на эту же почту придёт доступ к платформе.")
+            f"Ближе к старту (5 ноября) на эту же почту придёт доступ к платформе.")
     if not (RESEND_API_KEY and MAIL_FROM):
         print(f"[DEV] письмо для {to_email} не отправлено (нет RESEND_API_KEY/MAIL_FROM):\n{body}")
         return
