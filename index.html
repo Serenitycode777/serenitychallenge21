@@ -878,21 +878,18 @@ setTimeout(function(){(function(d,w,k,o,g) {var n=d.getElementsByTagName(o)[0],s
 </script>
 <script>
 (function(){
+  var goToPrice = function(){
+    window.location.hash = 'price';
+  };
   var joinBtn = document.getElementById('heroJoinBtn');
   if(joinBtn){
-    joinBtn.addEventListener('click',function(){
-      var p = document.getElementById('price');
-      if(p) p.scrollIntoView({behavior:'smooth',block:'start'});
-    });
+    joinBtn.addEventListener('click',goToPrice);
   }
   var wantBtn = document.getElementById('heroWantBtn');
   if(wantBtn){
     wantBtn.addEventListener('click',function(e){
-      var p = document.getElementById('price');
-      if(p){
-        e.preventDefault();
-        p.scrollIntoView({behavior:'smooth',block:'start'});
-      }
+      e.preventDefault();
+      goToPrice();
     });
   }
   var payBtn = document.getElementById('heroPayBtn');
