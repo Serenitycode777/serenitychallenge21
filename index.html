@@ -506,7 +506,7 @@ fieldset:has(input[value="Venmo"]:checked) .qr-pick-venmo,fieldset:has(input[val
 <div id="regStep2" class="reg-step" hidden> <button type="button" class="reg-back" id="regBack">← Другой способ оплаты</button> <div class="section-head" style="margin-bottom:0"> <h2 style="font-size:26px">Регистрация</h2> <p style="font-size:14px;margin-top:8px">Заполни короткую анкету — после неё покажем реквизиты для оплаты через <strong id="regMethodName">Venmo</strong>.</p> </div> <form id="reg" novalidate>
 <input type="hidden" name="pay" id="regPay" value="">
 
-<div class="reg-section"> <div class="reg-section-head"><span class="reg-num">1</span><span>О тебе</span></div> <div class="reg-section-body"> <div><label for="name">Твоё имя <span class="req">*</span></label><input id="name" name="name" autocomplete="name" required></div> <div class="reg-grid"> <div><label for="email">Email <span class="req">*</span></label><input id="email" name="email" type="email" autocomplete="email" required></div> <div><label for="phone">Телефон <span class="req">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+1 (___) ___-____" value="+1 " required></div> </div> <div><label for="ig">Ник в Telegram</label><input id="ig" name="ig" placeholder="@имя"><p class="hint">Для добавления в закрытую группу марафона.</p></div> </div> </div>
+<div class="reg-section"> <div class="reg-section-head"><span class="reg-num">1</span><span>О тебе</span></div> <div class="reg-section-body"> <div><label for="name">Твоё имя <span class="req">*</span></label><input id="name" name="name" autocomplete="name" required></div> <div class="reg-grid"> <div><label for="email">Email <span class="req">*</span></label><input id="email" name="email" type="email" autocomplete="email" required></div> <div><label for="phone">Телефон <span class="req">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+1 (___) ___-____" required></div> </div> <div><label for="ig">Ник в Telegram</label><input id="ig" name="ig" placeholder="@имя"><p class="hint">Для добавления в закрытую группу марафона.</p></div> </div> </div>
 
 <details class="reg-section reg-details"> <summary class="reg-section-head"><span class="reg-num reg-num-muted">2</span><span>Комментарий или вопрос <span class="hint" style="font-weight:400;display:inline">(необязательно)</span></span></summary> <div class="reg-section-body"><textarea id="msg" name="msg"></textarea></div> </details>
 
@@ -864,5 +864,17 @@ fieldset:has(input[value="Venmo"]:checked) .qr-pick-venmo,fieldset:has(input[val
 })();
 </script>
 <!-- nominify end --> </div> </div> </div> </div> </div> <!--/allrecords--> <!-- Stat --> <script type="text/javascript">if(!window.mainTracker) {window.mainTracker='tilda';}
-setTimeout(function(){(function(d,w,k,o,g) {var n=d.getElementsByTagName(o)[0],s=d.createElement(o),f=function(){n.parentNode.insertBefore(s,n);};s.type="text/javascript";s.async=true;s.key=k;s.id="tildastatscript";s.src=g;if(w.opera=="[object Opera]") {d.addEventListener("DOMContentLoaded",f,false);} else {f();}})(document,window,'7b90bf80064049479043a3313bba4d29','script','https://static.tildacdn.net/js/tilda-stat-1.0.min.js');},2000);</script> </body> </html>
+setTimeout(function(){(function(d,w,k,o,g) {var n=d.getElementsByTagName(o)[0],s=d.createElement(o),f=function(){n.parentNode.insertBefore(s,n);};s.type="text/javascript";s.async=true;s.key=k;s.id="tildastatscript";s.src=g;if(w.opera=="[object Opera]") {d.addEventListener("DOMContentLoaded",f,false);} else {f();}})(document,window,'7b90bf80064049479043a3313bba4d29','script','https://static.tildacdn.net/js/tilda-stat-1.0.min.js');},2000);</script>
+<script>
+(function(){
+  var phoneInput = document.getElementById('phone');
+  if(!phoneInput) return;
+  fetch('https://ipapi.co/json/').then(function(r){return r.json();}).then(function(d){
+    if(d && d.country_calling_code && !phoneInput.value){
+      phoneInput.value = d.country_calling_code + ' ';
+    }
+  }).catch(function(){});
+})();
+</script>
+</body> </html>
 </body></html>
