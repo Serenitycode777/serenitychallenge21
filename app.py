@@ -138,9 +138,9 @@ h1,h2,h3{{font-family:Fraunces,Georgia,serif;margin:0}}
 @media (max-width:520px){{.grid{{grid-template-columns:1fr}}}}
 .card{{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;cursor:pointer;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}}
 .card[hidden]{{display:none}}
-.dot{{width:34px;height:34px;border-radius:50%}}
-.card.mila .dot{{background:var(--lav)}} .card.maria .dot{{background:var(--sage)}}
-.card.anna .dot{{background:var(--sand)}} .card.extra .dot{{background:linear-gradient(135deg,var(--lav),var(--sage) 55%,var(--sand))}}
+.dot{{width:34px;height:34px;border-radius:50%;background-size:cover;background-position:center;flex-shrink:0}}
+.card.mila .dot{{background-color:var(--lav)}} .card.maria .dot{{background-color:var(--sage)}}
+.card.anna .dot{{background-color:var(--sand)}} .card.extra .dot{{background:linear-gradient(135deg,var(--lav),var(--sage) 55%,var(--sand))}}
 .card h3{{font-size:19px;font-weight:600}}
 .card .topics{{font-size:12.5px;color:var(--ink-soft)}}
 .card .desc{{font-size:13.5px;color:var(--ink-soft);line-height:1.45;flex:1}}
@@ -225,7 +225,8 @@ function renderGrid(){{
     const mT = activeTheme==="all"||items.some(m=>m.tags.includes(activeTheme));
     const mQ = items.some(matchesQuery);
     if(!mA||!mT||!mQ) card.hidden = true;
-    card.innerHTML = `<div class="dot"></div><h3>${{a.name}}</h3><div class="topics">${{a.topics}}</div>
+    const dotStyle = a.photo ? ` style="background-image:url('${{a.photo}}')"` : "";
+    card.innerHTML = `<div class="dot"${{dotStyle}}></div><h3>${{a.name}}</h3><div class="topics">${{a.topics}}</div>
       <div class="desc">${{a.desc}}</div>`;
     card.addEventListener("click", ()=>openPanel(key));
     grid.appendChild(card);
@@ -236,7 +237,9 @@ function openPanel(key){{
   const a = DATA.authors[key];
   document.getElementById("panelTitle").textContent = a.name;
   document.getElementById("panelSub").textContent = a.topics;
-  document.getElementById("panelDot").className = "dot "+key;
+  const panelDot = document.getElementById("panelDot");
+  panelDot.className = "dot "+key;
+  panelDot.style.backgroundImage = a.photo ? `url('${{a.photo}}')` : "";
   const items = DATA.materials.filter(m=>m.author===key);
   document.getElementById("panelList").innerHTML = items.map(m=>{{
     const unlocked = m.day===null || m.day<=TODAY;
