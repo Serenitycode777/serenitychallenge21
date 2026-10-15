@@ -510,7 +510,7 @@ fieldset:has(input[value="Venmo"]:checked) .qr-pick-venmo,fieldset:has(input[val
 
 <details class="reg-section reg-details"> <summary class="reg-section-head"><span class="reg-num reg-num-muted">2</span><span>Комментарий или вопрос <span class="hint" style="font-weight:400;display:inline">(необязательно)</span></span></summary> <div class="reg-section-body"><textarea id="msg" name="msg"></textarea></div> </details>
 
-<button class="btn btn-gold" type="submit" style="width:100%;text-align:center">Продолжить к оплате</button> <p class="error" id="err" role="alert"></p> <p class="form-note">После нажатия появятся реквизиты для оплаты.</p>
+<button class="btn btn-gold" type="submit" style="width:100%;text-align:center">Перейти к оплате</button> <p class="error" id="err" role="alert"></p> <p class="form-note">После нажатия появятся реквизиты для оплаты.</p>
 </form> </div>
 
 <div id="regStep3" class="reg-step" hidden> <div class="section-head" style="margin-bottom:14px"> <h2 style="font-size:26px">Остался последний шаг</h2> <p style="font-size:14px;margin-top:8px"><span id="regThanks">Спасибо!</span> Переведи <strong>$33</strong> и укажи в комментарии к платежу своё имя.</p> </div>
@@ -581,7 +581,7 @@ fieldset:has(input[value="Venmo"]:checked) .qr-pick-venmo,fieldset:has(input[val
       fetch('https://serenity-platform-2g6h.onrender.com/register',{method:'POST',body:fd})
         .then(function(r){return r.json().then(function(d){return {ok:r.ok,data:d}})})
         .then(function(res){
-          submitBtn.disabled=false;submitBtn.textContent='Продолжить к оплате';
+          submitBtn.disabled=false;submitBtn.textContent='Перейти к оплате';
           if(res.ok&&res.data&&res.data.ok){
             document.getElementById('regThanks').textContent='Спасибо, '+f.name.value.trim().split(/\s+/)[0]+'!';
             s3.querySelectorAll('.qr-final').forEach(function(q){q.style.display=q.getAttribute('data-for')===method?'flex':'none'});
@@ -591,7 +591,7 @@ fieldset:has(input[value="Venmo"]:checked) .qr-pick-venmo,fieldset:has(input[val
           }
         })
         .catch(function(){
-          submitBtn.disabled=false;submitBtn.textContent='Продолжить к оплате';
+          submitBtn.disabled=false;submitBtn.textContent='Перейти к оплате';
           err.textContent='Не получилось отправить — проверь интернет и попробуй ещё раз, или напиши на serenitymooncircle@gmail.com';
         });
     });
