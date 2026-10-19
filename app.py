@@ -1423,7 +1423,6 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   <h2 class="fd-praise" id="fdPraise">Ты держишь ритм ✨</h2>
   <div class="fd-stat"><div class="num"><span id="fdDone">0</span>/<span id="fdTotal">5</span></div><div class="lbl">привычек выполнено сегодня</div></div>
   <p class="fd-quote">«Маленькие шаги каждый день создают большие результаты»</p>
-  <p class="fd-honest">Будь честна с самой собой: цель марафона не в том, чтобы поучаствовать в розыгрыше, а в том, чтобы изменить свою жизнь.</p>
   <button class="fd-btn" id="fdClose">
     <svg viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="currentColor"/></svg>
     Спокойной ночи</button>
@@ -1823,6 +1822,7 @@ function buildMaterialsState(){
 function initCabinetUI(){
   buildMaterialsState();
   renderHeat(); renderChecklist(); renderMaterials(); renderProgress(); renderEvents(); renderProfileTile();
+  syncHabitsCount();
   setActiveTab(initialTab, {persist:false});
   if(HABITS.length === 0) startOnboarding();
   checkStarCelebration();
@@ -2723,6 +2723,9 @@ h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
 
 .evlist{display:flex;flex-direction:column;gap:8px;margin-top:4px}
 .evrow{display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.evrow.past{background:var(--ok-bg);border-color:var(--ok)}
+.evrow.past .evday{background:var(--ok);border-color:var(--ok);color:#fff}
+.evrow.past .evtag{background:var(--ok);color:#fff}
 .evrow .evday{width:40px;height:44px;border-radius:10px;background:var(--surface);border:1px solid var(--line);
   display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.3;font-size:13px;font-weight:700;color:var(--lav-ink);flex-shrink:0}
 .evrow .evbody{flex:1;min-width:0}
@@ -3374,12 +3377,14 @@ function fmtDate(iso){
 }
 function renderEvents(){
   const list = document.getElementById("evList");
+  const todayStr = new Date().toISOString().slice(0,10);
   list.innerHTML = EVENTS.length ? EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).map((e)=>{
     const d = fmtDate(e.date);
+    const past = e.date < todayStr;
     return `
-    <div class="evrow">
+    <div class="evrow${past?' past':''}">
       <div class="evday">${d.num}<br><span style="font-size:8px;font-weight:600;text-transform:uppercase">${d.lbl}</span></div>
-      <div class="evbody"><div class="evttl">${e.title}</div><div class="evmeta">${e.time||""}</div></div>
+      <div class="evbody"><div class="evttl">${e.title}</div><div class="evmeta">${e.time||""}${past?' · прошёл':''}</div></div>
       <div class="evtag">${e.type||""}</div>
       <button class="evbtn" data-del="${e.id}">✕</button>
     </div>`;
