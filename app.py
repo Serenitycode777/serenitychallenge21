@@ -782,7 +782,7 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
 .cchip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface-2);
   border:1.5px solid var(--line);border-radius:999px;padding:6px 13px 6px 8px;cursor:pointer;user-select:none}
 .cchip.on{border-color:var(--ink)}
-.cchip .sw{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.08)}
+.cchip .cswatch{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.08)}
 
 .addtheme{display:flex;gap:8px;margin-top:14px}
 .addtheme input{flex:1;font-family:inherit;font-size:13.5px;color:var(--ink);background:var(--surface);
@@ -1319,7 +1319,7 @@ let selectedMevColor = MEV_COLORS[0].v;
 function renderMevColorPicker(){
   const wrap = document.getElementById("mevColorPicker");
   wrap.innerHTML = MEV_COLORS.map(c=>`<div class="cchip${c.v===selectedMevColor?" on":""}" data-c="${c.v}">
-    <span class="sw" style="background:${c.css}"></span>${c.l}</div>`).join("");
+    <span class="cswatch" style="background:${c.css}"></span>${c.l}</div>`).join("");
   wrap.querySelectorAll(".cchip").forEach(el=>{
     el.addEventListener("click", ()=>{ selectedMevColor = el.dataset.c; renderMevColorPicker(); });
   });
