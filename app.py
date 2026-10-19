@@ -563,6 +563,7 @@ ADMIN_APP_HTML = """<!doctype html>
   --lav:#AA9DB8; --lav-ink:#6B5A7C; --sage:#6A9993; --sage-ink:#3F6660;
   --sand:#CBBAA8; --sand-ink:#8A6F55; --ink:#332E3D; --ink-soft:#6B6475;
   --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#F2ECE6; --line:#E7DED6;
+  --ok:#5C8A5C; --ok-bg:#E7F1E4; --warn:#B98A3E; --warn-bg:#FBF0DE;
   --shadow:0 10px 30px -14px rgba(51,46,61,.22);
   --sys:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
 }
@@ -643,24 +644,36 @@ h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
 .crm-stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:90px;box-shadow:var(--shadow)}
 .crm-stat .l{font-size:11.5px;color:var(--ink-soft)}
 .crm-stat .v{font-size:20px;font-weight:600;margin-top:2px}
-.crm-stat .v.paid{color:var(--sage-ink)}
-.crm-stat .v.wait{color:var(--sand-ink)}
+.crm-stat .v.paid{color:var(--ok)}
+.crm-stat .v.wait{color:var(--warn)}
+.crm-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.crm-search{flex:1;min-width:200px;position:relative}
+.crm-search input{width:100%;font:inherit;font-size:13px;padding:9px 12px 9px 32px;border-radius:10px;border:1.3px solid var(--line);
+  background:var(--surface);color:var(--ink)}
+.crm-search::before{content:"";position:absolute;left:11px;top:50%;width:12px;height:12px;margin-top:-7px;border-radius:50%;
+  border:1.6px solid var(--ink-soft);box-shadow:5px 5px 0 -3px var(--ink-soft);pointer-events:none}
+.crm-chips{display:flex;gap:6px;flex-wrap:wrap}
+.crm-chip{font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:999px;border:1.3px solid var(--line);
+  background:var(--surface);color:var(--ink-soft);cursor:pointer;white-space:nowrap;user-select:none}
+.crm-chip.on{background:var(--lav);border-color:var(--lav);color:#fff}
 details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-weight:600;padding:8px 0}
 .crm-addbody{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px;box-shadow:var(--shadow)}
 .crm-addbody label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--ink-soft)}
 .crm-addbody input,.crm-addbody select{border:1.3px solid var(--sage);background:var(--surface);border-radius:8px;padding:7px 9px;font-size:13px;font-family:inherit}
 .crm-addbody button{background:var(--lav);color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;cursor:pointer}
-.crm-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:13px;box-shadow:var(--shadow)}
-.crm-table th{text-align:left;padding:10px 12px;background:var(--surface-2);font-size:12px;font-weight:600}
-.crm-table td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--ink-soft)}
-.crm-table td.nm{color:var(--ink);font-weight:500}
+.crm-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:12.8px;box-shadow:var(--shadow)}
+.crm-table th{text-align:left;padding:10px 12px;background:var(--surface-2);font-size:11.5px;font-weight:650;color:var(--ink-soft)}
+.crm-table td{padding:10px 12px;border-top:1px solid var(--line);color:var(--ink-soft);vertical-align:middle}
+.crm-table td.nm{color:var(--ink);font-weight:600}
+.crm-table td.nm .em{display:block;font-weight:400;font-size:11.5px;color:var(--ink-soft);margin-top:1px}
 .crm-badge{padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
-.crm-badge.paid{background:var(--sage);color:#fff}
-.crm-badge.wait{background:var(--sand);color:var(--sand-ink)}
-.crm-note{border:1.3px solid var(--sage);background:var(--surface);border-radius:8px;padding:5px 7px;font-size:12px;font-family:inherit;width:100%;min-width:90px}
+.crm-badge.paid{background:var(--ok-bg);color:var(--ok)}
+.crm-badge.wait{background:var(--warn-bg);color:var(--warn)}
+.crm-note,.crm-amt{border:1.3px solid var(--sage);background:var(--surface);border-radius:8px;padding:5px 7px;font-size:12px;font-family:inherit;width:100%;min-width:90px}
+.crm-amt{min-width:60px;font-variant-numeric:tabular-nums}
 .crm-confirm{background:var(--lav);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11.5px;cursor:pointer;white-space:nowrap}
 .crm-del{background:none;color:#c0564f;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:11.5px;cursor:pointer}
-.crm-mobile-wrap{overflow-x:auto}
+.crm-mobile-wrap{overflow-x:auto;border-radius:14px}
 
 .mevrow{display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .mevrow .ph{width:40px;height:40px;border-radius:10px;flex-shrink:0}
@@ -853,12 +866,19 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
         <div class="crm-stat"><div class="l">оплачено</div><div class="v paid" id="crmPaid">0</div></div>
         <div class="crm-stat"><div class="l">ждут</div><div class="v wait" id="crmWait">0</div></div>
       </div>
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-        <input type="text" id="crmSearch" placeholder="поиск: имя, почта, телефон, телеграм…"
-          style="flex:1;min-width:200px;font:inherit;font-size:13px;padding:9px 12px;border-radius:10px;border:1.3px solid var(--line);background:var(--surface);color:var(--ink)">
-        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;white-space:nowrap">
-          <input type="checkbox" id="crmOnlyPaid"> только оплаченные
-        </label>
+      <div class="crm-toolbar">
+        <div class="crm-search"><input type="text" id="crmSearch" placeholder="имя, почта, телефон, телеграм…"></div>
+        <div class="crm-chips" id="crmStatusChips">
+          <div class="crm-chip on" data-status="all">все</div>
+          <div class="crm-chip" data-status="оплачено">оплачено</div>
+          <div class="crm-chip" data-status="ждёт">ждут</div>
+        </div>
+        <div class="crm-chips" id="crmMethodChips">
+          <div class="crm-chip on" data-method="all">все способы</div>
+          <div class="crm-chip" data-method="venmo">venmo</div>
+          <div class="crm-chip" data-method="zelle">zelle</div>
+          <div class="crm-chip" data-method="stripe">stripe</div>
+        </div>
       </div>
       <details class="crm-add">
         <summary>+ добавить вручную</summary>
@@ -869,13 +889,14 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
           <label>Телеграм<input type="text" id="caTg" placeholder="@username"></label>
           <label>Способ<select id="caMethod"><option value="venmo">venmo</option><option value="zelle">zelle</option><option value="stripe">stripe</option></select></label>
           <label>Статус<select id="caStatus"><option value="ждёт">ждёт</option><option value="оплачено">оплачено</option></select></label>
+          <label>Сумма<input type="text" id="caAmount" placeholder="33" style="width:70px"></label>
           <label>Заметка<input type="text" id="caNote"></label>
           <button id="caAdd">Добавить</button>
         </div>
       </details>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>Имя</th><th>Почта</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
+          <thead><tr><th>Имя</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Сумма</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
           <tbody id="crmBody"></tbody>
         </table>
       </div>
@@ -1230,14 +1251,17 @@ async function loadParticipants(){
   }
 }
 
+let crmStatus = "all";
+let crmMethod = "all";
+
 function renderParticipants(){
   document.getElementById("crmTotal").textContent = PARTICIPANTS.length;
   document.getElementById("crmPaid").textContent = PARTICIPANTS.filter(p=>p.status==="оплачено").length;
   document.getElementById("crmWait").textContent = PARTICIPANTS.filter(p=>p.status!=="оплачено").length;
-  const onlyPaid = document.getElementById("crmOnlyPaid").checked;
   const q = document.getElementById("crmSearch").value.trim().toLowerCase();
   const shown = PARTICIPANTS.filter(p=>{
-    if(onlyPaid && p.status!=="оплачено") return false;
+    if(crmStatus!=="all" && p.status!==crmStatus) return false;
+    if(crmMethod!=="all" && p.method!==crmMethod) return false;
     if(!q) return true;
     return [p.name,p.email,p.phone,p.instagram].some(v=>(v||"").toLowerCase().includes(q));
   });
@@ -1247,11 +1271,11 @@ function renderParticipants(){
     const badge = paid ? `<span class="crm-badge paid">оплачено</span>` : `<span class="crm-badge wait">ждёт</span>`;
     const confirmBtn = (paid || p.method==="stripe") ? "" : `<button class="crm-confirm" data-pay="${p.id}">Отметить оплаченным</button>`;
     return `<tr>
-      <td class="nm">${p.name||"—"}</td>
-      <td>${p.email||"—"}</td>
+      <td class="nm">${p.name||"—"}<span class="em">${p.email||""}</span></td>
       <td>${p.phone||"—"}</td>
       <td>${p.instagram||"—"}</td>
       <td>${p.method||"—"}</td>
+      <td><input class="crm-amt" data-amount="${p.id}" value="${p.amount!=null?p.amount:""}" placeholder="—" inputmode="decimal"></td>
       <td>${badge}</td>
       <td>${fmtDT(p.confirmed || p.created)}</td>
       <td><input class="crm-note" data-note="${p.id}" value="${(p.note||"").replace(/"/g,"&quot;")}" placeholder="заметка…"></td>
@@ -1287,9 +1311,34 @@ function renderParticipants(){
       catch(e){}
     });
   });
+  body.querySelectorAll("[data-amount]").forEach(inp=>{
+    inp.addEventListener("change", async ()=>{
+      const v = inp.value.trim().replace(",",".");
+      try{
+        await apiFetch(`/api/admin/signups/${inp.dataset.amount}/note`, {method:"POST", body: JSON.stringify({amount: v === "" ? null : v})});
+        const p = PARTICIPANTS.find(p=>String(p.id)===inp.dataset.amount);
+        if(p) p.amount = v === "" ? null : parseFloat(v);
+      }catch(e){}
+    });
+  });
 }
-document.getElementById("crmOnlyPaid").addEventListener("change", renderParticipants);
 document.getElementById("crmSearch").addEventListener("input", renderParticipants);
+document.querySelectorAll("#crmStatusChips .crm-chip").forEach(c=>{
+  c.addEventListener("click", ()=>{
+    document.querySelectorAll("#crmStatusChips .crm-chip").forEach(x=>x.classList.remove("on"));
+    c.classList.add("on");
+    crmStatus = c.dataset.status;
+    renderParticipants();
+  });
+});
+document.querySelectorAll("#crmMethodChips .crm-chip").forEach(c=>{
+  c.addEventListener("click", ()=>{
+    document.querySelectorAll("#crmMethodChips .crm-chip").forEach(x=>x.classList.remove("on"));
+    c.classList.add("on");
+    crmMethod = c.dataset.method;
+    renderParticipants();
+  });
+});
 
 document.getElementById("caAdd").addEventListener("click", async ()=>{
   const email = document.getElementById("caEmail").value.trim();
@@ -1302,6 +1351,7 @@ document.getElementById("caAdd").addEventListener("click", async ()=>{
       instagram: document.getElementById("caTg").value.trim(),
       method: document.getElementById("caMethod").value,
       status: document.getElementById("caStatus").value,
+      amount: document.getElementById("caAmount").value.trim() || null,
       note: document.getElementById("caNote").value.trim()
     })});
     PARTICIPANTS.unshift(row);
@@ -1310,6 +1360,7 @@ document.getElementById("caAdd").addEventListener("click", async ()=>{
     document.getElementById("caEmail").value = "";
     document.getElementById("caPhone").value = "";
     document.getElementById("caTg").value = "";
+    document.getElementById("caAmount").value = "";
     document.getElementById("caNote").value = "";
     showToast("Заявка добавлена ✓");
   }catch(e){}
@@ -1528,11 +1579,28 @@ async def api_signup_confirm(request):
 
 
 async def api_signup_note(request):
+    """Правка заметки и/или суммы (venmo/zelle не передают сумму сами —
+    миля вписывает её вручную в CRM при подтверждении оплаты)."""
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
     row_id = int(request.match_info["id"])
     data = await request.json()
-    await DB_POOL.execute("UPDATE signups SET note=$1 WHERE id=$2", str(data.get("note", "")).strip(), row_id)
+    sets, vals = [], []
+    if "note" in data:
+        sets.append(f"note=${len(vals) + 1}")
+        vals.append(str(data.get("note", "")).strip())
+    if "amount" in data:
+        raw = data.get("amount")
+        try:
+            amount = float(raw) if raw not in (None, "") else None
+        except (TypeError, ValueError):
+            return web.json_response({"error": "bad amount"}, status=400)
+        sets.append(f"amount=${len(vals) + 1}")
+        vals.append(amount)
+    if not sets:
+        return web.json_response({"ok": True})
+    vals.append(row_id)
+    await DB_POOL.execute(f"UPDATE signups SET {', '.join(sets)} WHERE id=${len(vals)}", *vals)
     return web.json_response({"ok": True})
 
 
@@ -1552,13 +1620,18 @@ async def api_signup_add(request):
     if not email:
         return web.json_response({"error": "email required"}, status=400)
     status = str(data.get("status", "ждёт")).strip()
+    raw_amount = data.get("amount")
+    try:
+        amount = float(raw_amount) if raw_amount not in (None, "") else None
+    except (TypeError, ValueError):
+        amount = None
     await DB_POOL.execute(
-        "INSERT INTO signups (name, email, email_norm, phone, instagram, method, status, note, created, confirmed) "
-        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+        "INSERT INTO signups (name, email, email_norm, phone, instagram, method, status, note, amount, created, confirmed) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
         str(data.get("name", "")).strip(), email, normalize_email(email),
         str(data.get("phone", "")).strip(),
         str(data.get("instagram", "")).strip(),
-        str(data.get("method", "venmo")).strip(), status, str(data.get("note", "")).strip(),
+        str(data.get("method", "venmo")).strip(), status, str(data.get("note", "")).strip(), amount,
         time.time(), time.time() if status == "оплачено" else None,
     )
     row = await DB_POOL.fetchrow("SELECT * FROM signups WHERE email_norm=$1 ORDER BY id DESC LIMIT 1",
