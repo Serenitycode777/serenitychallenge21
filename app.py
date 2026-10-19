@@ -2853,7 +2853,7 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
       </div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Привычек</th><th>% выполнения</th><th>💎 Бриллианты</th><th>Мастермайнды</th><th>Была в кабинете</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Привычек</th><th>% выполнения</th><th>💎</th><th>Мастермайнды</th><th>Была в кабинете</th><th></th></tr></thead>
           <tbody id="progBody"></tbody>
         </table>
       </div>
