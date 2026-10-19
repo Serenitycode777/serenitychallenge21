@@ -225,190 +225,6 @@ def marathon_day_today(marathon_start: str, tz_name: str) -> int:
     return (now - start).days + 1
 
 
-def materials_page(data: dict, today: int) -> str:
-    payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
-    return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>Материалы — Serenity Moon</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Playfair+Display:ital@1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{{
-  --lav:#AA9DB8; --lav-ink:#6B5A7C; --sage:#6A9993; --sage-ink:#3F6660;
-  --sand:#CBBAA8; --ink:#332E3D; --ink-soft:#6B6475;
-  --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#F2ECE6; --line:#E7DED6;
-  --shadow:0 10px 30px -14px rgba(51,46,61,.22); color-scheme:light;
-}}
-*{{box-sizing:border-box}}
-body{{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;padding:28px 20px 60px}}
-h1,h2,h3{{font-family:Fraunces,Georgia,serif;margin:0}}
-.wrap{{max-width:720px;margin:0 auto}}
-.eyebrow{{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-size:14px;color:var(--lav-ink);margin:0 0 6px}}
-.head h1{{font-size:28px;font-weight:600}}
-.head p{{margin:8px 0 0;color:var(--ink-soft);font-size:14px;line-height:1.5}}
-.search-wrap{{position:relative;margin:20px 0 16px}}
-.search-box{{width:100%;font-size:14.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 16px 13px 42px;box-shadow:var(--shadow)}}
-.search-icon{{position:absolute;left:15px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--ink-soft)}}
-.search-drop{{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;z-index:30}}
-.search-drop[hidden]{{display:none}}
-.sr-item{{display:flex;gap:10px;padding:11px 14px;cursor:pointer;font-size:13.5px;border-top:1px solid var(--line)}}
-.sr-item:first-child{{border-top:none}}
-.sr-item:hover{{background:var(--surface-2)}}
-.filters{{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}}
-.filter-row{{display:flex;flex-wrap:wrap;gap:8px}}
-.flabel{{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);width:100%}}
-.chip{{font-size:13px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}}
-.chip.active{{background:var(--lav);border-color:var(--lav);color:#fff}}
-.chip.active.theme{{background:var(--sage);border-color:var(--sage)}}
-.grid{{display:grid;grid-template-columns:1fr 1fr;gap:14px}}
-@media (max-width:520px){{.grid{{grid-template-columns:1fr}}}}
-.card{{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;cursor:pointer;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}}
-.card[hidden]{{display:none}}
-.dot{{width:34px;height:34px;border-radius:50%;background-size:cover;background-position:center;flex-shrink:0}}
-.card.mila .dot{{background-color:var(--lav)}} .card.maria .dot{{background-color:var(--sage)}}
-.card.anna .dot{{background-color:var(--sand)}} .card.extra .dot{{background:linear-gradient(135deg,var(--lav),var(--sage) 55%,var(--sand))}}
-.card h3{{font-size:19px;font-weight:600}}
-.card .topics{{font-size:12.5px;color:var(--ink-soft)}}
-.card .desc{{font-size:13.5px;color:var(--ink-soft);line-height:1.45;flex:1}}
-.card .foot{{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft)}}
-.card .count{{font-weight:600;color:var(--ink)}}
-.overlay{{position:fixed;inset:0;background:rgba(26,21,33,.45);display:flex;align-items:flex-end;justify-content:center;z-index:40;opacity:0;pointer-events:none;transition:.2s}}
-.overlay.open{{opacity:1;pointer-events:auto}}
-.panel{{position:relative;background:var(--surface);width:100%;max-width:560px;border-radius:22px 22px 0 0;padding:24px 22px 26px;max-height:82vh;overflow-y:auto}}
-.pin{{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 16px}}
-.panel-head{{display:flex;align-items:center;gap:12px}}
-.panel-head .dot{{width:40px;height:40px}}
-.close-x{{position:absolute;top:18px;right:20px;background:none;border:none;color:var(--ink-soft);font-size:20px;cursor:pointer}}
-.sub{{color:var(--ink-soft);font-size:13px;margin:2px 0 18px}}
-.mat{{display:flex;gap:12px;padding:13px 0;border-top:1px solid var(--line)}}
-.mat:first-of-type{{border-top:none}}
-.mat.is-locked{{opacity:.55}}
-.mat-icon{{width:34px;height:34px;border-radius:10px;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center}}
-.mat-body{{flex:1;min-width:0}}
-.mat-title{{font-size:14.5px;font-weight:500;line-height:1.35}}
-.mat-tags{{font-size:12px;color:var(--ink-soft);margin-top:3px}}
-.mat-status{{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;align-self:flex-start}}
-.mat-status.open{{background:var(--surface-2);color:var(--sage-ink)}}
-.mat-status.locked{{background:var(--surface-2);color:var(--ink-soft)}}
-.note{{font-size:12px;color:var(--ink-soft);background:var(--surface-2);border-radius:10px;padding:10px 14px;margin-top:4px;line-height:1.5}}
-</style></head><body>
-<div class="wrap">
-  <div class="head">
-    <p class="eyebrow">Личный кабинет · 21-дневный марафон</p>
-    <h1>Материалы</h1>
-    <p>Сегодня день {max(today, 0)} из 21. Материалы открываются по датам — новые появляются по ходу марафона.</p>
-  </div>
-  <div class="search-wrap">
-    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-    <input class="search-box" id="searchBox" type="text" placeholder="поиск: массаж лица, питание, дыхание…" autocomplete="off">
-    <div class="search-drop" id="searchDrop" hidden></div>
-  </div>
-  <div class="filters">
-    <div class="filter-row"><span class="flabel">по автору</span><div id="authorChips"></div></div>
-    <div class="filter-row"><span class="flabel">по теме</span><div id="themeChips"></div></div>
-  </div>
-  <div class="grid" id="grid"></div>
-</div>
-<div class="overlay" id="overlay"><div class="panel">
-  <button class="close-x" id="closePanel">&#10005;</button>
-  <div class="pin"></div>
-  <div class="panel-head"><div class="dot" id="panelDot"></div><div><h2 id="panelTitle"></h2><p class="sub" id="panelSub"></p></div></div>
-  <div id="panelList"></div>
-</div></div>
-<script id="materials-data" type="application/json">{payload}</script>
-<script>
-const DATA = JSON.parse(document.getElementById("materials-data").textContent);
-const TODAY = {int(today)};
-const ICONS = {{
-  video:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2.5" y="5.5" width="13" height="13" rx="2.5"/><path d="M18.5 9.5 21.5 7v10l-3-2.5"/></svg>',
-  audio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v4h3.5L13 18V6L7.5 10H4Z"/><path d="M16.5 9a4 4 0 0 1 0 6"/></svg>',
-  pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2.5h8l4.5 4.5V21a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5Z"/><path d="M14 2.5V7h4.5"/></svg>',
-  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>'
-}};
-const THEMES = [...new Set(DATA.materials.flatMap(m=>m.tags))];
-let activeAuthor="all", activeTheme="all", query="";
-
-function authorChip(key,label,active){{return `<button class="chip ${{active?'active':''}}" data-a="${{key}}">${{label}}</button>`;}}
-document.getElementById("authorChips").innerHTML =
-  authorChip("all","все",true) + Object.entries(DATA.authors).map(([k,a])=>authorChip(k,a.name,false)).join("");
-document.getElementById("themeChips").innerHTML =
-  `<button class="chip theme active" data-t="all">все темы</button>` +
-  THEMES.map(t=>`<button class="chip theme" data-t="${{t}}">${{t}}</button>`).join("");
-
-function matchesQuery(m){{
-  if(!query) return true;
-  return (m.title+" "+m.tags.join(" ")).toLowerCase().includes(query);
-}}
-
-function renderGrid(){{
-  const grid = document.getElementById("grid");
-  grid.innerHTML = "";
-  Object.entries(DATA.authors).forEach(([key,a])=>{{
-    const items = DATA.materials.filter(m=>m.author===key);
-    const card = document.createElement("div");
-    card.className = "card "+key;
-    const mA = activeAuthor==="all"||activeAuthor===key;
-    const mT = activeTheme==="all"||items.some(m=>m.tags.includes(activeTheme));
-    const mQ = items.some(matchesQuery);
-    if(!mA||!mT||!mQ) card.hidden = true;
-    const dotStyle = a.photo ? ` style="background-image:url('${{a.photo}}')"` : "";
-    card.innerHTML = `<div class="dot"${{dotStyle}}></div><h3>${{a.name}}</h3><div class="topics">${{a.topics}}</div>
-      <div class="desc">${{a.desc}}</div>`;
-    card.addEventListener("click", ()=>openPanel(key));
-    grid.appendChild(card);
-  }});
-}}
-
-function openPanel(key){{
-  const a = DATA.authors[key];
-  document.getElementById("panelTitle").textContent = a.name;
-  document.getElementById("panelSub").textContent = a.topics;
-  const panelDot = document.getElementById("panelDot");
-  panelDot.className = "dot "+key;
-  panelDot.style.backgroundImage = a.photo ? `url('${{a.photo}}')` : "";
-  const items = DATA.materials.filter(m=>m.author===key);
-  document.getElementById("panelList").innerHTML = items.map(m=>{{
-    const unlocked = m.day===null || m.day<=TODAY;
-    const status = m.day===null ? `<span class="mat-status open">открыто</span>`
-      : unlocked ? `<span class="mat-status open">день ${{m.day}}</span>`
-      : `<span class="mat-status locked">${{ICONS.lock}} день ${{m.day}}</span>`;
-    return `<div class="mat ${{unlocked?'':'is-locked'}}">
-      <div class="mat-icon">${{ICONS[m.type]}}</div>
-      <div class="mat-body"><div class="mat-title">${{m.title}}</div><div class="mat-tags">#${{m.tags.join(' #')}}</div></div>
-      ${{status}}</div>`;
-  }}).join("") + `<p class="note">доступ к файлу открывается в день разблокировки.</p>`;
-  document.getElementById("overlay").classList.add("open");
-}}
-document.getElementById("closePanel").onclick = ()=>document.getElementById("overlay").classList.remove("open");
-document.getElementById("overlay").addEventListener("click",e=>{{if(e.target.id==="overlay")e.currentTarget.classList.remove("open");}});
-document.getElementById("authorChips").addEventListener("click",e=>{{
-  const b=e.target.closest(".chip"); if(!b) return;
-  document.querySelectorAll("#authorChips .chip").forEach(c=>c.classList.remove("active"));
-  b.classList.add("active"); activeAuthor=b.dataset.a; renderGrid();
-}});
-document.getElementById("themeChips").addEventListener("click",e=>{{
-  const b=e.target.closest(".chip"); if(!b) return;
-  document.querySelectorAll("#themeChips .chip").forEach(c=>c.classList.remove("active"));
-  b.classList.add("active"); activeTheme=b.dataset.t; renderGrid();
-}});
-const searchBox=document.getElementById("searchBox"), searchDrop=document.getElementById("searchDrop");
-searchBox.addEventListener("input",()=>{{
-  query = searchBox.value.trim().toLowerCase();
-  if(!query){{searchDrop.hidden=true; renderGrid(); return;}}
-  const results = DATA.materials.filter(matchesQuery).slice(0,6);
-  searchDrop.innerHTML = results.length ? results.map(m=>
-    `<div class="sr-item" data-a="${{m.author}}"><div class="mat-icon">${{ICONS[m.type]}}</div><div>${{m.title}}<div class="mat-tags">${{DATA.authors[m.author].name}}</div></div></div>`
-  ).join("") : `<div class="sr-item">ничего не нашлось</div>`;
-  searchDrop.hidden = false;
-  renderGrid();
-}});
-searchDrop.addEventListener("click",e=>{{const it=e.target.closest(".sr-item"); if(it&&it.dataset.a) openPanel(it.dataset.a); searchDrop.hidden=true;}});
-document.addEventListener("click",e=>{{if(!e.target.closest(".search-wrap")) searchDrop.hidden=true;}});
-renderGrid();
-</script>
-</body></html>"""
-
 
 # ---------- почта (не падает без ключей — просто логирует) ----------
 QR_PATHS = {"venmo": HERE / "qr-venmo.jpg", "zelle": HERE / "qr-zelle.jpg"}
@@ -4104,7 +3920,7 @@ async def api_cabinet_bootstrap(request):
 def verify_stripe_signature(payload: str, sig_header: str) -> bool:
     """Проверка, что вебхук реально от Stripe (см. Stripe Webhook signing)."""
     if not STRIPE_WEBHOOK_SECRET:
-        return True  # тестовый режим без секрета — пропускаем без проверки
+        return False  # секрет не задан — отклоняем всё, а не пропускаем (fail-closed)
     try:
         parts = dict(p.split("=", 1) for p in sig_header.split(","))
         timestamp, v1 = parts["t"], parts["v1"]
@@ -4748,12 +4564,6 @@ async def api_settings_cabinet_opens(request):
     })
 
 
-async def materials(request):
-    data = await load_materials_from_db()
-    today = marathon_day_today(data["marathon_start"], data["timezone"])
-    return html_response(materials_page(data, today))
-
-
 async def cabinet(request):
     return html_response(CABINET_APP_HTML)
 
@@ -4812,7 +4622,6 @@ def make_app():
         web.post("/admin/add", admin_add),
         web.get("/admin/export.csv", admin_export),
         web.get("/admin/logout", admin_logout),
-        web.get("/materials", materials),
         web.get("/health", health),
         web.post("/api/auth/register", api_auth_register),
         web.post("/api/auth/login", api_auth_login),
