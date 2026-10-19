@@ -49,6 +49,8 @@ MAIL_FROM = os.environ.get("MAIL_FROM", "")  # напр. marathon@serenitymoonev
 MAIL_REPLY_TO = os.environ.get("MAIL_REPLY_TO", "")  # куда попадают ответы участниц
 CHANNEL_INVITE_LINK = os.environ.get("CHANNEL_INVITE_LINK", "")  # обычная (не одноразовая) ссылка на телеграм-канал
 DATABASE_URL = os.environ.get("DATABASE_URL", "")  # supabase/postgres connection string
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")  # напр. https://xxxx.supabase.co
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")  # публичный (anon/publishable) ключ — НЕ service_role
 
 # пул подключений к базе — создаётся асинхронно при старте (см. on_startup), пока сервер
 # не поднялся — DB_POOL == None
@@ -1554,6 +1556,117 @@ async def register(request):
     return web.json_response({"ok": True})
 
 
+# ---------- auth кабинета участниц (supabase auth, 2026-10-19) ----------
+# регистрация разрешена только тем, чья почта уже есть в signups со статусом "оплачено" —
+# так в кабинет не попадёт никто, кто не оплатил марафон.
+async def api_auth_register(request):
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    email = str(data.get("email", "")).strip()
+    password = str(data.get("password", ""))
+    if not email or not password or len(password) < 6:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    email_norm = normalize_email(email)
+
+    paid = await DB_POOL.fetchval(
+        "SELECT 1 FROM signups WHERE email_norm=$1 AND status='оплачено' LIMIT 1", email_norm
+    )
+    if not paid:
+        return web.json_response({"ok": False, "error": "not_paid"}, status=403)
+
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        return web.json_response({"ok": False, "error": "auth_not_configured"}, status=500)
+
+    async with ClientSession() as session:
+        async with session.post(
+            f"{SUPABASE_URL}/auth/v1/signup",
+            json={"email": email, "password": password},
+            headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+        ) as resp:
+            result = await resp.json()
+            if resp.status >= 400:
+                msg = result.get("msg") or result.get("error_description") or "signup_failed"
+                return web.json_response({"ok": False, "error": msg}, status=resp.status)
+
+    user = result.get("user") or result
+    user_id = user.get("id")
+    if not user_id:
+        return web.json_response({"ok": False, "error": "no_user_id"}, status=500)
+
+    await DB_POOL.execute(
+        "INSERT INTO profiles (id, email, email_norm, created) VALUES ($1,$2,$3,$4) "
+        "ON CONFLICT (id) DO NOTHING",
+        user_id, email, email_norm, time.time(),
+    )
+
+    return web.json_response({
+        "ok": True,
+        "access_token": result.get("access_token"),
+        "refresh_token": result.get("refresh_token"),
+        "user_id": user_id,
+        "needs_confirmation": result.get("access_token") is None,
+    })
+
+
+async def api_auth_login(request):
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    email = str(data.get("email", "")).strip()
+    password = str(data.get("password", ""))
+    if not email or not password:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        return web.json_response({"ok": False, "error": "auth_not_configured"}, status=500)
+
+    async with ClientSession() as session:
+        async with session.post(
+            f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
+            json={"email": email, "password": password},
+            headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+        ) as resp:
+            result = await resp.json()
+            if resp.status >= 400:
+                msg = result.get("msg") or result.get("error_description") or "login_failed"
+                return web.json_response({"ok": False, "error": msg}, status=resp.status)
+
+    return web.json_response({
+        "ok": True,
+        "access_token": result.get("access_token"),
+        "refresh_token": result.get("refresh_token"),
+    })
+
+
+async def _supabase_user_from_token(token: str):
+    if not token or not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        return None
+    async with ClientSession() as session:
+        async with session.get(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {token}"},
+        ) as resp:
+            if resp.status != 200:
+                return None
+            return await resp.json()
+
+
+async def api_auth_me(request):
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
+    user = await _supabase_user_from_token(token)
+    if not user:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    row = await DB_POOL.fetchrow("SELECT * FROM profiles WHERE id=$1", user["id"])
+    if not row:
+        return web.json_response({"ok": False, "error": "no_profile"}, status=404)
+    d = dict(row)
+    d["id"] = str(d["id"])
+    return web.json_response({"ok": True, "profile": d})
+
+
 def verify_stripe_signature(payload: str, sig_header: str) -> bool:
     """Проверка, что вебхук реально от Stripe (см. Stripe Webhook signing)."""
     if not STRIPE_WEBHOOK_SECRET:
@@ -2083,6 +2196,9 @@ def make_app():
         web.get("/admin/logout", admin_logout),
         web.get("/materials", materials),
         web.get("/health", health),
+        web.post("/api/auth/register", api_auth_register),
+        web.post("/api/auth/login", api_auth_login),
+        web.get("/api/auth/me", api_auth_me),
         # ---- JSON api для CRM-вкладки в админ-прототипе (claude.ai, другой origin — токен в
         # заголовке X-Admin-Token вместо cookie-сессии) ----
         web.get("/api/admin/signups", api_signups_list),
