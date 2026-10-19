@@ -1781,7 +1781,9 @@ function authErrText(code, mode){
     invalid_login_credentials: "неверный email или пароль",
     bad_request: "проверь email и пароль",
   };
-  return map[code] || (mode==="login" ? "не получилось войти, попробуй ещё раз" : "не получилось зарегистрироваться, попробуй ещё раз");
+  if(map[code]) return map[code];
+  if(String(code||"").toLowerCase().includes("confirm")) return "подтверди email по ссылке из письма, потом попробуй войти";
+  return mode==="login" ? "не получилось войти, попробуй ещё раз" : "не получилось зарегистрироваться, попробуй ещё раз";
 }
 document.getElementById("authSwitchMode").addEventListener("click", ()=>{
   authMode = authMode === "login" ? "register" : "login";
