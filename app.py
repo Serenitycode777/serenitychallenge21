@@ -3697,6 +3697,10 @@ async def api_auth_register(request):
     if not paid:
         return web.json_response({"ok": False, "error": "not_paid"}, status=403)
 
+    already = await DB_POOL.fetchval("SELECT 1 FROM profiles WHERE email_norm=$1 LIMIT 1", email_norm)
+    if already:
+        return web.json_response({"ok": False, "error": "user_already_exists"}, status=409)
+
     if not SUPABASE_URL or not SUPABASE_ANON_KEY:
         return web.json_response({"ok": False, "error": "auth_not_configured"}, status=500)
 
