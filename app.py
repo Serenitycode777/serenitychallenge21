@@ -876,50 +876,50 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   font-weight:600;font-size:13.5px;cursor:pointer;font-family:var(--sys)}
 
 /* модалка: создать/редактировать привычку */
-.hm-backdrop{position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.3);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+.hm-backdrop{position:fixed;inset:0;z-index:55;background:rgba(51,46,61,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
   display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:.2s}
 .hm-backdrop.open{opacity:1;pointer-events:auto}
-.hm-card{max-width:440px;width:100%;border-radius:24px;padding:24px;background:rgba(255,255,255,.92);
+.hm-card{max-width:440px;width:100%;border-radius:24px;padding:24px;background:var(--surface);
   display:flex;flex-direction:column;gap:20px;transform:scale(.96);transition:.2s;
-  box-shadow:0 30px 70px -24px rgba(0,0,0,.35);max-height:88vh;overflow-y:auto;font-family:var(--sys)}
+  box-shadow:0 30px 70px -24px rgba(51,46,61,.4);max-height:88vh;overflow-y:auto;font-family:var(--sys)}
 .hm-backdrop.open .hm-card{transform:scale(1)}
 .hm-head{display:flex;justify-content:space-between;align-items:center}
-.hm-title{font-weight:500;font-size:18px;color:#171717}
-.hm-close{background:none;border:none;color:#a3a3a3;font-size:16px;cursor:pointer;line-height:1;padding:4px}
-@media (hover:hover){ .hm-close:hover{color:#404040} }
+.hm-title{font-weight:500;font-size:18px;color:var(--ink)}
+.hm-close{background:none;border:none;color:var(--ink-soft);font-size:16px;cursor:pointer;line-height:1;padding:4px}
+@media (hover:hover){ .hm-close:hover{color:var(--ink)} }
 .hm-row1{display:flex;align-items:center;gap:12px}
-.hm-nameinput{width:100%;height:48px;border-radius:16px;padding:0 16px;background:rgba(0,0,0,.03);
-  border:1px solid rgba(0,0,0,.05);font-weight:500;font-size:14px;color:#171717;font-family:var(--sys)}
-.hm-nameinput::placeholder{color:#a3a3a3}
-.hm-days-head{font-weight:500;font-size:14px;color:#171717}
-.hm-days-sub{font-size:12px;color:#a3a3a3;margin:1px 0 10px}
+.hm-nameinput{width:100%;height:48px;border-radius:16px;padding:0 16px;background:var(--surface-2);
+  border:1px solid var(--line);font-weight:500;font-size:14px;color:var(--ink);font-family:var(--sys)}
+.hm-nameinput::placeholder{color:var(--ink-soft)}
+.hm-days-head{font-weight:500;font-size:14px;color:var(--ink)}
+.hm-days-sub{font-size:12px;color:var(--ink-soft);margin:1px 0 10px}
 .hm-daysgrid{display:flex;align-items:center;justify-content:space-between;gap:4px}
 .hm-day{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:500;transition:.15s;border:none;cursor:pointer;background:rgba(0,0,0,.05);color:#737373;font-family:var(--sys)}
+  font-size:12px;font-weight:500;transition:.15s;border:none;cursor:pointer;background:var(--surface-2);color:var(--ink-soft);font-family:var(--sys)}
 .hm-day.active{background:var(--lav);color:#fff}
-@media (hover:hover){ .hm-day:not(.active):hover{background:rgba(0,0,0,.1)} }
-.hm-qty{background:rgba(0,0,0,.02);border-radius:16px;padding:16px;border:1px solid rgba(0,0,0,.05);display:flex;flex-direction:column;gap:0}
+@media (hover:hover){ .hm-day:not(.active):hover{background:var(--line)} }
+.hm-qty{background:var(--surface-2);border-radius:16px;padding:16px;border:1px solid var(--line);display:flex;flex-direction:column;gap:0}
 .hm-qty-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.hm-qty-title{font-weight:500;font-size:14px;color:#171717}
-.hm-qty-sub{font-size:12px;color:#a3a3a3;margin-top:2px}
-.hm-switch{position:relative;width:42px;height:24px;border-radius:999px;background:rgba(0,0,0,.15);
+.hm-qty-title{font-weight:500;font-size:14px;color:var(--ink)}
+.hm-qty-sub{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.hm-switch{position:relative;width:42px;height:24px;border-radius:999px;background:var(--line);
   border:none;cursor:pointer;flex-shrink:0;transition:.2s;padding:0}
 .hm-switch::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
-  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:.2s}
+  background:#fff;box-shadow:0 1px 3px rgba(51,46,61,.3);transition:.2s}
 .hm-switch.on{background:var(--lav)}
 .hm-switch.on::after{transform:translateX(18px)}
 .hm-qty-expand{display:flex;flex-direction:column;gap:12px;overflow:hidden;max-height:300px;opacity:1;
   transition:max-height .25s ease,opacity .2s ease,padding-top .25s ease,margin-top .25s ease;
-  padding-top:12px;margin-top:12px;border-top:1px solid rgba(0,0,0,.05)}
+  padding-top:12px;margin-top:12px;border-top:1px solid var(--line)}
 .hm-qty-expand.collapsed{max-height:0;opacity:0;padding-top:0;margin-top:0;border-top-color:transparent;pointer-events:none}
 .hm-qty-line{display:flex;justify-content:space-between;align-items:center}
-.hm-qty-line .lbl{font-size:14px;color:#404040}
-.hm-stepper{display:inline-flex;align-items:center;gap:12px;background:rgba(0,0,0,.05);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:500;color:#171717}
-.hm-stepper button{background:none;border:none;font-size:16px;color:#171717;cursor:pointer;width:18px;height:18px;
+.hm-qty-line .lbl{font-size:14px;color:var(--ink-soft)}
+.hm-stepper{display:inline-flex;align-items:center;gap:12px;background:var(--surface-2);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:500;color:var(--ink)}
+.hm-stepper button{background:none;border:none;font-size:16px;color:var(--ink);cursor:pointer;width:18px;height:18px;
   display:flex;align-items:center;justify-content:center;line-height:1;font-family:var(--sys)}
-.hm-unit-input{border:none;background:transparent;text-align:right;font-size:14px;font-weight:500;color:#171717;
+.hm-unit-input{border:none;background:transparent;text-align:right;font-size:14px;font-weight:500;color:var(--ink);
   width:70px;font-family:var(--sys)}
-.hm-unit-input::placeholder{color:#d4d4d4}
+.hm-unit-input::placeholder{color:var(--line)}
 .hm-unit-input:focus{outline:none}
 .hm-footer{display:flex;flex-direction:column;gap:8px}
 .hm-save{width:100%;padding:13.5px;background:var(--lav);color:#fff;border:none;border-radius:16px;font-weight:500;
@@ -1190,16 +1190,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
       </div>
 
       <div class="sectitle">мероприятия</div>
-      <div class="evcard">
-        <div class="ph"></div>
-        <div class="b"><h4>Ретрит выходного дня</h4><div class="dt">14-15 ноября · Durham, NC</div>
-          <a href="#">Узнать больше →</a></div>
-      </div>
-      <div class="evcard">
-        <div class="ph" style="background:linear-gradient(135deg,var(--sand),var(--lav))"></div>
-        <div class="b"><h4>Онлайн-ретрит «Новолуние»</h4><div class="dt">2 декабря · онлайн</div>
-          <a href="#">Узнать больше →</a></div>
-      </div>
+      <div id="profileMilaEvents"></div>
       <button class="editlink" id="logoutBtn" type="button" style="display:block;margin:18px auto 0">Выйти из кабинета</button>
     </section>
   </div></main>
@@ -1650,9 +1641,21 @@ function buildMaterialsState(){
   activeTheme = "all"; query = "";
 }
 
+function renderMilaEvents(){
+  const wrap = document.getElementById("profileMilaEvents");
+  const events = STATE.mila_events || [];
+  wrap.innerHTML = events.length ? events.map(e=>{
+    const bg = COLOR_CSS[e.color] || COLOR_CSS.lav;
+    const link = e.link ? `<a href="${e.link}" target="_blank" rel="noopener">Узнать больше →</a>` : "";
+    return `<div class="evcard">
+      <div class="ph" style="background:${bg}"></div>
+      <div class="b"><h4>${e.title}</h4><div class="dt">${e.date_place}</div>${link}</div>
+    </div>`;
+  }).join("") : `<p class="note" style="margin:8px 0 16px">пока нет мероприятий</p>`;
+}
 function initCabinetUI(){
   buildMaterialsState();
-  renderHeat(); renderChecklist(); renderMaterials(); renderProgress(); renderEvents(); renderProfileTile();
+  renderHeat(); renderChecklist(); renderMaterials(); renderProgress(); renderEvents(); renderProfileTile(); renderMilaEvents();
   syncHabitsCount();
   setActiveTab(initialTab, {persist:false});
   if(HABITS.length === 0) startOnboarding();
@@ -3910,10 +3913,14 @@ async def api_cabinet_bootstrap(request):
         "time": r["time"] or "", "type": r["type"] or "", "link": r["link"] or "",
     } for r in cal_rows]
 
+    mila_event_rows = await DB_POOL.fetch("SELECT * FROM mila_events ORDER BY id DESC")
+    mila_events = [_mila_event_json(r) for r in mila_event_rows]
+
     return web.json_response({
         "ok": True, "profile": profile, "habits": habits, "logs": logs, "today": today,
         "marathon_start": MARATHON_START, "mastermind": mastermind,
         "authors": materials_data["authors"], "materials": materials_data["materials"], "events": events,
+        "mila_events": mila_events,
     })
 
 
@@ -4586,14 +4593,17 @@ async def health(request):
 async def cors_middleware(request, handler):
     """Лендинг (gh-pages / свой домен) и сервер — разные источники для браузера,
     без этих заголовков браузер блокирует ответ на fetch('/register', ...) с
-    фронта даже если сам запрос реально дошёл до сервера."""
+    фронта даже если сам запрос реально дошёл до сервера. Остальные роуты
+    (кабинет/админка) вызываются только с того же домена, что их отдаёт —
+    им кросс-доменные заголовки не нужны, и лишний раз светить их наружу незачем."""
     if request.method == "OPTIONS":
         resp = web.Response()
     else:
         resp = await handler(request)
-    resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    resp.headers["Access-Control-Allow-Headers"] = "*"
+    if request.path == "/register":
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "*"
     return resp
 
 
