@@ -1653,10 +1653,15 @@ async def _supabase_user_from_token(token: str):
             return await resp.json()
 
 
-async def api_auth_me(request):
+async def require_cabinet_user(request):
+    """Возвращает supabase-пользователя (dict с id/email) по Bearer-токену, либо None."""
     auth_header = request.headers.get("Authorization", "")
     token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
-    user = await _supabase_user_from_token(token)
+    return await _supabase_user_from_token(token)
+
+
+async def api_auth_me(request):
+    user = await require_cabinet_user(request)
     if not user:
         return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
     row = await DB_POOL.fetchrow("SELECT * FROM profiles WHERE id=$1", user["id"])
@@ -1665,6 +1670,102 @@ async def api_auth_me(request):
     d = dict(row)
     d["id"] = str(d["id"])
     return web.json_response({"ok": True, "profile": d})
+
+
+# ---------- кабинет участниц: профиль / привычки / ежедневные отметки (2026-10-19) ----------
+async def api_cabinet_profile_update(request):
+    user = await require_cabinet_user(request)
+    if not user:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    name = str(data.get("name", ""))[:200]
+    age = data.get("age")
+    city = str(data.get("city", ""))[:200]
+    bio = str(data.get("bio", ""))[:2000]
+    photo_url = data.get("photo_url")
+    await DB_POOL.execute(
+        "UPDATE profiles SET name=$2, age=$3, city=$4, bio=$5, photo_url=$6 WHERE id=$1",
+        user["id"], name, age, city, bio, photo_url,
+    )
+    return web.json_response({"ok": True})
+
+
+async def api_cabinet_habits_list(request):
+    user = await require_cabinet_user(request)
+    if not user:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    rows = await DB_POOL.fetch(
+        "SELECT id, name, config, sort FROM habit_selections WHERE user_id=$1 ORDER BY sort, id", user["id"]
+    )
+    habits = [{"id": r["id"], "name": r["name"], "config": _jsonb(r["config"]), "sort": r["sort"]} for r in rows]
+    return web.json_response({"ok": True, "habits": habits})
+
+
+async def api_cabinet_habits_replace(request):
+    """Полностью заменяет набор привычек участницы — так же, как работает пикер в кабинете."""
+    user = await require_cabinet_user(request)
+    if not user:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    habits = data.get("habits")
+    if not isinstance(habits, list) or not (1 <= len(habits) <= 5):
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    async with DB_POOL.acquire() as conn:
+        async with conn.transaction():
+            await conn.execute("DELETE FROM habit_selections WHERE user_id=$1", user["id"])
+            for i, h in enumerate(habits):
+                name = str(h.get("name") if isinstance(h, dict) else h)[:200]
+                config = json.dumps(h.get("config", {})) if isinstance(h, dict) else "{}"
+                await conn.execute(
+                    "INSERT INTO habit_selections (user_id, name, config, sort, created) VALUES ($1,$2,$3,$4,$5)",
+                    user["id"], name, config, i, time.time(),
+                )
+    return web.json_response({"ok": True})
+
+
+async def api_cabinet_logs_list(request):
+    user = await require_cabinet_user(request)
+    if not user:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    rows = await DB_POOL.fetch(
+        "SELECT log_date, habits_done, closed, closed_at FROM daily_logs WHERE user_id=$1 ORDER BY log_date",
+        user["id"],
+    )
+    logs = [{
+        "date": r["log_date"].isoformat(), "habits_done": _jsonb(r["habits_done"]),
+        "closed": r["closed"], "closed_at": r["closed_at"],
+    } for r in rows]
+    return web.json_response({"ok": True, "logs": logs})
+
+
+async def api_cabinet_log_upsert(request):
+    """Сохраняет отметки за один день: {date:'2026-11-09', habits_done:[bool,...], closed:bool}"""
+    user = await require_cabinet_user(request)
+    if not user:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    log_date = str(data.get("date", ""))
+    habits_done = data.get("habits_done", [])
+    closed = bool(data.get("closed", False))
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", log_date) or not isinstance(habits_done, list):
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    closed_at = time.time() if closed else None
+    await DB_POOL.execute(
+        "INSERT INTO daily_logs (user_id, log_date, habits_done, closed, closed_at) VALUES ($1,$2,$3,$4,$5) "
+        "ON CONFLICT (user_id, log_date) DO UPDATE SET habits_done=$3, closed=$4, "
+        "closed_at=COALESCE(daily_logs.closed_at, $5)",
+        user["id"], datetime.strptime(log_date, "%Y-%m-%d").date(), json.dumps(habits_done), closed, closed_at,
+    )
+    return web.json_response({"ok": True})
 
 
 def verify_stripe_signature(payload: str, sig_header: str) -> bool:
@@ -2199,6 +2300,11 @@ def make_app():
         web.post("/api/auth/register", api_auth_register),
         web.post("/api/auth/login", api_auth_login),
         web.get("/api/auth/me", api_auth_me),
+        web.put("/api/cabinet/profile", api_cabinet_profile_update),
+        web.get("/api/cabinet/habits", api_cabinet_habits_list),
+        web.put("/api/cabinet/habits", api_cabinet_habits_replace),
+        web.get("/api/cabinet/logs", api_cabinet_logs_list),
+        web.put("/api/cabinet/logs", api_cabinet_log_upsert),
         # ---- JSON api для CRM-вкладки в админ-прототипе (claude.ai, другой origin — токен в
         # заголовке X-Admin-Token вместо cookie-сессии) ----
         web.get("/api/admin/signups", api_signups_list),
