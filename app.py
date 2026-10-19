@@ -2733,7 +2733,6 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
   <div id="t-progress" style="display:none">
     <div class="crm-wrap">
       <div class="crm-top">
-        <h1>Как у участниц дела</h1>
         <div class="crm-actions">
           <a href="#" id="progressRefresh" class="secondary">обновить</a>
         </div>
