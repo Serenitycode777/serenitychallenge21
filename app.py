@@ -1847,7 +1847,10 @@ function authErrText(code, mode){
     bad_request: "проверь email и пароль",
   };
   if(map[code]) return map[code];
-  if(String(code||"").toLowerCase().includes("confirm")) return "подтверди email по ссылке из письма, потом попробуй войти";
+  const low = String(code||"").toLowerCase();
+  if(low.includes("confirm")) return "подтверди email по ссылке из письма, потом попробуй войти";
+  if(low.includes("invalid login") || low.includes("invalid_login")) return "неверный email или пароль";
+  if(low.includes("already") && low.includes("regist")) return "такой email уже зарегистрирован — попробуй войти";
   return mode==="login" ? "не получилось войти, попробуй ещё раз" : "не получилось зарегистрироваться, попробуй ещё раз";
 }
 document.getElementById("authSwitchMode").addEventListener("click", ()=>{
@@ -1897,6 +1900,7 @@ async function submitAuth(){
       document.getElementById("authSubmit").textContent = "Войти";
       document.getElementById("authSwitchHint").textContent = "Первый раз?";
       document.getElementById("authSwitchMode").textContent = "Зарегистрироваться";
+      document.getElementById("authPassword2Field").hidden = true;
       btn.disabled = false; return;
     }
     setToken(data.access_token);
