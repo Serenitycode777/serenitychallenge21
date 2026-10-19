@@ -2820,6 +2820,20 @@ h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
 .cchip.on{border-color:var(--ink)}
 .cchip .cswatch{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.08)}
 
+.nf-form{display:flex;flex-direction:column;gap:12px;margin-top:14px;padding:14px;background:var(--surface-2);border-radius:12px}
+.nf-photo-row{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--ink-soft)}
+.nf-photo-row input[type=file]{font-size:12px;color:var(--ink-soft)}
+.nf-color-acc{font-size:12.5px}
+.nf-color-acc summary{cursor:pointer;color:var(--lav-ink);font-weight:600;padding:4px 0;list-style:none}
+.nf-color-acc summary::-webkit-details-marker{display:none}
+.nf-color-acc summary::before{content:"▸";display:inline-block;margin-right:5px;transition:transform .15s}
+.nf-color-acc[open] summary::before{transform:rotate(90deg)}
+.nf-swatches{display:flex;gap:10px;padding-top:8px;flex-wrap:wrap}
+.nf-swatch{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.nf-swatch.on{border-color:var(--ink)}
+.nf-swatch.on::after{content:"✓";color:#fff;font-size:13px;font-weight:700;text-shadow:0 0 2px rgba(0,0,0,.5)}
+.nf-create-btn{align-self:flex-start;border:none;background:var(--sage);color:#fff;border-radius:10px;padding:9px 18px;font-weight:600;font-size:13px;cursor:pointer}
+.nf-form .addtheme{margin-top:0}
 .addtheme{display:flex;gap:8px;margin-top:14px}
 .addtheme input{flex:1;font-family:inherit;font-size:13.5px;color:var(--ink);background:var(--surface);
   border:1.3px solid var(--sage);border-radius:10px;padding:9px 12px}
@@ -2885,14 +2899,20 @@ h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
       <div class="field">
         <label>Папка <span class="req">*</span></label>
         <div class="chipgrid" id="folderPicker"></div>
-        <div class="addtheme" id="newFolderForm" style="display:none">
-          <input type="text" id="nfName" placeholder="Название папки">
-          <input type="text" id="nfDesc" placeholder="Описание (необязательно)">
-          <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--ink-soft)">Фото (необязательно, если не выбрать — будет цвет/градиент ниже)
+        <div class="nf-form" id="newFolderForm" style="display:none">
+          <div class="addtheme">
+            <input type="text" id="nfName" placeholder="Название папки">
+            <input type="text" id="nfDesc" placeholder="Описание (необязательно)">
+          </div>
+          <div class="nf-photo-row">
+            <span>Фото папки (необязательно)</span>
             <input type="file" id="nfPhoto" accept="image/*">
-          </label>
-          <div class="chipgrid" id="nfColorPicker"></div>
-          <button id="nfCreate">Создать</button>
+          </div>
+          <details class="nf-color-acc">
+            <summary>цвет / градиент, если без фото</summary>
+            <div class="nf-swatches" id="nfColorPicker"></div>
+          </details>
+          <button id="nfCreate" class="nf-create-btn">Создать</button>
         </div>
       </div>
       <div class="field">
@@ -3261,9 +3281,8 @@ const NF_COLORS = [
 let selectedNfColor = NF_COLORS[0].v;
 function renderNfColorPicker(){
   const wrap = document.getElementById("nfColorPicker");
-  wrap.innerHTML = NF_COLORS.map(c=>`<div class="cchip${c.v===selectedNfColor?" on":""}" data-c="${c.v}">
-    <span class="cswatch" style="background:${c.css}"></span>${c.l}</div>`).join("");
-  wrap.querySelectorAll(".cchip").forEach(el=>{
+  wrap.innerHTML = NF_COLORS.map(c=>`<div class="nf-swatch${c.v===selectedNfColor?" on":""}" data-c="${c.v}" title="${c.l}" style="background:${c.css}"></div>`).join("");
+  wrap.querySelectorAll(".nf-swatch").forEach(el=>{
     el.addEventListener("click", ()=>{ selectedNfColor = el.dataset.c; renderNfColorPicker(); });
   });
 }
