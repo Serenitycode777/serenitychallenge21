@@ -1022,10 +1022,10 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove("show"), 2200);
 }
 
-let THEMES = ["дыхание","медитация","аюрведа","растяжка","сила","звукотерапия","массаж","разное"];
+let THEMES = []; // [{id,label}] — грузится с сервера, см. loadThemes()
 function renderMaterialThemes(){
   const wrap = document.getElementById("mThemes");
-  wrap.innerHTML = THEMES.map(t=>`<div class="tchip" data-t="${t}">${t}</div>`).join("")
+  wrap.innerHTML = THEMES.map(t=>`<div class="tchip" data-t="${t.id}">${t.label}</div>`).join("")
     + `<div class="tchip" id="themePlusChip">+ своя тема</div>`;
   wrap.querySelectorAll(".tchip").forEach(c=>{
     if(c.id === "themePlusChip") return;
@@ -1037,19 +1037,26 @@ function renderMaterialThemes(){
     if(f.style.display==="flex") document.getElementById("newThemeInput").focus();
   });
 }
-document.getElementById("addThemeBtn").addEventListener("click", ()=>{
+async function loadThemes(){
+  try{ THEMES = await apiFetch("/api/admin/themes"); }catch(e){ THEMES = []; }
+  renderMaterialThemes();
+}
+document.getElementById("addThemeBtn").addEventListener("click", async ()=>{
   const inp = document.getElementById("newThemeInput");
   const v = inp.value.trim().toLowerCase();
-  if(!v || THEMES.includes(v)){ inp.focus(); return; }
-  THEMES.push(v);
-  inp.value = "";
-  document.getElementById("newThemeForm").style.display = "none";
-  renderMaterialThemes();
-  document.querySelector(`#mThemes .tchip[data-t="${v}"]`).classList.add("on");
-  document.getElementById("themeErr").style.display="none";
-  showToast("Тема «"+v+"» добавлена ✓");
+  if(!v || THEMES.some(t=>t.id===v)){ inp.focus(); return; }
+  try{
+    const t = await apiFetch("/api/admin/themes", {method:"POST", body: JSON.stringify({label: v})});
+    THEMES.push(t);
+    inp.value = "";
+    document.getElementById("newThemeForm").style.display = "none";
+    renderMaterialThemes();
+    document.querySelector(`#mThemes .tchip[data-t="${t.id}"]`).classList.add("on");
+    document.getElementById("themeErr").style.display="none";
+    showToast("Тема «"+v+"» добавлена ✓");
+  }catch(e){}
 });
-renderMaterialThemes();
+loadThemes();
 
 function buildDatePicker(baseId, startMonth){
   const wrap = document.getElementById(baseId+"Wrap");
@@ -1126,11 +1133,11 @@ function renderFormatPicker(){
 }
 renderFormatPicker();
 
-let FOLDERS = ["Мила","Мария","Анна","Доп.папка","Мастермайнды","Эфиры с приглашёнными гостями"];
+let FOLDERS = []; // [{id,name,description,topics,photo}] — грузится с сервера
 let selectedFolder = null;
 function renderFolderPicker(){
   const wrap = document.getElementById("folderPicker");
-  wrap.innerHTML = FOLDERS.map(f=>`<div class="tchip${f===selectedFolder?" on":""}" data-f="${f}">${f}</div>`).join("")
+  wrap.innerHTML = FOLDERS.map(f=>`<div class="tchip${f.id===selectedFolder?" on":""}" data-f="${f.id}">${f.name}</div>`).join("")
     + `<div class="tchip" id="folderPlusChip">+ новая папка</div>`;
   wrap.querySelectorAll(".tchip[data-f]").forEach(c=>{
     c.addEventListener("click", ()=>{
@@ -1145,18 +1152,27 @@ function renderFolderPicker(){
     if(f.style.display==="flex") document.getElementById("nfName").focus();
   });
 }
-renderFolderPicker();
-document.getElementById("nfCreate").addEventListener("click", ()=>{
-  const name = document.getElementById("nfName").value.trim();
-  if(!name || FOLDERS.includes(name)){ document.getElementById("nfName").focus(); return; }
-  FOLDERS.push(name);
-  selectedFolder = name;
-  document.getElementById("nfName").value = "";
-  document.getElementById("nfDesc").value = "";
-  document.getElementById("newFolderForm").style.display = "none";
+async function loadFolders(){
+  try{ FOLDERS = await apiFetch("/api/admin/folders"); }catch(e){ FOLDERS = []; }
   renderFolderPicker();
-  showToast("Папка «"+name+"» создана ✓");
+}
+document.getElementById("nfCreate").addEventListener("click", async ()=>{
+  const name = document.getElementById("nfName").value.trim();
+  if(!name || FOLDERS.some(f=>f.name===name)){ document.getElementById("nfName").focus(); return; }
+  try{
+    const f = await apiFetch("/api/admin/folders", {method:"POST", body: JSON.stringify({
+      name, description: document.getElementById("nfDesc").value.trim()
+    })});
+    FOLDERS.push(f);
+    selectedFolder = f.id;
+    document.getElementById("nfName").value = "";
+    document.getElementById("nfDesc").value = "";
+    document.getElementById("newFolderForm").style.display = "none";
+    renderFolderPicker();
+    showToast("Папка «"+name+"» создана ✓");
+  }catch(e){}
 });
+loadFolders();
 
 document.getElementById("evtHintDot").addEventListener("click", ()=>{
   document.getElementById("evtHintDot").classList.toggle("on");
@@ -1168,16 +1184,33 @@ evtToggle.addEventListener("click", ()=>{
   document.getElementById("evtPickWrap").style.display = evtToggle.classList.contains("on") ? "" : "none";
 });
 
-document.getElementById("saveMaterial").addEventListener("click", ()=>{
+const MARATHON_START_ISO = "2026-11-09"; // держать в паре с MARATHON_START в app.py
+function isoDateToMarathonDay(iso){
+  if(!iso) return null;
+  const a = new Date(MARATHON_START_ISO+"T00:00:00"), b = new Date(iso+"T00:00:00");
+  return Math.round((b-a)/86400000) + 1;
+}
+
+document.getElementById("saveMaterial").addEventListener("click", async ()=>{
   const title = document.getElementById("mTitle").value.trim();
-  const themesChosen = document.querySelectorAll("#mThemes .tchip.on").length;
+  const themeIds = [...document.querySelectorAll("#mThemes .tchip.on")].map(c=>c.dataset.t);
   if(!selectedFolder){ document.getElementById("folderPicker").scrollIntoView({block:"center"}); return; }
-  if(!themesChosen){ document.getElementById("themeErr").style.display = "block"; return; }
+  if(!themeIds.length){ document.getElementById("themeErr").style.display = "block"; return; }
   if(!title){ document.getElementById("mTitle").focus(); return; }
-  showToast("Материал «"+title+"» сохранён ✓");
-  document.getElementById("mTitle").value = "";
-  document.getElementById("mLink").value = "";
-  mDayPicker.reset();
+  const evOn = evtToggle.classList.contains("on");
+  try{
+    await apiFetch("/api/admin/materials", {method:"POST", body: JSON.stringify({
+      folder_id: selectedFolder, title, format: selectedFormat,
+      day: isoDateToMarathonDay(document.getElementById("mDay").value),
+      tags: themeIds, url: document.getElementById("mLink").value.trim() || "#",
+      calendar_event_id: evOn ? (document.getElementById("evtPick").value || null) : null,
+    })});
+    showToast("Материал «"+title+"» сохранён ✓");
+    document.getElementById("mTitle").value = "";
+    document.getElementById("mLink").value = "";
+    mDayPicker.reset();
+    document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
+  }catch(e){}
 });
 
 let EVENT_TYPES = ["Мастермайнд","Онлайн-практика","Эфир с гостем"];
@@ -1212,47 +1245,67 @@ document.getElementById("ntCreate").addEventListener("click", ()=>{
 });
 
 const MONTHS_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
-let EVENTS = [
-  {date:"2026-11-11", title:"Мастермайнд #1", type:"Мастермайнд", time:"19:00 мск"},
-  {date:"2026-11-18", title:"Онлайн-практика дыхания", type:"Онлайн-практика", time:"19:00 мск"},
-  {date:"2026-11-23", title:"Мастермайнд #2", type:"Мастермайнд", time:"19:00 мск"}
-];
+let EVENTS = []; // [{id,date,title,type,time,link}] — грузится с сервера
 function fmtDate(iso){
   const d = new Date(iso+"T00:00:00");
   return {num:d.getDate(), lbl:MONTHS_SHORT[d.getMonth()]};
 }
 function renderEvents(){
   const list = document.getElementById("evList");
-  list.innerHTML = EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).map((e)=>{
+  list.innerHTML = EVENTS.length ? EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).map((e)=>{
     const d = fmtDate(e.date);
     return `
     <div class="evrow">
       <div class="evday">${d.num}<br><span style="font-size:8px;font-weight:600;text-transform:uppercase">${d.lbl}</span></div>
-      <div class="evbody"><div class="evttl">${e.title}</div><div class="evmeta">${e.time}</div></div>
-      <div class="evtag">${e.type}</div>
-      <button class="evbtn" data-del="${EVENTS.indexOf(e)}">✕</button>
+      <div class="evbody"><div class="evttl">${e.title}</div><div class="evmeta">${e.time||""}</div></div>
+      <div class="evtag">${e.type||""}</div>
+      <button class="evbtn" data-del="${e.id}">✕</button>
     </div>`;
-  }).join("");
+  }).join("") : `<div class="hint" style="margin:0">пока нет эфиров</div>`;
   list.querySelectorAll("[data-del]").forEach(b=>{
-    b.addEventListener("click", ()=>{
-      EVENTS.splice(+b.dataset.del, 1);
-      renderEvents();
-      showToast("Эфир удалён");
+    b.addEventListener("click", async ()=>{
+      try{
+        await apiFetch(`/api/admin/calendar-events/${b.dataset.del}`, {method:"DELETE"});
+        EVENTS = EVENTS.filter(e=>String(e.id)!==b.dataset.del);
+        renderEvents();
+        renderEvtPick();
+        showToast("Эфир удалён");
+      }catch(e){}
     });
   });
 }
-renderEvents();
-document.getElementById("saveEvent").addEventListener("click", ()=>{
-  const date = document.getElementById("eDay").value;
-  const title = document.getElementById("eTitle").value.trim();
-  if(!date){ document.getElementById("eDayWrap").scrollIntoView({block:"center"}); return; }
-  if(!title){ document.getElementById("eTitle").focus(); return; }
-  EVENTS.push({ date, title, type: selectedType, time: document.getElementById("eTime").value.trim() || "19:00 мск" });
+function renderEvtPick(){
+  const sel = document.getElementById("evtPick");
+  sel.innerHTML = EVENTS.length
+    ? EVENTS.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>{
+        const d = fmtDate(e.date);
+        return `<option value="${e.id}">${d.num} ${d.lbl} — ${e.title}</option>`;
+      }).join("")
+    : `<option value="">пока нет эфиров — сначала добавь в "Календарь"</option>`;
+}
+async function loadCalendarEvents(){
+  try{ EVENTS = await apiFetch("/api/admin/calendar-events"); }catch(e){ EVENTS = []; }
   renderEvents();
-  showToast("Эфир «"+title+"» добавлен в календарь ✓");
-  eDayPicker.reset();
-  document.getElementById("eTitle").value = "";
-  document.getElementById("eLink").value = "";
+  renderEvtPick();
+}
+loadCalendarEvents();
+document.getElementById("saveEvent").addEventListener("click", async ()=>{
+  const eventDate = document.getElementById("eDay").value;
+  const title = document.getElementById("eTitle").value.trim();
+  if(!eventDate){ document.getElementById("eDayWrap").scrollIntoView({block:"center"}); return; }
+  if(!title){ document.getElementById("eTitle").focus(); return; }
+  try{
+    await apiFetch("/api/admin/calendar-events", {method:"POST", body: JSON.stringify({
+      date: eventDate, title, type: selectedType,
+      time: document.getElementById("eTime").value.trim() || "19:00 мск",
+      link: document.getElementById("eLink").value.trim(),
+    })});
+    await loadCalendarEvents();
+    showToast("Эфир «"+title+"» добавлен в календарь ✓");
+    eDayPicker.reset();
+    document.getElementById("eTitle").value = "";
+    document.getElementById("eLink").value = "";
+  }catch(e){}
 });
 
 const MEV_COLORS = [
@@ -1273,40 +1326,49 @@ function renderMevColorPicker(){
 }
 renderMevColorPicker();
 
-let MILA_EVENTS = [
-  {title:"Ретрит выходного дня", date:"14-15 ноября · Durham, NC", link:"#", color:"sand"},
-  {title:"Онлайн-ретрит «Новолуние»", date:"2 декабря · онлайн", link:"#", color:"grad1"}
-];
+let MILA_EVENTS = []; // [{id,title,date_place,link,color}] — грузится с сервера
 function renderMevList(){
   const wrap = document.getElementById("mevList");
-  wrap.innerHTML = MILA_EVENTS.length ? MILA_EVENTS.map((e,i)=>{
+  wrap.innerHTML = MILA_EVENTS.length ? MILA_EVENTS.map((e)=>{
     const c = MEV_COLORS.find(x=>x.v===e.color) || MEV_COLORS[0];
     return `<div class="mevrow">
       <div class="ph" style="background:${c.css}"></div>
-      <div class="b"><h4>${e.title}</h4><div class="dt">${e.date}</div></div>
-      <button class="evbtn" data-del="${i}">✕</button>
+      <div class="b"><h4>${e.title}</h4><div class="dt">${e.date_place}</div></div>
+      <button class="evbtn" data-del="${e.id}">✕</button>
     </div>`;
   }).join("") : `<div class="hint" style="margin:0">пока нет мероприятий</div>`;
   wrap.querySelectorAll("[data-del]").forEach(b=>{
-    b.addEventListener("click", ()=>{
-      MILA_EVENTS.splice(+b.dataset.del, 1);
-      renderMevList();
-      showToast("Мероприятие удалено");
+    b.addEventListener("click", async ()=>{
+      try{
+        await apiFetch(`/api/admin/mila-events/${b.dataset.del}`, {method:"DELETE"});
+        MILA_EVENTS = MILA_EVENTS.filter(e=>String(e.id)!==b.dataset.del);
+        renderMevList();
+        showToast("Мероприятие удалено");
+      }catch(e){}
     });
   });
 }
-renderMevList();
-document.getElementById("saveEventMila").addEventListener("click", ()=>{
-  const title = document.getElementById("mevTitle").value.trim();
-  const date = document.getElementById("mevDate").value.trim();
-  if(!title){ document.getElementById("mevTitle").focus(); return; }
-  if(!date){ document.getElementById("mevDate").focus(); return; }
-  MILA_EVENTS.push({ title, date, link: document.getElementById("mevLink").value.trim() || "#", color: selectedMevColor });
+async function loadMilaEvents(){
+  try{ MILA_EVENTS = await apiFetch("/api/admin/mila-events"); }catch(e){ MILA_EVENTS = []; }
   renderMevList();
-  showToast("Мероприятие «"+title+"» добавлено ✓");
-  document.getElementById("mevTitle").value = "";
-  document.getElementById("mevDate").value = "";
-  document.getElementById("mevLink").value = "";
+}
+loadMilaEvents();
+document.getElementById("saveEventMila").addEventListener("click", async ()=>{
+  const title = document.getElementById("mevTitle").value.trim();
+  const datePlace = document.getElementById("mevDate").value.trim();
+  if(!title){ document.getElementById("mevTitle").focus(); return; }
+  if(!datePlace){ document.getElementById("mevDate").focus(); return; }
+  try{
+    await apiFetch("/api/admin/mila-events", {method:"POST", body: JSON.stringify({
+      title, date_place: datePlace,
+      link: document.getElementById("mevLink").value.trim() || "#", color: selectedMevColor,
+    })});
+    await loadMilaEvents();
+    showToast("Мероприятие «"+title+"» добавлено ✓");
+    document.getElementById("mevTitle").value = "";
+    document.getElementById("mevDate").value = "";
+    document.getElementById("mevLink").value = "";
+  }catch(e){}
 });
 
 /* ---- CRM: реальные данные с /api/admin/* на этом же сервере — та же cookie-сессия,
