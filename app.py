@@ -2753,7 +2753,7 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
       </div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>Имя</th><th>Email</th><th>Привычек</th><th>% выполнения</th><th>Идеальных дней</th><th>Мастермайнды</th><th>Была в кабинете</th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Привычек</th><th>% выполнения</th><th>💎 Бриллианты</th><th>Мастермайнды</th><th>Была в кабинете</th></tr></thead>
           <tbody id="progBody"></tbody>
         </table>
       </div>
@@ -2928,7 +2928,7 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
       </details>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>Имя</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Сумма</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Сумма</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
           <tbody id="crmBody"></tbody>
         </table>
       </div>
@@ -2971,15 +2971,16 @@ function renderProgress(){
   document.getElementById("progTotal").textContent = PARTICIPANT_PROGRESS.length;
   document.getElementById("progQuiet").textContent = quiet.length;
   const rows = progressFilter === "quiet" ? quiet : PARTICIPANT_PROGRESS;
-  document.getElementById("progBody").innerHTML = rows.length ? rows.map(p=>`<tr>
+  document.getElementById("progBody").innerHTML = rows.length ? rows.map((p,i)=>`<tr>
+    <td>${i+1}</td>
     <td>${p.name || "—"}</td>
     <td>${p.email || "—"}</td>
     <td>${p.habit_count}</td>
     <td>${p.avg_pct}%</td>
-    <td>${p.perfect_days}</td>
+    <td>${p.perfect_days + p.mastermind_count*5}</td>
     <td>${p.mastermind_count}/2</td>
     <td${isQuiet(p.last_active)?' style="color:#B3415A;font-weight:600"':''}>${fmtLastActive(p.last_active)}</td>
-  </tr>`).join("") : `<tr><td colspan="7" style="text-align:center;color:#999">пока никто не зарегистрировался в кабинете</td></tr>`;
+  </tr>`).join("") : `<tr><td colspan="8" style="text-align:center;color:#999">пока никто не зарегистрировался в кабинете</td></tr>`;
 }
 async function loadProgress(){
   try{ PARTICIPANT_PROGRESS = await apiFetch("/api/admin/participants"); }catch(e){ PARTICIPANT_PROGRESS = []; }
@@ -3433,11 +3434,12 @@ function renderParticipants(){
     return [p.name,p.email,p.phone,p.instagram].some(v=>(v||"").toLowerCase().includes(q));
   });
   const body = document.getElementById("crmBody");
-  body.innerHTML = shown.length ? shown.map((p)=>{
+  body.innerHTML = shown.length ? shown.map((p,i)=>{
     const paid = p.status === "оплачено";
     const badge = paid ? `<span class="crm-badge paid">оплачено</span>` : `<span class="crm-badge wait">ждёт</span>`;
     const confirmBtn = (paid || p.method==="stripe") ? "" : `<button class="crm-confirm" data-pay="${p.id}">Отметить оплаченным</button>`;
     return `<tr>
+      <td>${i+1}</td>
       <td class="nm">${p.name||"—"}<span class="em">${p.email||""}</span></td>
       <td>${p.phone||"—"}</td>
       <td>${p.instagram||"—"}</td>
@@ -3448,7 +3450,7 @@ function renderParticipants(){
       <td><input class="crm-note" data-note="${p.id}" value="${(p.note||"").replace(/"/g,"&quot;")}" placeholder="заметка…"></td>
       <td style="text-align:right;white-space:nowrap">${confirmBtn} <button class="crm-del" data-del="${p.id}">удалить</button></td>
     </tr>`;
-  }).join("") : `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">ничего не нашлось</td></tr>`;
+  }).join("") : `<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--ink-soft)">ничего не нашлось</td></tr>`;
 
   body.querySelectorAll("[data-pay]").forEach(b=>{
     b.addEventListener("click", async ()=>{
