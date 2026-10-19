@@ -953,6 +953,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .avatar .camera{position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;background:var(--surface);
   border:1px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink-soft)}
 .avatar .camera svg{width:13px;height:13px}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
 .field input, .field textarea{
@@ -1035,10 +1036,27 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .fd-stat{background:rgba(255,255,255,.16);border-radius:14px;padding:13px;margin-bottom:14px}
 .fd-stat .num{font-family:var(--sys);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
 .fd-stat .lbl{font-size:11px;opacity:.85;margin-top:2px}
-.fd-quote{font-family:var(--sys);font-style:italic;font-size:13px;line-height:1.5;opacity:.95;margin-bottom:20px}
+.fd-quote{font-family:var(--sys);font-style:italic;font-size:13px;line-height:1.5;opacity:.95;margin-bottom:12px}
+.fd-honest{font-family:var(--sys);font-size:11px;line-height:1.5;opacity:.8;margin-bottom:20px}
 .fd-btn{width:100%;background:rgba(255,255,255,.95);color:var(--lav-ink);border:none;border-radius:999px;
   padding:12px;font-weight:600;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
 .fd-btn svg{width:14px;height:14px}
+
+/* модалка: получение звезды */
+.star-overlay{position:fixed;inset:0;background:rgba(26,21,33,.5);display:flex;align-items:center;justify-content:center;
+  z-index:50;opacity:0;pointer-events:none;transition:.2s;padding:20px}
+.star-overlay.open{opacity:1;pointer-events:auto}
+.star-card{width:100%;max-width:300px;background:var(--surface);border-radius:22px;padding:26px 22px;text-align:center;
+  transform:scale(.96);transition:.22s;box-shadow:0 24px 60px -20px rgba(0,0,0,.4)}
+.star-overlay.open .star-card{transform:scale(1)}
+.star-eyebrow{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.star-big{font-size:46px;margin-bottom:8px;line-height:1}
+.star-card h2{font-size:16px;font-weight:700;margin:0 0 14px;font-family:var(--sys)}
+.star-progress{display:flex;justify-content:center;gap:10px;margin-bottom:18px}
+.star-progress span{font-size:24px;filter:grayscale(1);opacity:.3}
+.star-progress span.on{filter:none;opacity:1}
+.star-card button{width:100%;border:none;background:var(--sage);color:#fff;border-radius:999px;padding:13px;
+  font-weight:600;font-size:13.5px;cursor:pointer;font-family:var(--sys)}
 
 /* модалка: создать/редактировать привычку */
 .hm-backdrop{position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.3);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
@@ -1292,8 +1310,9 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
     </section>
 
     <section class="screen" id="tab-profile" hidden>
+      <input type="file" id="avatarFileInput" accept="image/*" hidden>
       <div class="avatar-row">
-        <div class="avatar">
+        <div class="avatar" id="mainAvatar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20c1.5-4 4.5-6 7.5-6s6 2 7.5 6"/></svg>
           <div class="camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-2.5h5L16 7"/></svg></div>
         </div>
@@ -1363,9 +1382,18 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   <h2 class="fd-praise" id="fdPraise">Ты держишь ритм ✨</h2>
   <div class="fd-stat"><div class="num"><span id="fdDone">0</span>/<span id="fdTotal">5</span></div><div class="lbl">привычек выполнено сегодня</div></div>
   <p class="fd-quote">«Маленькие шаги каждый день создают большие результаты»</p>
+  <p class="fd-honest">Будь честна с самой собой: цель марафона не в том, чтобы поучаствовать в розыгрыше, а в том, чтобы изменить свою жизнь.</p>
   <button class="fd-btn" id="fdClose">
     <svg viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="currentColor"/></svg>
     Спокойной ночи</button>
+</div></div>
+
+<div class="star-overlay" id="starOverlay"><div class="star-card">
+  <div class="star-eyebrow" id="starEyebrow">неделя 1 пройдена</div>
+  <div class="star-big">⭐</div>
+  <h2 id="starTitle">Поздравляю, ты прошла неделю марафона — и за это получаешь звезду</h2>
+  <div class="star-progress" id="starProgress"></div>
+  <button id="starClose">Забрать звезду</button>
 </div></div>
 
 <div class="hm-backdrop" id="habitModalBackdrop">
@@ -1562,7 +1590,7 @@ function showInfoSimple(title, html){
 }
 document.getElementById("diamondInfoBtn").addEventListener("click", ()=>{
   playPopSound();
-  showInfoSimple("Бриллианты 💎", "+1 бриллиант за каждый день, в который закрыты все твои привычки на 100%. Максимум — 21 (по одному за каждый день марафона). Плюс +5 за каждый мастермайнд, если ввести кодовое слово после эфира.");
+  showInfoSimple("Бриллианты 💎", "+1 бриллиант за каждый день, в который закрыты все твои привычки на 100%. Максимум — 21 (по одному за каждый день марафона). Плюс +5 за каждый мастермайнд, если ввести кодовое слово после эфира.<br><br><i>Будь честна с самой собой: цель марафона не в том, чтобы поучаствовать в розыгрыше, а в том, чтобы изменить свою жизнь.</i>");
 });
 document.getElementById("achInfoBtn").addEventListener("click", ()=>{
   playPopSound();
@@ -1663,7 +1691,7 @@ async function apiFetch(url, opts){
   opts = opts || {};
   const headers = Object.assign({}, opts.headers, {"Authorization": "Bearer " + (getToken()||"")});
   let body = opts.body;
-  if(body && typeof body !== "string"){ body = JSON.stringify(body); headers["Content-Type"] = "application/json"; }
+  if(body && typeof body !== "string" && !(body instanceof FormData)){ body = JSON.stringify(body); headers["Content-Type"] = "application/json"; }
   const resp = await fetch(url, Object.assign({}, opts, {headers, body}));
   if(resp.status === 401){
     setToken(null);
@@ -1754,7 +1782,34 @@ function initCabinetUI(){
   renderHeat(); renderChecklist(); renderMaterials(); renderProgress(); renderEvents(); renderProfileTile();
   setActiveTab(initialTab, {persist:false});
   if(HABITS.length === 0) startOnboarding();
+  checkStarCelebration();
 }
+
+const STAR_SHOWN_KEY = "serenityStarShown";
+const STAR_TEXT = {
+  7: "Поздравляю, ты прошла неделю марафона — и за это получаешь звезду",
+  14: "Поздравляю, ты прошла две недели марафона — и за это получаешь звезду",
+  21: "Поздравляю, ты прошла марафон полностью — и за это получаешь звезду"
+};
+const STAR_EYEBROW = {7:"неделя 1 пройдена", 14:"неделя 2 пройдена", 21:"марафон завершён"};
+function checkStarCelebration(){
+  let shown = {};
+  try{ shown = JSON.parse(localStorage.getItem(STAR_SHOWN_KEY) || "{}"); }catch(e){}
+  const due = STAR_DAYS.find(d => TODAY >= d && !shown[d]);
+  if(!due) return;
+  document.getElementById("starEyebrow").textContent = STAR_EYEBROW[due];
+  document.getElementById("starTitle").textContent = STAR_TEXT[due];
+  document.getElementById("starProgress").innerHTML = STAR_DAYS.map(d =>
+    `<span class="${TODAY>=d?'on':''}">⭐</span>`
+  ).join("");
+  document.getElementById("starOverlay").classList.add("open");
+  shown[due] = true;
+  try{ localStorage.setItem(STAR_SHOWN_KEY, JSON.stringify(shown)); }catch(e){}
+}
+document.getElementById("starClose").addEventListener("click", ()=>{
+  playPopSound();
+  document.getElementById("starOverlay").classList.remove("open");
+});
 
 async function bootCabinet(){
   document.getElementById("authScreen").hidden = true;
@@ -2338,7 +2393,8 @@ function openMaterialDetail(key, idx){
   const m = items[idx];
   openOverlay(m.title, a.name);
   const codeBox = m.mmId ? mmCodeBoxHtml(m.mmId) : "";
-  const openLink = (m.url && m.url !== "#") ? `<a href="${m.url}" target="_blank" rel="noopener" class="btn primary" style="text-decoration:none;margin:4px 0 10px">Открыть материал →</a>` : "";
+  const hasLink = m.url && m.url !== "#";
+  const openLink = hasLink ? `<button id="matOpenBtn" class="btn primary" style="margin:4px 0 10px">Открыть материал →</button>` : "";
   document.getElementById("overlayBody").innerHTML =
     `<div class="mat" style="margin-bottom:10px"><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
       <div class="mat-body"><div class="mat-title">${m.title}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div></div>
@@ -2346,6 +2402,20 @@ function openMaterialDetail(key, idx){
      ${codeBox}
      <button class="editlink" id="matBackBtn" type="button" style="margin-top:4px">← к материалам ${a.name}</button>`;
   if(m.mmId) wireMmCodeBox(m.mmId);
+  if(hasLink){
+    document.getElementById("matOpenBtn").addEventListener("click", async ()=>{
+      playPopSound();
+      let target = m.url;
+      if(m.id){
+        try{
+          const resp = await apiFetch("/api/cabinet/materials/"+m.id+"/link");
+          const data = await resp.json();
+          if(resp.ok && data.ok) target = data.url;
+        }catch(e){ return; }
+      }
+      window.open(target, "_blank", "noopener");
+    });
+  }
   document.getElementById("matBackBtn").addEventListener("click", ()=>openMaterial(key));
 }
 document.getElementById("themeChips").addEventListener("click",e=>{
@@ -2375,7 +2445,37 @@ function renderProfileTile(){
   if(p.city) bits.push(p.city);
   bits.push("редактировать");
   document.querySelector("#v3tile .v3-txt").innerHTML = name + "<small>" + bits.join(" · ") + "</small>";
+  document.querySelectorAll(".avatar img").forEach(img=>img.remove());
+  if(p.photo_url){
+    document.querySelectorAll(".avatar").forEach(av=>{
+      const img = document.createElement("img");
+      img.src = p.photo_url;
+      av.insertBefore(img, av.firstChild);
+    });
+  }
 }
+document.getElementById("avatarFileInput").addEventListener("change", async (e)=>{
+  const file = e.target.files[0];
+  e.target.value = "";
+  if(!file) return;
+  const fd = new FormData();
+  fd.append("file", file);
+  try{
+    const resp = await apiFetch("/api/cabinet/avatar", {method:"POST", body: fd});
+    const data = await resp.json();
+    if(resp.ok && data.ok){
+      STATE.profile = Object.assign({}, STATE.profile, {photo_url: data.photo_url});
+      renderProfileTile();
+      playPopSound();
+    }
+  }catch(err){}
+});
+function wireCameraButtons(){
+  document.querySelectorAll(".camera").forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); document.getElementById("avatarFileInput").click(); };
+  });
+}
+wireCameraButtons();
 function openProfileEdit(){
   openOverlay("Редактировать профиль");
   const p = STATE.profile || {};
@@ -2394,6 +2494,8 @@ function openProfileEdit(){
       <div class="field"><label>о себе</label><textarea id="profBio">${esc(p.bio)}</textarea></div>
       <button class="savebtn" id="overlaySave">Сохранить</button>
     </div>`;
+  renderProfileTile();
+  wireCameraButtons();
   document.getElementById("overlaySave").addEventListener("click", async ()=>{
     const name = document.getElementById("profName").value.trim();
     const ageRaw = document.getElementById("profAge").value.trim();
@@ -2647,7 +2749,8 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
       </div>
       <div class="field">
         <label>Файл или ссылка</label>
-        <div class="filebox">перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже</div>
+        <input type="file" id="mFile" hidden>
+        <div class="filebox" id="mFileBox">перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже</div>
         <input type="text" id="mLink" placeholder="https://..." style="margin-top:8px">
       </div>
       <button class="save" id="saveMaterial">Сохранить материал</button>
@@ -2961,6 +3064,32 @@ function isoDateToMarathonDay(iso){
   return Math.round((b-a)/86400000) + 1;
 }
 
+async function uploadMaterialFile(file){
+  const box = document.getElementById("mFileBox");
+  box.textContent = "загружаю «" + file.name + "»…";
+  const fd = new FormData();
+  fd.append("file", file, file.name);
+  try{
+    const res = await fetch("/api/admin/materials/upload", {method:"POST", body: fd, credentials:"same-origin"});
+    if(!res.ok) throw new Error("http "+res.status);
+    const data = await res.json();
+    document.getElementById("mLink").value = data.url;
+    box.innerHTML = "файл загружен: <b>" + file.name + "</b> (заменить — выбери другой файл)";
+    showToast("Файл «"+file.name+"» загружен ✓");
+  }catch(e){
+    box.innerHTML = "не получилось загрузить файл — перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
+    showToast("ошибка загрузки файла");
+  }
+}
+document.getElementById("mFileBox").addEventListener("click", ()=>document.getElementById("mFile").click());
+document.getElementById("mFile").addEventListener("change", e=>{
+  if(e.target.files[0]) uploadMaterialFile(e.target.files[0]);
+});
+document.getElementById("mFileBox").addEventListener("dragover", e=>{ e.preventDefault(); });
+document.getElementById("mFileBox").addEventListener("drop", e=>{
+  e.preventDefault();
+  if(e.dataTransfer.files[0]) uploadMaterialFile(e.dataTransfer.files[0]);
+});
 document.getElementById("saveMaterial").addEventListener("click", async ()=>{
   const title = document.getElementById("mTitle").value.trim();
   const themeIds = [...document.querySelectorAll("#mThemes .tchip.on")].map(c=>c.dataset.t);
@@ -2978,6 +3107,8 @@ document.getElementById("saveMaterial").addEventListener("click", async ()=>{
     showToast("Материал «"+title+"» сохранён ✓");
     document.getElementById("mTitle").value = "";
     document.getElementById("mLink").value = "";
+    document.getElementById("mFile").value = "";
+    document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
     mDayPicker.reset();
     document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
   }catch(e){}
@@ -3973,6 +4104,131 @@ async def api_materials_delete(request):
     return web.json_response({"ok": True})
 
 
+MATERIALS_UPLOAD_MAX_BYTES = 80 * 1024 * 1024  # 80MB — хватает на видео-уроки и аудио
+
+
+async def api_materials_upload(request):
+    """Загружает файл материала в приватный supabase storage bucket 'materials'.
+    Возвращает storage-путь (storage:materials/<path>), который кладётся в поле url
+    существующего материала через обычный api_materials_add — участницам файл отдаётся
+    только подписанной ссылкой с ограниченным сроком, см. api_cabinet_material_link."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        return web.json_response({"error": "storage_not_configured"}, status=500)
+    reader = await request.multipart()
+    field = await reader.next()
+    if field is None or field.name != "file":
+        return web.json_response({"error": "file field required"}, status=400)
+    filename = field.filename or "file"
+    ext = Path(filename).suffix or ""
+    content_type = field.headers.get("Content-Type", "application/octet-stream")
+    storage_path = f"{uuid.uuid4().hex}{ext}"
+    chunks = []
+    total = 0
+    while True:
+        chunk = await field.read_chunk(1024 * 256)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MATERIALS_UPLOAD_MAX_BYTES:
+            return web.json_response({"error": "file_too_large"}, status=413)
+        chunks.append(chunk)
+    body = b"".join(chunks)
+    async with ClientSession() as session:
+        async with session.post(
+            f"{SUPABASE_URL}/storage/v1/object/materials/{storage_path}",
+            data=body,
+            headers={
+                "apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                "Content-Type": content_type,
+            },
+        ) as resp:
+            if resp.status >= 400:
+                err = await resp.text()
+                return web.json_response({"error": "upload_failed", "detail": err[:300]}, status=502)
+    return web.json_response({"ok": True, "url": f"storage:materials/{storage_path}", "filename": filename})
+
+
+async def api_cabinet_material_link(request):
+    """Выдаёт временную подписанную ссылку на файл материала, только если день уже
+    разблокирован. Для материалов с обычной внешней ссылкой просто отдаёт её обратно."""
+    user = await require_cabinet_user(request)
+    if not user:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    try:
+        mat_id = int(request.match_info["id"])
+    except ValueError:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    row = await DB_POOL.fetchrow("SELECT * FROM materials WHERE id=$1", mat_id)
+    if not row:
+        return web.json_response({"ok": False, "error": "not_found"}, status=404)
+    today = marathon_day_today(MARATHON_START, MARATHON_TZ)
+    if row["day"] is not None and row["day"] > today:
+        return web.json_response({"ok": False, "error": "locked"}, status=403)
+    url = row["url"] or ""
+    if not url.startswith("storage:materials/"):
+        return web.json_response({"ok": True, "url": url})
+    storage_path = url[len("storage:materials/"):]
+    async with ClientSession() as session:
+        async with session.post(
+            f"{SUPABASE_URL}/storage/v1/object/sign/materials/{storage_path}",
+            json={"expiresIn": 300},
+            headers={"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {SUPABASE_ANON_KEY}"},
+        ) as resp:
+            result = await resp.json()
+            if resp.status >= 400:
+                return web.json_response({"ok": False, "error": "sign_failed"}, status=502)
+    signed = result.get("signedURL") or result.get("signedUrl") or ""
+    return web.json_response({"ok": True, "url": f"{SUPABASE_URL}/storage/v1{signed}"})
+
+
+AVATAR_UPLOAD_MAX_BYTES = 5 * 1024 * 1024
+
+
+async def api_cabinet_avatar_upload(request):
+    user = await require_cabinet_user(request)
+    if not user:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        return web.json_response({"ok": False, "error": "storage_not_configured"}, status=500)
+    reader = await request.multipart()
+    field = await reader.next()
+    if field is None or field.name != "file":
+        return web.json_response({"ok": False, "error": "file field required"}, status=400)
+    ext = Path(field.filename or "").suffix.lower()
+    if ext not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+        ext = ".jpg"
+    content_type = field.headers.get("Content-Type", "image/jpeg")
+    chunks = []
+    total = 0
+    while True:
+        chunk = await field.read_chunk(1024 * 256)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > AVATAR_UPLOAD_MAX_BYTES:
+            return web.json_response({"ok": False, "error": "file_too_large"}, status=413)
+        chunks.append(chunk)
+    body = b"".join(chunks)
+    storage_path = f"{user['id']}/avatar{ext}"
+    async with ClientSession() as session:
+        async with session.post(
+            f"{SUPABASE_URL}/storage/v1/object/avatars/{storage_path}",
+            data=body,
+            headers={
+                "apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                "Content-Type": content_type, "x-upsert": "true",
+            },
+        ) as resp:
+            if resp.status >= 400:
+                err = await resp.text()
+                return web.json_response({"ok": False, "error": "upload_failed", "detail": err[:300]}, status=502)
+    photo_url = f"{SUPABASE_URL}/storage/v1/object/public/avatars/{storage_path}?v={int(time.time())}"
+    await DB_POOL.execute("UPDATE profiles SET photo_url=$2 WHERE id=$1", user["id"], photo_url)
+    return web.json_response({"ok": True, "photo_url": photo_url})
+
+
 async def api_calendar_list(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
@@ -4092,6 +4348,15 @@ async def cabinet(request):
     return html_response(CABINET_APP_HTML)
 
 
+async def root(request):
+    """Один сервер отвечает на нескольких доменах — отличаем по Host, чтобы
+    admin.serenitymoonevents.com/ не показывал кабинет участниц."""
+    host = (request.host or "").split(":")[0]
+    if host.startswith("admin."):
+        raise web.HTTPFound("/admin")
+    return html_response(CABINET_APP_HTML)
+
+
 async def health(request):
     await DB_POOL.fetchval("SELECT 1")
     return web.Response(text="ok")
@@ -4143,6 +4408,8 @@ def make_app():
         web.post("/api/auth/login", api_auth_login),
         web.get("/api/auth/me", api_auth_me),
         web.put("/api/cabinet/profile", api_cabinet_profile_update),
+        web.post("/api/cabinet/avatar", api_cabinet_avatar_upload),
+        web.get("/api/cabinet/materials/{id}/link", api_cabinet_material_link),
         web.get("/api/cabinet/habits", api_cabinet_habits_list),
         web.put("/api/cabinet/habits", api_cabinet_habits_replace),
         web.get("/api/cabinet/logs", api_cabinet_logs_list),
@@ -4150,6 +4417,7 @@ def make_app():
         web.post("/api/cabinet/mastermind", api_cabinet_mastermind_redeem),
         web.get("/api/cabinet/bootstrap", api_cabinet_bootstrap),
         web.get("/cabinet", cabinet),
+        web.get("/", root),
         # ---- JSON api для CRM-вкладки в админ-прототипе (claude.ai, другой origin — токен в
         # заголовке X-Admin-Token вместо cookie-сессии) ----
         web.get("/api/admin/signups", api_signups_list),
@@ -4168,6 +4436,7 @@ def make_app():
         web.get("/api/admin/materials", api_materials_list),
         web.post("/api/admin/materials", api_materials_add),
         web.delete("/api/admin/materials/{id}", api_materials_delete),
+        web.post("/api/admin/materials/upload", api_materials_upload),
         web.get("/api/admin/calendar-events", api_calendar_list),
         web.post("/api/admin/calendar-events", api_calendar_add),
         web.delete("/api/admin/calendar-events/{id}", api_calendar_delete),
