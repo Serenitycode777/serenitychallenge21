@@ -3297,8 +3297,9 @@ function readFileAsDataUrl(file){
 }
 function renderFolderPicker(){
   const wrap = document.getElementById("folderPicker");
-  wrap.innerHTML = FOLDERS.map(f=>`<div class="tchip${f.id===selectedFolder?" on":""}" data-f="${f.id}">${f.name}</div>`).join("")
-    + `<div class="tchip" id="folderPlusChip">+ новая папка</div>`;
+  const addingNew = document.getElementById("newFolderForm") && document.getElementById("newFolderForm").style.display==="flex";
+  wrap.innerHTML = FOLDERS.map(f=>`<div class="tchip${(!addingNew && f.id===selectedFolder)?" on":""}" data-f="${f.id}">${f.name}</div>`).join("")
+    + `<div class="tchip${addingNew?" on":""}" id="folderPlusChip">+ новая папка</div>`;
   wrap.querySelectorAll(".tchip[data-f]").forEach(c=>{
     c.addEventListener("click", ()=>{
       selectedFolder = c.dataset.f;
@@ -3309,6 +3310,7 @@ function renderFolderPicker(){
   document.getElementById("folderPlusChip").addEventListener("click", ()=>{
     const f = document.getElementById("newFolderForm");
     f.style.display = (f.style.display==="none") ? "flex" : "none";
+    renderFolderPicker();
     if(f.style.display==="flex") document.getElementById("nfName").focus();
   });
 }
