@@ -1175,9 +1175,40 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
       <input type="password" id="authPassword2" autocomplete="new-password">
       <button type="button" class="pwd-eye" id="authPwdEye2" aria-label="показать пароль">👁</button>
     </div></div>
+    <p class="auth-switch" id="authForgotWrap" style="margin:-2px 0 4px"><button id="authForgotBtn" type="button">Забыла пароль?</button></p>
     <button class="auth-submit" id="authSubmit" type="button">Войти</button>
   </div>
   <p class="auth-switch"><span id="authSwitchHint">Первый раз?</span> <button id="authSwitchMode" type="button">Зарегистрироваться</button></p>
+</div>
+
+<div class="authscreen" id="recoverScreen" hidden>
+  <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
+  <h1>Восстановление пароля</h1>
+  <p class="sub">Пришлём ссылку на email, по ней можно будет задать новый пароль</p>
+  <div class="authcard">
+    <p class="auth-err" id="recoverErr" hidden></p>
+    <div class="field"><label>email</label><input type="email" id="recoverEmail" autocomplete="email"></div>
+    <button class="auth-submit" id="recoverSubmit" type="button">Отправить ссылку</button>
+  </div>
+  <p class="auth-switch"><button id="recoverBack" type="button">← назад ко входу</button></p>
+</div>
+
+<div class="authscreen" id="newPasswordScreen" hidden>
+  <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
+  <h1>Новый пароль</h1>
+  <p class="sub">Придумай новый пароль для входа в кабинет</p>
+  <div class="authcard">
+    <p class="auth-err" id="newPasswordErr" hidden></p>
+    <div class="field"><label>новый пароль</label><div class="pwd-wrap">
+      <input type="password" id="newPassword1" autocomplete="new-password">
+      <button type="button" class="pwd-eye" id="newPwdEye1" aria-label="показать пароль">👁</button>
+    </div></div>
+    <div class="field"><label>повтори пароль</label><div class="pwd-wrap">
+      <input type="password" id="newPassword2" autocomplete="new-password">
+      <button type="button" class="pwd-eye" id="newPwdEye2" aria-label="показать пароль">👁</button>
+    </div></div>
+    <button class="auth-submit" id="newPasswordSubmit" type="button">Сохранить и войти</button>
+  </div>
 </div>
 
 <div class="authscreen" id="authLoading" hidden><p class="auth-loading">Загружаем кабинет…</p></div>
@@ -1714,6 +1745,8 @@ async function apiFetch(url, opts){
 function showAuthScreen(err){
   document.getElementById("mainApp").hidden = true;
   document.getElementById("authLoading").hidden = true;
+  document.getElementById("recoverScreen").hidden = true;
+  document.getElementById("newPasswordScreen").hidden = true;
   document.getElementById("authScreen").hidden = false;
   const errEl = document.getElementById("authErr");
   if(err){ errEl.style.color = ""; errEl.textContent = err; errEl.hidden = false; } else { errEl.hidden = true; }
@@ -1860,6 +1893,7 @@ document.getElementById("authSwitchMode").addEventListener("click", ()=>{
   document.getElementById("authSwitchHint").textContent = authMode==="login" ? "Первый раз?" : "Уже есть аккаунт?";
   document.getElementById("authSwitchMode").textContent = authMode==="login" ? "Зарегистрироваться" : "Войти";
   document.getElementById("authPassword2Field").hidden = authMode !== "register";
+  document.getElementById("authForgotWrap").hidden = authMode !== "login";
   document.getElementById("authErr").hidden = true;
 });
 document.getElementById("authPwdEye").addEventListener("click", ()=>{
@@ -1870,6 +1904,65 @@ document.getElementById("authPwdEye2").addEventListener("click", ()=>{
   const inp = document.getElementById("authPassword2");
   inp.type = inp.type === "password" ? "text" : "password";
 });
+
+/* ---------- восстановление пароля ---------- */
+document.getElementById("authForgotBtn").addEventListener("click", ()=>{
+  document.getElementById("recoverEmail").value = document.getElementById("authEmail").value.trim();
+  document.getElementById("recoverErr").hidden = true;
+  document.getElementById("authScreen").hidden = true;
+  document.getElementById("recoverScreen").hidden = false;
+});
+document.getElementById("recoverBack").addEventListener("click", ()=>{
+  document.getElementById("recoverScreen").hidden = true;
+  document.getElementById("authScreen").hidden = false;
+});
+document.getElementById("recoverSubmit").addEventListener("click", async ()=>{
+  const email = document.getElementById("recoverEmail").value.trim();
+  const errEl = document.getElementById("recoverErr");
+  errEl.style.color = ""; errEl.hidden = true;
+  if(!email){ errEl.textContent = "введи email"; errEl.hidden = false; return; }
+  const btn = document.getElementById("recoverSubmit");
+  btn.disabled = true;
+  try{
+    await fetch("/api/auth/recover", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({email})});
+    errEl.style.color = "var(--sage-ink)";
+    errEl.textContent = "если такой email зарегистрирован — письмо со ссылкой уже в пути, проверь почту";
+    errEl.hidden = false;
+  }catch(e){
+    errEl.textContent = "не получилось связаться с сервером, попробуй ещё раз"; errEl.hidden = false;
+  }
+  btn.disabled = false;
+});
+document.getElementById("newPwdEye1").addEventListener("click", ()=>{
+  const inp = document.getElementById("newPassword1");
+  inp.type = inp.type === "password" ? "text" : "password";
+});
+document.getElementById("newPwdEye2").addEventListener("click", ()=>{
+  const inp = document.getElementById("newPassword2");
+  inp.type = inp.type === "password" ? "text" : "password";
+});
+document.getElementById("newPasswordSubmit").addEventListener("click", async ()=>{
+  const p1 = document.getElementById("newPassword1").value;
+  const p2 = document.getElementById("newPassword2").value;
+  const errEl = document.getElementById("newPasswordErr");
+  errEl.style.color = ""; errEl.hidden = true;
+  if(!p1 || p1.length < 6){ errEl.textContent = "пароль минимум 6 символов"; errEl.hidden = false; return; }
+  if(p1 !== p2){ errEl.textContent = "пароли не совпадают"; errEl.hidden = false; return; }
+  const btn = document.getElementById("newPasswordSubmit");
+  btn.disabled = true;
+  try{
+    const resp = await apiFetch("/api/auth/set-password", {method:"PUT", body:{password:p1}});
+    const data = await resp.json();
+    if(!resp.ok || !data.ok){
+      errEl.textContent = "не получилось сохранить пароль — ссылка могла устареть, запроси новую"; errEl.hidden = false; btn.disabled = false; return;
+    }
+    document.getElementById("newPasswordScreen").hidden = true;
+    bootCabinet();
+  }catch(e){
+    btn.disabled = false;
+  }
+});
+
 async function submitAuth(){
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
@@ -1914,13 +2007,20 @@ document.getElementById("authSubmit").addEventListener("click", submitAuth);
 document.getElementById("authPassword").addEventListener("keydown", e=>{ if(e.key === "Enter") submitAuth(); });
 
 (function bootOnLoad(){
+  let isRecovery = false;
   if(location.hash && location.hash.indexOf("access_token=") !== -1){
     const params = new URLSearchParams(location.hash.slice(1));
     const tok = params.get("access_token");
+    isRecovery = params.get("type") === "recovery";
     if(tok){
       setToken(tok);
       try{ history.replaceState(null, "", location.pathname + location.search); }catch(e){}
     }
+  }
+  if(isRecovery && getToken()){
+    document.getElementById("authLoading").hidden = true;
+    document.getElementById("newPasswordScreen").hidden = false;
+    return;
   }
   if(getToken()){
     document.getElementById("authLoading").hidden = false;
@@ -2753,7 +2853,7 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
       </div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Привычек</th><th>% выполнения</th><th>💎 Бриллианты</th><th>Мастермайнды</th><th>Была в кабинете</th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Привычек</th><th>% выполнения</th><th>💎 Бриллианты</th><th>Мастермайнды</th><th>Была в кабинете</th><th></th></tr></thead>
           <tbody id="progBody"></tbody>
         </table>
       </div>
@@ -2980,7 +3080,20 @@ function renderProgress(){
     <td>${p.perfect_days + p.mastermind_count*5}</td>
     <td>${p.mastermind_count}/2</td>
     <td${isQuiet(p.last_active)?' style="color:#B3415A;font-weight:600"':''}>${fmtLastActive(p.last_active)}</td>
-  </tr>`).join("") : `<tr><td colspan="8" style="text-align:center;color:#999">пока никто не зарегистрировался в кабинете</td></tr>`;
+    <td><button class="crm-del" data-pdel="${p.id}" title="удалить участницу">✕</button></td>
+  </tr>`).join("") : `<tr><td colspan="9" style="text-align:center;color:#999">пока никто не зарегистрировался в кабинете</td></tr>`;
+  document.querySelectorAll("[data-pdel]").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      if(!confirm("Удалить эту участницу из кабинета? Это сотрёт её привычки и отметки, вернуть будет нельзя.")) return;
+      btn.disabled = true;
+      try{
+        await apiFetch("/api/admin/participants/"+btn.dataset.pdel, {method:"DELETE"});
+        PARTICIPANT_PROGRESS = PARTICIPANT_PROGRESS.filter(p=>p.id !== btn.dataset.pdel);
+        renderProgress();
+        showToast("Участница удалена");
+      }catch(e){ btn.disabled = false; }
+    });
+  });
 }
 async function loadProgress(){
   try{ PARTICIPANT_PROGRESS = await apiFetch("/api/admin/participants"); }catch(e){ PARTICIPANT_PROGRESS = []; }
@@ -3648,6 +3761,55 @@ async def api_auth_login(request):
     })
 
 
+async def api_auth_recover(request):
+    """Запрос письма восстановления пароля. Supabase всегда отвечает 200, даже если
+    такого email нет — так мы не палим, кто зарегистрирован, кто нет."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    email = str(data.get("email", "")).strip()
+    if not email:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        return web.json_response({"ok": False, "error": "auth_not_configured"}, status=500)
+    async with ClientSession() as session:
+        async with session.post(
+            f"{SUPABASE_URL}/auth/v1/recover",
+            json={"email": email},
+            headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+        ):
+            pass
+    return web.json_response({"ok": True})
+
+
+async def api_auth_set_password(request):
+    """Установка нового пароля — вызывается после перехода по ссылке восстановления,
+    токен в Authorization это временный recovery-токен от supabase."""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
+    if not token:
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    password = str(data.get("password", ""))
+    if len(password) < 6:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    async with ClientSession() as session:
+        async with session.put(
+            f"{SUPABASE_URL}/auth/v1/user",
+            json={"password": password},
+            headers={"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        ) as resp:
+            result = await resp.json()
+            if resp.status >= 400:
+                msg = result.get("msg") or result.get("error_description") or "set_password_failed"
+                return web.json_response({"ok": False, "error": msg}, status=resp.status)
+    return web.json_response({"ok": True})
+
+
 async def _supabase_user_from_token(token: str):
     if not token or not SUPABASE_URL or not SUPABASE_ANON_KEY:
         return None
@@ -4052,11 +4214,20 @@ async def api_admin_participants(request):
         mm = _jsonb(p["mastermind"]) or {}
         mm_count = sum(1 for v in mm.values() if v) if isinstance(mm, dict) else 0
         result.append({
-            "name": p["name"] or "", "email": p["email"] or "",
+            "id": str(uid), "name": p["name"] or "", "email": p["email"] or "",
             "habit_count": habit_count, "avg_pct": avg_pct, "perfect_days": perfect_days,
             "mastermind_count": mm_count, "last_active": last_date.isoformat() if last_date else None,
         })
     return web.json_response(result)
+
+
+async def api_admin_participant_delete(request):
+    """Удаляет профиль участницы из кабинета (вместе с её привычками/отметками —
+    ON DELETE CASCADE). Сам логин в supabase auth не трогает — только данные в нашей базе."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    await DB_POOL.execute("DELETE FROM profiles WHERE id=$1", request.match_info["id"])
+    return web.json_response({"ok": True})
 
 
 async def api_signup_confirm(request):
@@ -4560,6 +4731,8 @@ def make_app():
         web.get("/health", health),
         web.post("/api/auth/register", api_auth_register),
         web.post("/api/auth/login", api_auth_login),
+        web.post("/api/auth/recover", api_auth_recover),
+        web.put("/api/auth/set-password", api_auth_set_password),
         web.get("/api/auth/me", api_auth_me),
         web.put("/api/cabinet/profile", api_cabinet_profile_update),
         web.post("/api/cabinet/avatar", api_cabinet_avatar_upload),
@@ -4576,6 +4749,7 @@ def make_app():
         # заголовке X-Admin-Token вместо cookie-сессии) ----
         web.get("/api/admin/signups", api_signups_list),
         web.get("/api/admin/participants", api_admin_participants),
+        web.delete("/api/admin/participants/{id}", api_admin_participant_delete),
         web.post("/api/admin/signups", api_signup_add),
         web.post("/api/admin/signups/{id}/confirm", api_signup_confirm),
         web.post("/api/admin/signups/{id}/note", api_signup_note),
