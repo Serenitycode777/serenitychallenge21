@@ -96,6 +96,34 @@ async def init_db(app):
         link TEXT, color TEXT DEFAULT 'lav', created DOUBLE PRECISION
     )""")
 
+    # ---- кабинет участниц (2026-10-19): профиль / выбранные привычки / ежедневные отметки.
+    # id профиля = id из Supabase Auth (auth.users.id, uuid) — заполняется при реальной
+    # регистрации, когда подключим supabase auth (ещё не подключено на момент создания).
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS profiles (
+        id UUID PRIMARY KEY, email TEXT UNIQUE NOT NULL, email_norm TEXT NOT NULL,
+        name TEXT DEFAULT '', age INTEGER, city TEXT DEFAULT '', bio TEXT DEFAULT '',
+        photo_url TEXT, created DOUBLE PRECISION
+    )""")
+    await DB_POOL.execute("CREATE INDEX IF NOT EXISTS idx_profiles_email_norm ON profiles(email_norm)")
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS habit_selections (
+        id SERIAL PRIMARY KEY, user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        name TEXT NOT NULL, config JSONB DEFAULT '{}', sort INTEGER DEFAULT 0, created DOUBLE PRECISION
+    )""")
+    await DB_POOL.execute("CREATE INDEX IF NOT EXISTS idx_habit_sel_user ON habit_selections(user_id)")
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS daily_logs (
+        id SERIAL PRIMARY KEY, user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        log_date DATE NOT NULL, habits_done JSONB DEFAULT '[]',
+        closed BOOLEAN DEFAULT FALSE, closed_at DOUBLE PRECISION,
+        UNIQUE(user_id, log_date)
+    )""")
+    await DB_POOL.execute("CREATE INDEX IF NOT EXISTS idx_daily_logs_user ON daily_logs(user_id)")
+
+    # ---- глобальные настройки платформы (ключ-значение) — напр. "cabinet_opens_at" (unix-время,
+    # разовое открытие доступа всем оплатившим разом, см. 2026-10-13 решение в памяти проекта) ----
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY, value TEXT
+    )""")
+
 
 async def close_db(app):
     if DB_POOL:
@@ -1639,6 +1667,50 @@ async def api_signup_add(request):
     return web.json_response(_signup_json(row), status=201)
 
 
+async def get_setting(key: str, default=None):
+    row = await DB_POOL.fetchrow("SELECT value FROM settings WHERE key=$1", key)
+    return row["value"] if row else default
+
+
+async def set_setting(key: str, value: str):
+    await DB_POOL.execute(
+        "INSERT INTO settings (key, value) VALUES ($1,$2) "
+        "ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value",
+        key, value,
+    )
+
+
+async def cabinet_is_open() -> bool:
+    """Разовое открытие доступа всем оплатившим сразу (не по одному при оплате) —
+    см. решение 2026-10-13 в памяти проекта. Пока в кабинет ещё никто не стучится
+    (шаг 3 не готов), это просто готовый примитив для будущей проверки логина."""
+    raw = await get_setting("cabinet_opens_at")
+    if not raw:
+        return False
+    try:
+        return time.time() >= float(raw)
+    except ValueError:
+        return False
+
+
+async def api_settings_cabinet_opens(request):
+    """GET — текущее значение; POST {"opens_at": unix-время или null} — задать/снять."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    if request.method == "POST":
+        data = await request.json()
+        raw = data.get("opens_at")
+        if raw in (None, ""):
+            await DB_POOL.execute("DELETE FROM settings WHERE key='cabinet_opens_at'")
+        else:
+            await set_setting("cabinet_opens_at", str(float(raw)))
+    opens_at = await get_setting("cabinet_opens_at")
+    return web.json_response({
+        "opens_at": float(opens_at) if opens_at else None,
+        "is_open": await cabinet_is_open(),
+    })
+
+
 async def materials(request):
     data = load_materials()
     today = marathon_day_today(data["marathon_start"], data["timezone"])
@@ -1699,6 +1771,8 @@ def make_app():
         web.post("/api/admin/signups/{id}/confirm", api_signup_confirm),
         web.post("/api/admin/signups/{id}/note", api_signup_note),
         web.delete("/api/admin/signups/{id}", api_signup_delete),
+        web.get("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
+        web.post("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
         web.route("OPTIONS", "/{tail:.*}", cors_preflight),
     ])
     return app
