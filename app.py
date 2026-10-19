@@ -1146,7 +1146,10 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .authcard .field{margin-bottom:12px}
 .authcard .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
 .authcard .field input{width:100%;font-family:var(--sys);font-size:14px;color:var(--ink);background:var(--bg);
-  border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  border:1px solid var(--line);border-radius:12px;padding:11px 40px 11px 13px}
+.pwd-wrap{position:relative}
+.pwd-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;
+  font-size:15px;cursor:pointer;padding:6px;color:var(--ink-soft);line-height:1;font-family:var(--sys)}
 .auth-err{font-size:12px;color:#a8443a;margin:0 0 10px;line-height:1.4}
 .auth-err[hidden]{display:none}
 .auth-submit{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:13px;
@@ -1158,13 +1161,20 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 </style>
 
 <div class="authscreen" id="authScreen" hidden>
-  <img class="mark" src="/_blob/6185c49e74f3a3d4f8120f64a486c530" alt="Serenity Moon">
+  <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
   <h1 id="authTitle">Вход в кабинет</h1>
   <p class="sub" id="authSub">Марафон «Начни сегодня» · Serenity Moon</p>
   <div class="authcard">
     <p class="auth-err" id="authErr" hidden></p>
     <div class="field"><label>email</label><input type="email" id="authEmail" autocomplete="email"></div>
-    <div class="field"><label>пароль</label><input type="password" id="authPassword" autocomplete="current-password"></div>
+    <div class="field"><label>пароль</label><div class="pwd-wrap">
+      <input type="password" id="authPassword" autocomplete="current-password">
+      <button type="button" class="pwd-eye" id="authPwdEye" aria-label="показать пароль">👁</button>
+    </div></div>
+    <div class="field" id="authPassword2Field" hidden><label>повтори пароль</label><div class="pwd-wrap">
+      <input type="password" id="authPassword2" autocomplete="new-password">
+      <button type="button" class="pwd-eye" id="authPwdEye2" aria-label="показать пароль">👁</button>
+    </div></div>
     <button class="auth-submit" id="authSubmit" type="button">Войти</button>
   </div>
   <p class="auth-switch"><span id="authSwitchHint">Первый раз?</span> <button id="authSwitchMode" type="button">Зарегистрироваться</button></p>
@@ -1175,7 +1185,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 <div class="app" id="mainApp" hidden>
   <nav class="sidebar">
     <div class="brand">
-      <img class="mark" src="/_blob/6185c49e74f3a3d4f8120f64a486c530" alt="Serenity Moon">
+      <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
       <span class="name">Serenity Moon</span>
     </div>
     <button class="navbtn active" data-tab="today">
@@ -1193,7 +1203,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   </nav>
 
   <div class="topbar">
-    <img class="mark" src="/_blob/6185c49e74f3a3d4f8120f64a486c530" alt="Serenity Moon">
+    <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
     <span class="name">Serenity Moon</span>
   </div>
 
@@ -1846,15 +1856,28 @@ document.getElementById("authSwitchMode").addEventListener("click", ()=>{
   document.getElementById("authSubmit").textContent = authMode==="login" ? "Войти" : "Зарегистрироваться";
   document.getElementById("authSwitchHint").textContent = authMode==="login" ? "Первый раз?" : "Уже есть аккаунт?";
   document.getElementById("authSwitchMode").textContent = authMode==="login" ? "Зарегистрироваться" : "Войти";
+  document.getElementById("authPassword2Field").hidden = authMode !== "register";
   document.getElementById("authErr").hidden = true;
+});
+document.getElementById("authPwdEye").addEventListener("click", ()=>{
+  const inp = document.getElementById("authPassword");
+  inp.type = inp.type === "password" ? "text" : "password";
+});
+document.getElementById("authPwdEye2").addEventListener("click", ()=>{
+  const inp = document.getElementById("authPassword2");
+  inp.type = inp.type === "password" ? "text" : "password";
 });
 async function submitAuth(){
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
+  const password2 = document.getElementById("authPassword2").value;
   const errEl = document.getElementById("authErr");
   errEl.style.color = ""; errEl.hidden = true;
   if(!email || !password || password.length < 6){
     errEl.textContent = "заполни email и пароль (минимум 6 символов)"; errEl.hidden = false; return;
+  }
+  if(authMode === "register" && password !== password2){
+    errEl.textContent = "пароли не совпадают"; errEl.hidden = false; return;
   }
   const btn = document.getElementById("authSubmit");
   btn.disabled = true;
@@ -1887,6 +1910,14 @@ document.getElementById("authSubmit").addEventListener("click", submitAuth);
 document.getElementById("authPassword").addEventListener("keydown", e=>{ if(e.key === "Enter") submitAuth(); });
 
 (function bootOnLoad(){
+  if(location.hash && location.hash.indexOf("access_token=") !== -1){
+    const params = new URLSearchParams(location.hash.slice(1));
+    const tok = params.get("access_token");
+    if(tok){
+      setToken(tok);
+      try{ history.replaceState(null, "", location.pathname + location.search); }catch(e){}
+    }
+  }
   if(getToken()){
     document.getElementById("authLoading").hidden = false;
     bootCabinet();
@@ -2298,9 +2329,9 @@ document.getElementById("shareBtn").addEventListener("click", ()=>{
 /* ---------- материалы ---------- */
 let activeTheme="all", query="";
 const PHOTOS = {
-  mila: "/_blob/6a9c190aba1e701653b1c15a09f77256",
-  maria: "/_blob/7125971cfd4e06cefd14e18bb9c80a82",
-  anna: "/_blob/211d84a06ccc601c0a7e3f6154d65d3f"
+  mila: "https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/mila.jpg",
+  maria: "https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/maria.jpg",
+  anna: "https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/anna.jpg"
 };
 
 function matchesQuery(m){ if(!query) return true; return (m.title+" "+(m.tags||[]).join(" ")).toLowerCase().includes(query); }
