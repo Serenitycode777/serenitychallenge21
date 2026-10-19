@@ -18,6 +18,7 @@ import json
 import os
 import re
 import time
+import uuid
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -123,6 +124,47 @@ async def init_db(app):
     await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY, value TEXT
     )""")
+    # поля для карточки автора (topics/photo) — добавлены позже исходной таблицы folders
+    await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS topics TEXT DEFAULT ''")
+    await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS photo_url TEXT")
+
+    await seed_materials_once()
+
+
+async def seed_materials_once():
+    """Разовый перенос старых data/materials.json (13 материалов, 4 автора) в
+    реальные таблицы — выполняется только если materials пока пустая (т.е. один
+    раз, при первом запуске после появления этих таблиц). Дальше источником
+    правды становится админка (/api/admin/folders|themes|materials), не файл."""
+    if await DB_POOL.fetchval("SELECT COUNT(*) FROM materials"):
+        return
+    if not MATERIALS_FILE.exists():
+        return
+    data = json.loads(MATERIALS_FILE.read_text(encoding="utf-8"))
+    now = time.time()
+    for key, a in data.get("authors", {}).items():
+        await DB_POOL.execute(
+            "INSERT INTO folders (id, name, description, topics, photo_url, created) "
+            "VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (id) DO NOTHING",
+            key, a.get("name", key), a.get("desc", ""), a.get("topics", ""), a.get("photo"), now,
+        )
+    seen_tags = set()
+    for m in data.get("materials", []):
+        for t in m.get("tags", []):
+            seen_tags.add(t)
+    for t in seen_tags:
+        await DB_POOL.execute(
+            "INSERT INTO themes (id, label, created) VALUES ($1,$2,$3) ON CONFLICT (id) DO NOTHING",
+            t, t, now,
+        )
+    for m in data.get("materials", []):
+        await DB_POOL.execute(
+            "INSERT INTO materials (folder_id, title, format, tags, day, url, created) "
+            "VALUES ($1,$2,$3,$4,$5,$6,$7)",
+            m.get("author"), m.get("title", ""), m.get("type", "link"),
+            json.dumps(m.get("tags", []), ensure_ascii=False), m.get("day"), m.get("url", "#"), now,
+        )
+    print(f"[миграция] перенесено {len(data.get('authors', {}))} папок и {len(data.get('materials', []))} материалов из materials.json в supabase")
 
 
 async def close_db(app):
@@ -135,14 +177,41 @@ def normalize_email(e: str) -> str:
 
 
 # ---------- материалы ----------
-MATERIALS_FILE = HERE / "data" / "materials.json"
+MATERIALS_FILE = HERE / "data" / "materials.json"  # больше не источник правды, см. seed_materials_once()
+MARATHON_START = "2026-11-09"
+MARATHON_TZ = "America/New_York"
 
 
 def load_materials() -> dict:
-    """Читает список материалов заново при каждом запросе — мила правит
-    этот файл сама (через свой клод, коммитом в репозиторий), без нашей
-    админки; изменения должны подхватываться без перезапуска сервиса."""
+    """Старый путь (читает JSON-файл) — больше не вызывается, оставлено как
+    запасной вариант. Реальный источник данных теперь load_materials_from_db()."""
     return json.loads(MATERIALS_FILE.read_text(encoding="utf-8"))
+
+
+def _jsonb(v):
+    """asyncpg по умолчанию отдаёт jsonb как голую строку, не питоновский объект."""
+    if isinstance(v, str):
+        try:
+            return json.loads(v)
+        except (TypeError, ValueError):
+            return v
+    return v
+
+
+async def load_materials_from_db() -> dict:
+    folders = await DB_POOL.fetch("SELECT * FROM folders ORDER BY sort, name")
+    materials = await DB_POOL.fetch("SELECT * FROM materials ORDER BY day NULLS FIRST, id")
+    authors = {
+        f["id"]: {"name": f["name"], "topics": f["topics"] or "", "desc": f["description"] or "",
+                   "photo": f["photo_url"]}
+        for f in folders
+    }
+    mats = [
+        {"id": str(m["id"]), "author": m["folder_id"], "title": m["title"],
+         "type": m["format"] or "link", "tags": _jsonb(m["tags"]) or [], "day": m["day"], "url": m["url"] or "#"}
+        for m in materials
+    ]
+    return {"marathon_start": MARATHON_START, "timezone": MARATHON_TZ, "authors": authors, "materials": mats}
 
 
 def marathon_day_today(marathon_start: str, tz_name: str) -> int:
@@ -1667,6 +1736,194 @@ async def api_signup_add(request):
     return web.json_response(_signup_json(row), status=201)
 
 
+# ---------- материалы-админка: папки / темы / материалы / календарь / мероприятия Милы ----------
+def _folder_json(r) -> dict:
+    return {"id": r["id"], "name": r["name"], "description": r["description"] or "",
+            "topics": r["topics"] or "", "photo": r["photo_url"]}
+
+
+def _material_json(r) -> dict:
+    return {"id": r["id"], "folder_id": r["folder_id"], "title": r["title"], "format": r["format"],
+            "tags": _jsonb(r["tags"]) or [], "day": r["day"], "url": r["url"],
+            "calendar_event_id": r["calendar_event_id"]}
+
+
+def _calendar_json(r) -> dict:
+    return {"id": r["id"], "date": r["date"].isoformat() if r["date"] else None, "title": r["title"],
+            "type": r["type"], "time": r["time"], "link": r["link"]}
+
+
+def _mila_event_json(r) -> dict:
+    return {"id": r["id"], "title": r["title"], "date_place": r["date_place"],
+            "link": r["link"], "color": r["color"]}
+
+
+async def api_folders_list(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    rows = await DB_POOL.fetch("SELECT * FROM folders ORDER BY sort, name")
+    return web.json_response([_folder_json(r) for r in rows])
+
+
+async def api_folders_add(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    name = str(data.get("name", "")).strip()
+    if not name:
+        return web.json_response({"error": "name required"}, status=400)
+    fid = str(data.get("id") or uuid.uuid4().hex[:10])
+    await DB_POOL.execute(
+        "INSERT INTO folders (id, name, description, topics, photo_url, created) VALUES ($1,$2,$3,$4,$5,$6) "
+        "ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description, "
+        "topics=EXCLUDED.topics, photo_url=COALESCE(EXCLUDED.photo_url, folders.photo_url)",
+        fid, name, str(data.get("description", "")).strip(), str(data.get("topics", "")).strip(),
+        data.get("photo") or None, time.time(),
+    )
+    row = await DB_POOL.fetchrow("SELECT * FROM folders WHERE id=$1", fid)
+    return web.json_response(_folder_json(row), status=201)
+
+
+async def api_folders_delete(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    fid = request.match_info["id"]
+    await DB_POOL.execute("DELETE FROM folders WHERE id=$1", fid)
+    return web.json_response({"ok": True})
+
+
+async def api_themes_list(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    rows = await DB_POOL.fetch("SELECT * FROM themes ORDER BY label")
+    return web.json_response([{"id": r["id"], "label": r["label"]} for r in rows])
+
+
+async def api_themes_add(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    label = str(data.get("label", "")).strip()
+    if not label:
+        return web.json_response({"error": "label required"}, status=400)
+    tid = label.lower()
+    await DB_POOL.execute(
+        "INSERT INTO themes (id, label, created) VALUES ($1,$2,$3) ON CONFLICT (id) DO NOTHING",
+        tid, label, time.time(),
+    )
+    return web.json_response({"id": tid, "label": label}, status=201)
+
+
+async def api_themes_delete(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    await DB_POOL.execute("DELETE FROM themes WHERE id=$1", request.match_info["id"])
+    return web.json_response({"ok": True})
+
+
+async def api_materials_list(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    rows = await DB_POOL.fetch("SELECT * FROM materials ORDER BY day NULLS FIRST, id")
+    return web.json_response([_material_json(r) for r in rows])
+
+
+async def api_materials_add(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    title = str(data.get("title", "")).strip()
+    folder_id = str(data.get("folder_id", "")).strip()
+    if not title or not folder_id:
+        return web.json_response({"error": "title and folder_id required"}, status=400)
+    day_raw = data.get("day")
+    try:
+        day = int(day_raw) if day_raw not in (None, "") else None
+    except (TypeError, ValueError):
+        day = None
+    row_id = await DB_POOL.fetchval(
+        "INSERT INTO materials (folder_id, title, format, tags, day, url, calendar_event_id, created) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id",
+        folder_id, title, str(data.get("format", "link")).strip(),
+        json.dumps(data.get("tags", []), ensure_ascii=False), day,
+        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"), time.time(),
+    )
+    row = await DB_POOL.fetchrow("SELECT * FROM materials WHERE id=$1", row_id)
+    return web.json_response(_material_json(row), status=201)
+
+
+async def api_materials_delete(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    await DB_POOL.execute("DELETE FROM materials WHERE id=$1", int(request.match_info["id"]))
+    return web.json_response({"ok": True})
+
+
+async def api_calendar_list(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    rows = await DB_POOL.fetch("SELECT * FROM calendar_events ORDER BY date")
+    return web.json_response([_calendar_json(r) for r in rows])
+
+
+async def api_calendar_add(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    title = str(data.get("title", "")).strip()
+    date_str = str(data.get("date", "")).strip()
+    if not title or not date_str:
+        return web.json_response({"error": "title and date required"}, status=400)
+    try:
+        ev_date = date.fromisoformat(date_str)
+    except ValueError:
+        return web.json_response({"error": "bad date"}, status=400)
+    row_id = await DB_POOL.fetchval(
+        "INSERT INTO calendar_events (date, title, type, time, link, created) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id",
+        ev_date, title, str(data.get("type", "")).strip(), str(data.get("time", "")).strip(),
+        str(data.get("link", "")).strip(), time.time(),
+    )
+    row = await DB_POOL.fetchrow("SELECT * FROM calendar_events WHERE id=$1", row_id)
+    return web.json_response(_calendar_json(row), status=201)
+
+
+async def api_calendar_delete(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    await DB_POOL.execute("DELETE FROM calendar_events WHERE id=$1", int(request.match_info["id"]))
+    return web.json_response({"ok": True})
+
+
+async def api_mila_events_list(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    rows = await DB_POOL.fetch("SELECT * FROM mila_events ORDER BY id DESC")
+    return web.json_response([_mila_event_json(r) for r in rows])
+
+
+async def api_mila_events_add(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    title = str(data.get("title", "")).strip()
+    date_place = str(data.get("date_place", "")).strip()
+    if not title or not date_place:
+        return web.json_response({"error": "title and date_place required"}, status=400)
+    row_id = await DB_POOL.fetchval(
+        "INSERT INTO mila_events (title, date_place, link, color, created) VALUES ($1,$2,$3,$4,$5) RETURNING id",
+        title, date_place, str(data.get("link", "")).strip(), str(data.get("color", "lav")).strip(), time.time(),
+    )
+    row = await DB_POOL.fetchrow("SELECT * FROM mila_events WHERE id=$1", row_id)
+    return web.json_response(_mila_event_json(row), status=201)
+
+
+async def api_mila_events_delete(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    await DB_POOL.execute("DELETE FROM mila_events WHERE id=$1", int(request.match_info["id"]))
+    return web.json_response({"ok": True})
+
+
 async def get_setting(key: str, default=None):
     row = await DB_POOL.fetchrow("SELECT value FROM settings WHERE key=$1", key)
     return row["value"] if row else default
@@ -1712,7 +1969,7 @@ async def api_settings_cabinet_opens(request):
 
 
 async def materials(request):
-    data = load_materials()
+    data = await load_materials_from_db()
     today = marathon_day_today(data["marathon_start"], data["timezone"])
     return html_response(materials_page(data, today))
 
@@ -1773,6 +2030,21 @@ def make_app():
         web.delete("/api/admin/signups/{id}", api_signup_delete),
         web.get("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
         web.post("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
+        web.get("/api/admin/folders", api_folders_list),
+        web.post("/api/admin/folders", api_folders_add),
+        web.delete("/api/admin/folders/{id}", api_folders_delete),
+        web.get("/api/admin/themes", api_themes_list),
+        web.post("/api/admin/themes", api_themes_add),
+        web.delete("/api/admin/themes/{id}", api_themes_delete),
+        web.get("/api/admin/materials", api_materials_list),
+        web.post("/api/admin/materials", api_materials_add),
+        web.delete("/api/admin/materials/{id}", api_materials_delete),
+        web.get("/api/admin/calendar-events", api_calendar_list),
+        web.post("/api/admin/calendar-events", api_calendar_add),
+        web.delete("/api/admin/calendar-events/{id}", api_calendar_delete),
+        web.get("/api/admin/mila-events", api_mila_events_list),
+        web.post("/api/admin/mila-events", api_mila_events_add),
+        web.delete("/api/admin/mila-events/{id}", api_mila_events_delete),
         web.route("OPTIONS", "/{tail:.*}", cors_preflight),
     ])
     return app
