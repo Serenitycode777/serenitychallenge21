@@ -9,9 +9,11 @@
 всё работает в тестовом режиме — только без реальной отправки.
 """
 import base64
+import csv
 import hashlib
 import hmac
 import html
+import io
 import json
 import os
 import re
@@ -68,6 +70,31 @@ async def init_db(app):
         created DOUBLE PRECISION, confirmed DOUBLE PRECISION
     )""")
     await DB_POOL.execute("CREATE INDEX IF NOT EXISTS idx_email_norm ON signups(email_norm)")
+
+    # ---- контент-админка (2026-10-16): папки/темы/материалы/эфиры/мероприятия Милы ----
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS folders (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT DEFAULT '',
+        sort INTEGER DEFAULT 0, created DOUBLE PRECISION
+    )""")
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS themes (
+        id TEXT PRIMARY KEY, label TEXT NOT NULL, created DOUBLE PRECISION
+    )""")
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS materials (
+        id SERIAL PRIMARY KEY, folder_id TEXT REFERENCES folders(id) ON DELETE CASCADE,
+        title TEXT NOT NULL, format TEXT, tags JSONB DEFAULT '[]',
+        day INTEGER,
+        url TEXT,              -- внешняя ссылка (если формат "ссылка")
+        storage_key TEXT,      -- путь в supabase storage (если файл реально загружен)
+        calendar_event_id INTEGER, created DOUBLE PRECISION
+    )""")
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS calendar_events (
+        id SERIAL PRIMARY KEY, date DATE NOT NULL, title TEXT NOT NULL,
+        type TEXT, time TEXT, link TEXT, created DOUBLE PRECISION
+    )""")
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS mila_events (
+        id SERIAL PRIMARY KEY, title TEXT NOT NULL, date_place TEXT NOT NULL,
+        link TEXT, color TEXT DEFAULT 'lav', created DOUBLE PRECISION
+    )""")
 
 
 async def close_db(app):
@@ -462,6 +489,7 @@ def admin_page(rows) -> str:
         return (f'<tr style="border-bottom:1px solid #F0EBE6;">'
                 f'<td style="padding:12px 16px;">{E(r["name"] or "—")}</td>'
                 f'<td style="padding:12px 16px;color:#6B6470;">{E(r["email"])}</td>'
+                f'<td style="padding:12px 16px;color:#6B6470;">{E(r["phone"] or "—")}</td>'
                 f'<td style="padding:12px 16px;color:#6B6470;">{E(r["method"])}</td>'
                 f'<td style="padding:12px 16px;">{badge}</td>'
                 f'<td style="padding:12px 16px;color:#6B6470;">{dt}</td>'
@@ -472,7 +500,7 @@ def admin_page(rows) -> str:
     paid_n = sum(1 for r in rows if r["status"] == "оплачено")
     waiting_n = total - paid_n
     rows_html = "".join(row_html(r) for r in rows) or \
-        '<tr><td colspan="7" style="padding:24px;text-align:center;color:#8A8390;">пока пусто</td></tr>'
+        '<tr><td colspan="8" style="padding:24px;text-align:center;color:#8A8390;">пока пусто</td></tr>'
 
     return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -493,7 +521,10 @@ details.addform summary{{cursor:pointer;font-size:13.5px;color:#5A5266;font-weig
 <div class="wrap">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
 <h1 style="font-size:24px;margin:0;">Заявки марафона</h1>
+<div style="display:flex;gap:16px;align-items:center;">
+<a href="/admin/export.csv" style="font-size:13px;color:#7C6A9C;font-weight:600;">скачать CSV</a>
 <a href="/admin/logout" style="font-size:13px;color:#8A8390;">выйти</a>
+</div>
 </div>
 <div style="display:flex;gap:14px;margin-bottom:20px;">
 <div class="stat"><div style="font-size:12px;color:#8A8390;">всего</div><div style="font-size:22px;font-weight:600;">{total}</div></div>
@@ -505,13 +536,14 @@ details.addform summary{{cursor:pointer;font-size:13.5px;color:#5A5266;font-weig
 <form class="addform-body" method="post" action="/admin/add">
 <label>Имя<input name="name"></label>
 <label>Email <span style="color:#B3415A">*</span><input name="email" type="email" required></label>
+<label>Телефон<input name="phone"></label>
 <label>Способ<select name="method"><option value="venmo">venmo</option><option value="zelle">zelle</option><option value="stripe">stripe</option></select></label>
 <label>Статус<select name="status"><option value="ждёт">ждёт</option><option value="оплачено">оплачено</option></select></label>
 <label>Заметка<input name="note"></label>
 <button style="background:#7C6A9C;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13.5px;cursor:pointer;">Добавить</button>
 </form>
 </details>
-<table><thead><tr><th>Имя</th><th>Почта</th><th>Способ</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
+<table><thead><tr><th>Имя</th><th>Почта</th><th>Телефон</th><th>Способ</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
 <tbody>{rows_html}</tbody></table>
 </div></body></html>"""
 
@@ -605,11 +637,15 @@ async def admin_login_post(request):
     raise resp
 
 
+ADMIN_ARTIFACT_URL = "https://claude.ai/artifact/SHAhm9W5oqJV3fkWChCdWP"
+
+
 async def admin(request):
-    if not authed(request):
-        raise web.HTTPFound("/admin/login")
-    rows = await DB_POOL.fetch("SELECT * FROM signups ORDER BY created DESC")
-    return html_response(admin_page(rows))
+    # Старая HTML-табличка заменена новой админкой (claude.ai-артефакт с реальным api) —
+    # эта страница больше не используется, см. workspace/clients/mila-serenity/platform/
+    # (2026-10-19). Роуты/хендлеры ниже оставлены нетронутыми ради остальных api,
+    # но сама табличка теперь редиректит на актуальную админку.
+    raise web.HTTPFound(ADMIN_ARTIFACT_URL)
 
 
 async def admin_confirm(request):
@@ -650,19 +686,113 @@ async def admin_add(request):
         raise web.HTTPFound("/admin")
     status = str(data.get("status", "ждёт")).strip()
     await DB_POOL.execute(
-        "INSERT INTO signups (name, email, email_norm, method, status, note, created, confirmed) "
-        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+        "INSERT INTO signups (name, email, email_norm, phone, method, status, note, created, confirmed) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
         str(data.get("name", "")).strip(), email, normalize_email(email),
+        str(data.get("phone", "")).strip(),
         str(data.get("method", "venmo")).strip(), status, str(data.get("note", "")).strip(),
         time.time(), time.time() if status == "оплачено" else None,
     )
     raise web.HTTPFound("/admin")
 
 
+async def admin_export(request):
+    if not authed(request):
+        raise web.HTTPFound("/admin/login")
+    rows = await DB_POOL.fetch("SELECT * FROM signups ORDER BY created DESC")
+    cols = ["id", "name", "email", "phone", "instagram", "method", "amount", "status", "note", "created", "confirmed"]
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(cols)
+    for r in rows:
+        row = []
+        for c in cols:
+            v = r[c]
+            if c in ("created", "confirmed") and v:
+                v = time.strftime("%Y-%m-%d %H:%M", time.localtime(v))
+            row.append(v if v is not None else "")
+        writer.writerow(row)
+    resp = web.Response(text="﻿" + buf.getvalue(), content_type="text/csv", charset="utf-8")
+    resp.headers["Content-Disposition"] = 'attachment; filename="serenity-signups.csv"'
+    return resp
+
+
 async def admin_logout(request):
     resp = web.HTTPFound("/admin/login")
     resp.del_cookie(COOKIE, path="/")
     raise resp
+
+
+def admin_token_ok(request) -> bool:
+    """Токен для JSON-api админки (CRM-вкладка в прототипе на claude.ai —
+    другой origin, обычная cookie-сессия /admin туда не дотягивается)."""
+    token = request.headers.get("X-Admin-Token", "")
+    return bool(ADMIN_PASSWORD) and hmac.compare_digest(token, ADMIN_PASSWORD)
+
+
+def _signup_json(row) -> dict:
+    d = dict(row)
+    return d
+
+
+async def api_signups_list(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    rows = await DB_POOL.fetch("SELECT * FROM signups ORDER BY created DESC")
+    return web.json_response([_signup_json(r) for r in rows])
+
+
+async def api_signup_confirm(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    row_id = int(request.match_info["id"])
+    row = await DB_POOL.fetchrow("SELECT * FROM signups WHERE id=$1", row_id)
+    if not row:
+        return web.json_response({"error": "not found"}, status=404)
+    if row["status"] != "оплачено":
+        await DB_POOL.execute("UPDATE signups SET status='оплачено', confirmed=$1 WHERE id=$2",
+                               time.time(), row_id)
+        await send_access_email(row["email"], row["name"])
+    row = await DB_POOL.fetchrow("SELECT * FROM signups WHERE id=$1", row_id)
+    return web.json_response(_signup_json(row))
+
+
+async def api_signup_note(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    row_id = int(request.match_info["id"])
+    data = await request.json()
+    await DB_POOL.execute("UPDATE signups SET note=$1 WHERE id=$2", str(data.get("note", "")).strip(), row_id)
+    return web.json_response({"ok": True})
+
+
+async def api_signup_delete(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    row_id = int(request.match_info["id"])
+    await DB_POOL.execute("DELETE FROM signups WHERE id=$1", row_id)
+    return web.json_response({"ok": True})
+
+
+async def api_signup_add(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    email = str(data.get("email", "")).strip()
+    if not email:
+        return web.json_response({"error": "email required"}, status=400)
+    status = str(data.get("status", "ждёт")).strip()
+    await DB_POOL.execute(
+        "INSERT INTO signups (name, email, email_norm, phone, method, status, note, created, confirmed) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+        str(data.get("name", "")).strip(), email, normalize_email(email),
+        str(data.get("phone", "")).strip(),
+        str(data.get("method", "venmo")).strip(), status, str(data.get("note", "")).strip(),
+        time.time(), time.time() if status == "оплачено" else None,
+    )
+    row = await DB_POOL.fetchrow("SELECT * FROM signups WHERE email_norm=$1 ORDER BY id DESC LIMIT 1",
+                                  normalize_email(email))
+    return web.json_response(_signup_json(row), status=201)
 
 
 async def materials(request):
@@ -714,9 +844,18 @@ def make_app():
         web.post("/admin/note/{id}", admin_note),
         web.post("/admin/delete/{id}", admin_delete),
         web.post("/admin/add", admin_add),
+        web.get("/admin/export.csv", admin_export),
         web.get("/admin/logout", admin_logout),
         web.get("/materials", materials),
         web.get("/health", health),
+        # ---- JSON api для CRM-вкладки в админ-прототипе (claude.ai, другой origin — токен в
+        # заголовке X-Admin-Token вместо cookie-сессии) ----
+        web.get("/api/admin/signups", api_signups_list),
+        web.post("/api/admin/signups", api_signup_add),
+        web.post("/api/admin/signups/{id}/confirm", api_signup_confirm),
+        web.post("/api/admin/signups/{id}/note", api_signup_note),
+        web.delete("/api/admin/signups/{id}", api_signup_delete),
+        web.route("OPTIONS", "/{tail:.*}", cors_preflight),
     ])
     return app
 
