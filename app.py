@@ -853,15 +853,20 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
         <div class="crm-stat"><div class="l">оплачено</div><div class="v paid" id="crmPaid">0</div></div>
         <div class="crm-stat"><div class="l">ждут</div><div class="v wait" id="crmWait">0</div></div>
       </div>
-      <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;cursor:pointer">
-        <input type="checkbox" id="crmOnlyPaid"> только оплаченные
-      </label>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+        <input type="text" id="crmSearch" placeholder="поиск: имя, почта, телефон, телеграм…"
+          style="flex:1;min-width:200px;font:inherit;font-size:13px;padding:9px 12px;border-radius:10px;border:1.3px solid var(--line);background:var(--surface);color:var(--ink)">
+        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="crmOnlyPaid"> только оплаченные
+        </label>
+      </div>
       <details class="crm-add">
         <summary>+ добавить вручную</summary>
         <div class="crm-addbody">
           <label>Имя<input type="text" id="caName"></label>
           <label>Email <span style="color:#B3415A">*</span><input type="text" id="caEmail"></label>
           <label>Телефон<input type="text" id="caPhone"></label>
+          <label>Телеграм<input type="text" id="caTg" placeholder="@username"></label>
           <label>Способ<select id="caMethod"><option value="venmo">venmo</option><option value="zelle">zelle</option><option value="stripe">stripe</option></select></label>
           <label>Статус<select id="caStatus"><option value="ждёт">ждёт</option><option value="оплачено">оплачено</option></select></label>
           <label>Заметка<input type="text" id="caNote"></label>
@@ -870,7 +875,7 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
       </details>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>Имя</th><th>Почта</th><th>Телефон</th><th>Способ</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
+          <thead><tr><th>Имя</th><th>Почта</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
           <tbody id="crmBody"></tbody>
         </table>
       </div>
@@ -1215,13 +1220,13 @@ function fmtDT(ts){
 
 async function loadParticipants(){
   const body = document.getElementById("crmBody");
-  body.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--ink-soft)">загрузка…</td></tr>`;
+  body.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">загрузка…</td></tr>`;
   try{
     PARTICIPANTS = await apiFetch("/api/admin/signups");
     crmLoaded = true;
     renderParticipants();
   }catch(e){
-    if(crmLoaded === false) body.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--ink-soft)">не удалось загрузить</td></tr>`;
+    if(crmLoaded === false) body.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">не удалось загрузить</td></tr>`;
   }
 }
 
@@ -1230,7 +1235,12 @@ function renderParticipants(){
   document.getElementById("crmPaid").textContent = PARTICIPANTS.filter(p=>p.status==="оплачено").length;
   document.getElementById("crmWait").textContent = PARTICIPANTS.filter(p=>p.status!=="оплачено").length;
   const onlyPaid = document.getElementById("crmOnlyPaid").checked;
-  const shown = PARTICIPANTS.filter(p=>!onlyPaid || p.status==="оплачено");
+  const q = document.getElementById("crmSearch").value.trim().toLowerCase();
+  const shown = PARTICIPANTS.filter(p=>{
+    if(onlyPaid && p.status!=="оплачено") return false;
+    if(!q) return true;
+    return [p.name,p.email,p.phone,p.instagram].some(v=>(v||"").toLowerCase().includes(q));
+  });
   const body = document.getElementById("crmBody");
   body.innerHTML = shown.length ? shown.map((p)=>{
     const paid = p.status === "оплачено";
@@ -1240,13 +1250,14 @@ function renderParticipants(){
       <td class="nm">${p.name||"—"}</td>
       <td>${p.email||"—"}</td>
       <td>${p.phone||"—"}</td>
+      <td>${p.instagram||"—"}</td>
       <td>${p.method||"—"}</td>
       <td>${badge}</td>
       <td>${fmtDT(p.confirmed || p.created)}</td>
       <td><input class="crm-note" data-note="${p.id}" value="${(p.note||"").replace(/"/g,"&quot;")}" placeholder="заметка…"></td>
       <td style="text-align:right;white-space:nowrap">${confirmBtn} <button class="crm-del" data-del="${p.id}">удалить</button></td>
     </tr>`;
-  }).join("") : `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--ink-soft)">пока пусто</td></tr>`;
+  }).join("") : `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">ничего не нашлось</td></tr>`;
 
   body.querySelectorAll("[data-pay]").forEach(b=>{
     b.addEventListener("click", async ()=>{
@@ -1278,6 +1289,7 @@ function renderParticipants(){
   });
 }
 document.getElementById("crmOnlyPaid").addEventListener("change", renderParticipants);
+document.getElementById("crmSearch").addEventListener("input", renderParticipants);
 
 document.getElementById("caAdd").addEventListener("click", async ()=>{
   const email = document.getElementById("caEmail").value.trim();
@@ -1287,6 +1299,7 @@ document.getElementById("caAdd").addEventListener("click", async ()=>{
       name: document.getElementById("caName").value.trim(),
       email,
       phone: document.getElementById("caPhone").value.trim(),
+      instagram: document.getElementById("caTg").value.trim(),
       method: document.getElementById("caMethod").value,
       status: document.getElementById("caStatus").value,
       note: document.getElementById("caNote").value.trim()
@@ -1296,6 +1309,7 @@ document.getElementById("caAdd").addEventListener("click", async ()=>{
     document.getElementById("caName").value = "";
     document.getElementById("caEmail").value = "";
     document.getElementById("caPhone").value = "";
+    document.getElementById("caTg").value = "";
     document.getElementById("caNote").value = "";
     showToast("Заявка добавлена ✓");
   }catch(e){}
@@ -1539,10 +1553,11 @@ async def api_signup_add(request):
         return web.json_response({"error": "email required"}, status=400)
     status = str(data.get("status", "ждёт")).strip()
     await DB_POOL.execute(
-        "INSERT INTO signups (name, email, email_norm, phone, method, status, note, created, confirmed) "
-        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+        "INSERT INTO signups (name, email, email_norm, phone, instagram, method, status, note, created, confirmed) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
         str(data.get("name", "")).strip(), email, normalize_email(email),
         str(data.get("phone", "")).strip(),
+        str(data.get("instagram", "")).strip(),
         str(data.get("method", "venmo")).strip(), status, str(data.get("note", "")).strip(),
         time.time(), time.time() if status == "оплачено" else None,
     )
