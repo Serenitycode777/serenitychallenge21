@@ -1658,7 +1658,7 @@ const ICONS = {
   lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>'
 };
 ICONS.link = ICONS.pdf;
-const MASTERMIND_AUTHOR = {mastermind:{name:"Мастермайнды",topics:"записи эфиров с милой",desc:"Запись мастермайнда — введи кодовое слово, которое мила называла вживую, и получи бриллиант"}};
+const MASTERMIND_AUTHOR = {mastermind:{name:"Мастермайнды",topics:"записи эфиров с Милой",desc:"Запись мастермайнда — введи кодовое слово, которое Мила называла вживую, и получи бриллиант"}};
 const MASTERMIND_MATERIALS = [
   {author:"mastermind",title:"Мастермайнд 1",type:"video",tags:["мастермайнд"],day:3,mmId:"1",url:"#"},
   {author:"mastermind",title:"Мастермайнд 2",type:"video",tags:["мастермайнд"],day:15,mmId:"2",url:"#"}
