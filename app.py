@@ -3590,13 +3590,25 @@ async def require_cabinet_user(request):
     return await _supabase_user_from_token(token)
 
 
+async def _ensure_profile_row(user):
+    """Подстраховка: у подтверждённого supabase-пользователя обязана быть строка в
+    profiles (создаётся при регистрации), но если её почему-то нет — создаём на лету,
+    а не роняем вход ошибкой no_profile."""
+    row = await DB_POOL.fetchrow("SELECT * FROM profiles WHERE id=$1", user["id"])
+    if row:
+        return row
+    await DB_POOL.execute(
+        "INSERT INTO profiles (id, email, email_norm, created) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO NOTHING",
+        user["id"], user.get("email", ""), normalize_email(user.get("email", "")), time.time(),
+    )
+    return await DB_POOL.fetchrow("SELECT * FROM profiles WHERE id=$1", user["id"])
+
+
 async def api_auth_me(request):
     user = await require_cabinet_user(request)
     if not user:
         return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
-    row = await DB_POOL.fetchrow("SELECT * FROM profiles WHERE id=$1", user["id"])
-    if not row:
-        return web.json_response({"ok": False, "error": "no_profile"}, status=404)
+    row = await _ensure_profile_row(user)
     d = dict(row)
     d["id"] = str(d["id"])
     return web.json_response({"ok": True, "profile": d})
@@ -3731,9 +3743,7 @@ async def api_cabinet_bootstrap(request):
     user = await require_cabinet_user(request)
     if not user:
         return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
-    profile_row = await DB_POOL.fetchrow("SELECT * FROM profiles WHERE id=$1", user["id"])
-    if not profile_row:
-        return web.json_response({"ok": False, "error": "no_profile"}, status=404)
+    profile_row = await _ensure_profile_row(user)
     profile = dict(profile_row)
     profile["id"] = str(profile["id"])
     mastermind = _jsonb(profile.pop("mastermind", None)) or {}
