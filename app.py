@@ -2748,7 +2748,6 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
           <div class="crm-chip" data-f="quiet">молчат 3+ дня</div>
         </div>
       </div>
-      <div class="hint" style="margin:4px 0 14px">день марафона у всех общий, тут — только личный прогресс каждой</div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
           <thead><tr><th>Имя</th><th>Email</th><th>Привычек</th><th>% выполнения</th><th>Идеальных дней</th><th>Мастермайнды</th><th>Была в кабинете</th></tr></thead>
