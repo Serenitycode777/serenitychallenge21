@@ -2723,10 +2723,39 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
   <div class="sub">CRM — реальные заявки марафона. Материалы/Календарь/Мероприятия — пока визуальный прототип (без сохранения).</div>
 
   <div class="tabs">
+    <div class="tab" data-tab="t-progress">Участницы</div>
     <div class="tab active" data-tab="t-content">Материалы</div>
     <div class="tab" data-tab="t-calendar">Календарь</div>
     <div class="tab" data-tab="t-events">Мероприятия</div>
     <div class="tab" data-tab="t-participants">CRM</div>
+  </div>
+
+  <div id="t-progress" style="display:none">
+    <div class="crm-wrap">
+      <div class="crm-top">
+        <h1>Как у участниц дела</h1>
+        <div class="crm-actions">
+          <a href="#" id="progressRefresh" class="secondary">обновить</a>
+        </div>
+      </div>
+      <div class="crm-stats">
+        <div class="crm-stat"><div class="l">участниц</div><div class="v" id="progTotal">0</div></div>
+        <div class="crm-stat"><div class="l">молчат 3+ дня</div><div class="v wait" id="progQuiet">0</div></div>
+      </div>
+      <div class="crm-toolbar">
+        <div class="crm-chips" id="progFilterChips">
+          <div class="crm-chip on" data-f="all">все</div>
+          <div class="crm-chip" data-f="quiet">молчат 3+ дня</div>
+        </div>
+      </div>
+      <div class="hint" style="margin:4px 0 14px">день марафона у всех общий, тут — только личный прогресс каждой</div>
+      <div class="crm-mobile-wrap">
+        <table class="crm-table">
+          <thead><tr><th>Имя</th><th>Email</th><th>Привычек</th><th>% выполнения</th><th>Идеальных дней</th><th>Мастермайнды</th><th>Была в кабинете</th></tr></thead>
+          <tbody id="progBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div id="t-content">
@@ -2908,15 +2937,60 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
 <div class="toast" id="toast">Сохранено ✓</div>
 
 <script>
-const TABS = ["t-content","t-calendar","t-events","t-participants"];
+const TABS = ["t-progress","t-content","t-calendar","t-events","t-participants"];
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
     t.classList.add("active");
     TABS.forEach(id=>{ document.getElementById(id).style.display = (id===t.dataset.tab) ? "" : "none"; });
-    document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants");
+    document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress");
     if(t.dataset.tab==="t-participants" && !crmLoaded) loadParticipants();
+    if(t.dataset.tab==="t-progress" && !progressLoaded) loadProgress();
   });
+});
+
+let PARTICIPANT_PROGRESS = [];
+let progressLoaded = false;
+let progressFilter = "all";
+function fmtLastActive(iso){
+  if(!iso) return "ни разу";
+  const days = Math.floor((Date.now() - new Date(iso+"T00:00:00Z").getTime()) / 86400000);
+  if(days <= 0) return "сегодня";
+  if(days === 1) return "вчера";
+  return days+" дн. назад";
+}
+function isQuiet(iso){
+  if(!iso) return true;
+  const days = Math.floor((Date.now() - new Date(iso+"T00:00:00Z").getTime()) / 86400000);
+  return days >= 3;
+}
+function renderProgress(){
+  const quiet = PARTICIPANT_PROGRESS.filter(p=>isQuiet(p.last_active));
+  document.getElementById("progTotal").textContent = PARTICIPANT_PROGRESS.length;
+  document.getElementById("progQuiet").textContent = quiet.length;
+  const rows = progressFilter === "quiet" ? quiet : PARTICIPANT_PROGRESS;
+  document.getElementById("progBody").innerHTML = rows.length ? rows.map(p=>`<tr>
+    <td>${p.name || "—"}</td>
+    <td>${p.email || "—"}</td>
+    <td>${p.habit_count}</td>
+    <td>${p.avg_pct}%</td>
+    <td>${p.perfect_days}</td>
+    <td>${p.mastermind_count}/2</td>
+    <td${isQuiet(p.last_active)?' style="color:#B3415A;font-weight:600"':''}>${fmtLastActive(p.last_active)}</td>
+  </tr>`).join("") : `<tr><td colspan="7" style="text-align:center;color:#999">пока никто не зарегистрировался в кабинете</td></tr>`;
+}
+async function loadProgress(){
+  try{ PARTICIPANT_PROGRESS = await apiFetch("/api/admin/participants"); }catch(e){ PARTICIPANT_PROGRESS = []; }
+  progressLoaded = true;
+  renderProgress();
+}
+document.getElementById("progressRefresh").addEventListener("click", e=>{ e.preventDefault(); loadProgress(); });
+document.getElementById("progFilterChips").addEventListener("click", e=>{
+  const chip = e.target.closest(".crm-chip"); if(!chip) return;
+  document.querySelectorAll("#progFilterChips .crm-chip").forEach(c=>c.classList.remove("on"));
+  chip.classList.add("on");
+  progressFilter = chip.dataset.f;
+  renderProgress();
 });
 
 function showToast(msg){
@@ -3946,6 +4020,41 @@ async def api_signups_list(request):
     return web.json_response([_signup_json(r) for r in rows])
 
 
+async def api_admin_participants(request):
+    """Личный прогресс каждой зарегистрированной в кабинете участницы — для вкладки
+    «Участницы» в админке (кто отстаёт/пропал, кому написать лично)."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind FROM profiles ORDER BY created DESC")
+    result = []
+    for p in profiles:
+        uid = p["id"]
+        habit_count = await DB_POOL.fetchval("SELECT COUNT(*) FROM habit_selections WHERE user_id=$1", uid) or 0
+        logs = await DB_POOL.fetch(
+            "SELECT log_date, habits_done FROM daily_logs WHERE user_id=$1 ORDER BY log_date", uid
+        )
+        perfect_days = 0
+        pct_sum = 0.0
+        last_date = None
+        for l in logs:
+            hd = _jsonb(l["habits_done"]) or {}
+            done = sum(1 for v in hd.values() if v)
+            if habit_count and done >= habit_count:
+                perfect_days += 1
+            if habit_count:
+                pct_sum += min(1.0, done / habit_count)
+            last_date = l["log_date"]
+        avg_pct = round((pct_sum / len(logs)) * 100) if logs else 0
+        mm = _jsonb(p["mastermind"]) or {}
+        mm_count = sum(1 for v in mm.values() if v) if isinstance(mm, dict) else 0
+        result.append({
+            "name": p["name"] or "", "email": p["email"] or "",
+            "habit_count": habit_count, "avg_pct": avg_pct, "perfect_days": perfect_days,
+            "mastermind_count": mm_count, "last_active": last_date.isoformat() if last_date else None,
+        })
+    return web.json_response(result)
+
+
 async def api_signup_confirm(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
@@ -4462,6 +4571,7 @@ def make_app():
         # ---- JSON api для CRM-вкладки в админ-прототипе (claude.ai, другой origin — токен в
         # заголовке X-Admin-Token вместо cookie-сессии) ----
         web.get("/api/admin/signups", api_signups_list),
+        web.get("/api/admin/participants", api_admin_participants),
         web.post("/api/admin/signups", api_signup_add),
         web.post("/api/admin/signups/{id}/confirm", api_signup_confirm),
         web.post("/api/admin/signups/{id}/note", api_signup_note),
