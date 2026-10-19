@@ -129,6 +129,7 @@ async def init_db(app):
     # поля для карточки автора (topics/photo) — добавлены позже исходной таблицы folders
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS topics TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS photo_url TEXT")
+    await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS dot_color TEXT DEFAULT ''")
 
     await seed_materials_once()
 
@@ -205,7 +206,7 @@ async def load_materials_from_db() -> dict:
     materials = await DB_POOL.fetch("SELECT * FROM materials ORDER BY day NULLS FIRST, id")
     authors = {
         f["id"]: {"name": f["name"], "topics": f["topics"] or "", "desc": f["description"] or "",
-                   "photo": f["photo_url"]}
+                   "photo": f["photo_url"], "color": f["dot_color"] or ""}
         for f in folders
     }
     mats = [
@@ -1342,7 +1343,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
         </div>
         <div class="mat-side">
           <div class="heatcard">
-            <h3>Эфиры марафона</h3>
+            <h3>Календарь</h3>
             <div id="nextEventBanner"></div>
             <div id="eventsList"></div>
           </div>
@@ -1513,7 +1514,13 @@ const CATALOG = {
     {name:"Контрастный/холодный душ",when:"Утро",dur:"5 мин.",desc:"Принятие холодного душа укрепляет иммунитет, стимулирует кровообращение, повышает энергию и настроение, снимает воспаления.",why:"Резкая смена температуры тренирует сосуды и нервную систему — со временем это ощущается как прилив бодрости."},
     {name:"Массаж щёткой",when:"Ежедневно",dur:"3-5 мин.",desc:"Не менее 1 раза, лучше 2 раза утром и вечером. Улучшает лимфоток и кровообращение в тканях.",why:"Лимфоток не имеет собственного «насоса» и двигается только за счёт движения — сухой массаж стимулирует его механически."},
     {name:"10 000 шагов в день",when:"Ежедневно",dur:"В течение дня",desc:"Помогает укрепить мышечный каркас, поддерживать вес и улучшает снабжение тканей кислородом.",why:"Регулярная ходьба — один из самых простых способов поддерживать сердце и обмен веществ без нагрузки на суставы."},
-    {name:"Регулярные тренировки",when:"2-3 раза в неделю",dur:"20-40 мин.",desc:"Укрепляют сердце и лёгкие, повышают выносливость и физическую силу, поддерживают здоровый вес и способствуют психологическому благополучию.",why:"Физическая нагрузка не только укрепляет тело, но и снижает уровень стресса через выброс эндорфинов."}
+    {name:"Регулярные тренировки",when:"2-3 раза в неделю",dur:"20-40 мин.",desc:"Укрепляют сердце и лёгкие, повышают выносливость и физическую силу, поддерживают здоровый вес и способствуют психологическому благополучию.",why:"Физическая нагрузка не только укрепляет тело, но и снижает уровень стресса через выброс эндорфинов."},
+    {name:"Опускание на пятки",when:"Любое время дня",dur:"2-3 мин.",desc:"Приподняться на 2-3 см и резко опускаться на пятки. Выполняется в быстром темпе.",why:"Короткая вибрация через пятки мягко стимулирует кровообращение и лимфоток, не отнимая много времени."},
+    {name:"Простукивание тимуса",when:"Любое время дня",dur:"2-3 мин.",desc:"Тимус играет ключевую роль в развитии и функционировании иммунных клеток. Регулярное простукивание улучшает кровообращение и лимфообращение, а также стимулирует его функции.",why:"Простой телесный ритуал, который помогает поддерживать иммунитет без дополнительных затрат времени."},
+    {name:"Тряска ног и рук лёжа на спине",when:"Ежедневно",dur:"2-3 мин.",desc:"Помогает улучшить кровообращение, стимулирует лимфатическую систему, способствует снятию напряжения и стресса, повышает энергию и снимает усталость.",why:"Мягкая встряска телу помогает «сбросить» напряжение, накопленное за день, без нагрузки на суставы."},
+    {name:"Растирание ушей",when:"Регулярно",dur:"1-2 мин.",desc:"Массаж ушной раковины, где находятся акупунктурные точки. Снимает напряжение, улучшает кровообращение, снижает стресс и головную боль.",why:"На ушах сосредоточено много акупунктурных точек — короткий массаж быстро снимает напряжение."},
+    {name:"Стояние на аппликаторе (Кузнецова/Ляпко/Садху)",when:"Утро",dur:"2-10 мин.",desc:"Статичный массаж ступней способствует улучшению кровообращения, снятию напряжения и боли, стимуляции эндорфинов и повышению энергии.",why:"Воздействие на точки стоп с утра бодрит не хуже чашки кофе, без нагрузки на нервную систему."},
+    {name:"Массаж живота «Наули»",when:"Регулярно",dur:"5-10 мин.",desc:"Вакуум живота помогает стимуляции пищеварительной системы, улучшению обмена веществ и снятию напряжения.",why:"Мягкая стимуляция живота поддерживает пищеварение и снимает лишнее напряжение в этой зоне."}
   ],
   "Питание": [
     {name:"Сбалансированная еда",when:"Ежедневно",dur:"Всегда",desc:"Полезное питание — ключевой элемент здорового образа жизни. Стремитесь к сбалансированному соотношению углеводов, белков и жиров. Слушайте своё тело.",why:"Стабильное питание убирает резкие скачки энергии и голода, из-за которых труднее держать остальные привычки."},
@@ -1528,7 +1535,9 @@ const CATALOG = {
   "Спокойствие": [
     {name:"Йога и медитации",when:"Ежедневно",dur:"30-40 мин.",desc:"Улучшает общее состояние здоровья, включает техники дыхания и медитации, способствующие расслаблению ума и тела.",why:"Осознанное дыхание переключает нервную систему из режима тревоги в режим покоя за считанные минуты."},
     {name:"Дыхательная практика",when:"Любое время дня",dur:"3-5 мин.",desc:"Несколько глубоких осознанных вдохов и выдохов. Быстро снижает напряжение и возвращает внимание в тело.",why:"Медленный выдох напрямую сигналит нервной системе, что можно расслабиться — самый быстрый доступный инструмент против стресса."},
-    {name:"Дневник благодарностей",when:"Ежедневно",dur:"5-10 мин.",desc:"Помогает сместить фокус внимания с негативных аспектов жизни на позитивные, замечать и ценить мелочи и радости.",why:"Фокус на хорошем — тренируемый навык: чем чаще его замечаешь, тем легче это даётся со временем."}
+    {name:"Дневник благодарностей",when:"Ежедневно",dur:"5-10 мин.",desc:"Помогает сместить фокус внимания с негативных аспектов жизни на позитивные, замечать и ценить мелочи и радости.",why:"Фокус на хорошем — тренируемый навык: чем чаще его замечаешь, тем легче это даётся со временем."},
+    {name:"Улыбайся своему отражению в зеркале",when:"В любое время",dur:"Сколько хотите",desc:"Расслабляет мышцы лица и шеи, помогает на разных уровнях учиться принимать и любить себя.",why:"Маленький жест заботы к себе, который со временем меняет внутренний разговор с собой."},
+    {name:"Быть на природе",when:"Как можно чаще",dur:"Сколько хотите",desc:"Ходить босыми ногами по траве, обниматься с деревьями :)",why:"Контакт с природой — один из самых простых и доступных способов снизить уровень стресса."}
   ],
   "Развитие": [
     {name:"Прочитать новое",when:"Регулярно",dur:"30-45 мин.",desc:"Всего 30 минут чтения в день могут развить вашу концентрацию и критическое мышление.",why:"Чтение — небольшая тренировка для концентрации, которая слабеет от бесконечного скролла."},
@@ -1541,7 +1550,8 @@ const CATALOG = {
     {name:"Заправить кровать",when:"Утро",dur:"1-2 мин.",desc:"Простое действие, с которого начинается ощущение порядка на весь день.",why:"Маленькое законченное действие с утра создаёт ощущение контроля, которое переносится на весь день."},
     {name:"Уборка",when:"Регулярно",dur:"10-15 мин.",desc:"Немного порядка вокруг — немного порядка внутри. Не обязательно генеральная уборка, достаточно малого.",why:"Порядок вокруг снижает визуальный шум — меньше отвлекающих раздражителей для внимания."},
     {name:"Полить растения",when:"Регулярно",dur:"2-5 мин.",desc:"Забота о чём-то живом рядом с тобой — маленький, но приятный ритуал.",why:"Забота о чём-то живом — простой способ почувствовать себя нужной и внимательной, без лишних усилий."},
-    {name:"Разобрать вещи",when:"Регулярно",dur:"10-15 мин.",desc:"Убери то, что давно не нужно. Меньше лишнего — больше свободного пространства и внимания.",why:"Лишние вещи вокруг незаметно забирают немного внимания каждый раз, когда попадаются на глаза."}
+    {name:"Разобрать вещи",when:"Регулярно",dur:"10-15 мин.",desc:"Убери то, что давно не нужно. Меньше лишнего — больше свободного пространства и внимания.",why:"Лишние вещи вокруг незаметно забирают немного внимания каждый раз, когда попадаются на глаза."},
+    {name:"Планирование",when:"Утро/Вечер",dur:"5-10 мин.",desc:"В твоей жизни будет меньше хаоса, если ты будешь планировать.",why:"Несколько минут планирования снимают тревогу неопределённости и экономят силы на решения в течение дня."}
   ],
   "Без вредного": [
     {name:"Не курить",when:"Каждый день",dur:"Весь день",desc:"День без сигарет — вклад в своё здоровье и энергию.",why:"Восстановление лёгких и сосудов начинается уже в первые часы без сигарет."},
@@ -1761,6 +1771,11 @@ let habitConfig = {};
 let liveChecked = [];
 let dayClosed = false;
 let AUTHORS = {}, MATERIALS = [], THEMES = [];
+const COLOR_CSS = {
+  lav: "var(--lav)", sage: "var(--sage)", sand: "var(--sand)",
+  grad1: "linear-gradient(135deg,var(--sand),var(--lav))",
+  grad2: "linear-gradient(135deg,var(--lav),var(--sage))"
+};
 
 function dateForDay(d){
   const [y,m,dd] = MARATHON_START_ISO.split("-").map(Number);
@@ -1810,7 +1825,7 @@ function applyState(data){
 }
 
 function buildMaterialsState(){
-  AUTHORS = Object.assign({}, MASTERMIND_AUTHOR, STATE.authors||{});
+  AUTHORS = Object.assign({}, STATE.authors||{}, MASTERMIND_AUTHOR);
   MATERIALS = MASTERMIND_MATERIALS.concat((STATE.materials||[]).map(m=>Object.assign({}, m, {tags: m.tags||[]})));
   THEMES = [...new Set(MATERIALS.flatMap(m=>m.tags||[]))];
   document.getElementById("themeChips").innerHTML =
@@ -2497,8 +2512,10 @@ function renderMaterials(){
     card.className = "mcard "+key;
     const photo = a.photo || PHOTOS[key] || "";
     const dotInner = photo ? `<img src="${photo}" alt="${a.name}">` : "";
+    const dotCss = COLOR_CSS[a.color] || "";
+    const dotStyleAttr = (!photo && dotCss) ? ` style="background:${dotCss}"` : "";
     const hasNew = items.some(m=>m.day===TODAY);
-    card.innerHTML = `<div class="dot">${dotInner}</div><div class="body"><h3>${a.name}${hasNew?'<span class="mat-new">Новое</span>':''}</h3><div class="topics">${a.topics||''}</div>
+    card.innerHTML = `<div class="dot"${dotStyleAttr}>${dotInner}</div><div class="body"><h3>${a.name}${hasNew?'<span class="mat-new">Новое</span>':''}</h3><div class="topics">${a.topics||''}</div>
       <div class="foot"><span>${a.desc||''}</span></div></div>`;
     card.addEventListener("click", ()=>openMaterial(key));
     grid.appendChild(card);
@@ -2574,7 +2591,7 @@ document.addEventListener("click",e=>{ if(!e.target.closest(".search-wrap")) sea
 /* ---------- профиль: отображение + редактирование ---------- */
 function renderProfileTile(){
   const p = STATE.profile || {};
-  const name = p.name || "участница марафона";
+  const name = p.name || "Добавь своё имя";
   const bits = [];
   if(p.age) bits.push(p.age);
   if(p.city) bits.push(p.city);
@@ -2762,11 +2779,21 @@ h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
 .crm-chip{font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:999px;border:1.3px solid var(--line);
   background:var(--surface);color:var(--ink-soft);cursor:pointer;white-space:nowrap;user-select:none}
 .crm-chip.on{background:var(--lav);border-color:var(--lav);color:#fff}
-details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-weight:600;padding:8px 0}
-.crm-addbody{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px;box-shadow:var(--shadow)}
+.crm-add-btn{width:34px;height:34px;border-radius:50%;border:1.3px solid var(--lav);background:var(--surface);color:var(--lav-ink);
+  font-size:19px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow)}
+.crm-add-btn:hover{background:var(--lav);color:#fff}
+.crm-modal-overlay{display:none;position:fixed;inset:0;background:rgba(51,46,61,.45);z-index:50;align-items:center;justify-content:center;padding:20px}
+.crm-modal-overlay.open{display:flex}
+.crm-modal{background:var(--surface);border-radius:16px;padding:18px;max-width:440px;width:100%;box-shadow:var(--shadow);max-height:90vh;overflow:auto}
+.crm-modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.crm-modal-head h3{font-size:15px;margin:0;font-weight:650}
+.crm-modal-x{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:4px}
+.crm-addbody{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
 .crm-addbody label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--ink-soft)}
 .crm-addbody input,.crm-addbody select{border:1.3px solid var(--sage);background:var(--surface);border-radius:8px;padding:7px 9px;font-size:13px;font-family:inherit}
 .crm-addbody button{background:var(--lav);color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;cursor:pointer}
+.crm-bottom-actions{display:flex;justify-content:flex-end;margin-top:16px}
+.crm-bottom-actions a{font-size:12.5px;font-weight:600;text-decoration:none;color:var(--lav-ink);cursor:pointer}
 .crm-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:12.8px;box-shadow:var(--shadow)}
 .crm-table th{text-align:left;padding:10px 12px;background:var(--surface-2);font-size:11.5px;font-weight:650;color:var(--ink-soft)}
 .crm-table td{padding:10px 12px;border-top:1px solid var(--line);color:var(--ink-soft);vertical-align:middle}
@@ -2861,6 +2888,10 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
         <div class="addtheme" id="newFolderForm" style="display:none">
           <input type="text" id="nfName" placeholder="Название папки">
           <input type="text" id="nfDesc" placeholder="Описание (необязательно)">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--ink-soft)">Фото (необязательно, если не выбрать — будет цвет/градиент ниже)
+            <input type="file" id="nfPhoto" accept="image/*">
+          </label>
+          <div class="chipgrid" id="nfColorPicker"></div>
           <button id="nfCreate">Создать</button>
         </div>
       </div>
@@ -2979,10 +3010,7 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
     <div class="crm-wrap">
       <div class="crm-top">
         <h1>Заявки марафона</h1>
-        <div class="crm-actions">
-          <a href="/admin/export.csv" class="primary" target="_blank">скачать CSV</a>
-          <a href="#" id="crmRefresh" class="secondary">обновить</a>
-        </div>
+        <button class="crm-add-btn" id="crmAddOpen" title="добавить вручную">+</button>
       </div>
       <div class="crm-stats">
         <div class="crm-stat"><div class="l">всего</div><div class="v" id="crmTotal">0</div></div>
@@ -3003,26 +3031,32 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
           <div class="crm-chip" data-method="stripe">stripe</div>
         </div>
       </div>
-      <details class="crm-add">
-        <summary>+ добавить вручную</summary>
-        <div class="crm-addbody">
-          <label>Имя<input type="text" id="caName"></label>
-          <label>Email <span style="color:#B3415A">*</span><input type="text" id="caEmail"></label>
-          <label>Телефон<input type="text" id="caPhone"></label>
-          <label>Телеграм<input type="text" id="caTg" placeholder="@username"></label>
-          <label>Способ<select id="caMethod"><option value="venmo">venmo</option><option value="zelle">zelle</option><option value="stripe">stripe</option></select></label>
-          <label>Статус<select id="caStatus"><option value="ждёт">ждёт</option><option value="оплачено">оплачено</option></select></label>
-          <label>Сумма<input type="text" id="caAmount" placeholder="33" style="width:70px"></label>
-          <label>Заметка<input type="text" id="caNote"></label>
-          <button id="caAdd">Добавить</button>
-        </div>
-      </details>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
           <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Сумма</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
           <tbody id="crmBody"></tbody>
         </table>
       </div>
+      <div class="crm-bottom-actions">
+        <a href="/admin/export.csv" class="primary" target="_blank">скачать CSV</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="crm-modal-overlay" id="crmAddOverlay">
+  <div class="crm-modal">
+    <div class="crm-modal-head"><h3>Добавить вручную</h3><button class="crm-modal-x" id="crmAddClose">✕</button></div>
+    <div class="crm-addbody">
+      <label>Имя<input type="text" id="caName"></label>
+      <label>Email <span style="color:#B3415A">*</span><input type="text" id="caEmail"></label>
+      <label>Телефон<input type="text" id="caPhone"></label>
+      <label>Телеграм<input type="text" id="caTg" placeholder="@username"></label>
+      <label>Способ<select id="caMethod"><option value="venmo">venmo</option><option value="zelle">zelle</option><option value="stripe">stripe</option></select></label>
+      <label>Статус<select id="caStatus"><option value="ждёт">ждёт</option><option value="оплачено">оплачено</option></select></label>
+      <label>Сумма<input type="text" id="caAmount" placeholder="33" style="width:70px"></label>
+      <label>Заметка<input type="text" id="caNote"></label>
+      <button id="caAdd">Добавить</button>
     </div>
   </div>
 </div>
@@ -3037,7 +3071,7 @@ document.querySelectorAll(".tab").forEach(t=>{
     t.classList.add("active");
     TABS.forEach(id=>{ document.getElementById(id).style.display = (id===t.dataset.tab) ? "" : "none"; });
     document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress");
-    if(t.dataset.tab==="t-participants" && !crmLoaded) loadParticipants();
+    if(t.dataset.tab==="t-participants") loadParticipants();
     if(t.dataset.tab==="t-progress") loadProgress();
   });
 });
@@ -3215,8 +3249,33 @@ function renderFormatPicker(){
 }
 renderFormatPicker();
 
-let FOLDERS = []; // [{id,name,description,topics,photo}] — грузится с сервера
+let FOLDERS = []; // [{id,name,description,topics,photo,color}] — грузится с сервера
 let selectedFolder = null;
+const NF_COLORS = [
+  {v:"lav", l:"Лавандовый", css:"var(--lav)"},
+  {v:"sage", l:"Шалфейный", css:"var(--sage)"},
+  {v:"sand", l:"Песочный", css:"var(--sand)"},
+  {v:"grad1", l:"Градиент 1", css:"linear-gradient(135deg,var(--sand),var(--lav))"},
+  {v:"grad2", l:"Градиент 2", css:"linear-gradient(135deg,var(--lav),var(--sage))"}
+];
+let selectedNfColor = NF_COLORS[0].v;
+function renderNfColorPicker(){
+  const wrap = document.getElementById("nfColorPicker");
+  wrap.innerHTML = NF_COLORS.map(c=>`<div class="cchip${c.v===selectedNfColor?" on":""}" data-c="${c.v}">
+    <span class="cswatch" style="background:${c.css}"></span>${c.l}</div>`).join("");
+  wrap.querySelectorAll(".cchip").forEach(el=>{
+    el.addEventListener("click", ()=>{ selectedNfColor = el.dataset.c; renderNfColorPicker(); });
+  });
+}
+renderNfColorPicker();
+function readFileAsDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=>resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
 function renderFolderPicker(){
   const wrap = document.getElementById("folderPicker");
   wrap.innerHTML = FOLDERS.map(f=>`<div class="tchip${f.id===selectedFolder?" on":""}" data-f="${f.id}">${f.name}</div>`).join("")
@@ -3241,14 +3300,20 @@ async function loadFolders(){
 document.getElementById("nfCreate").addEventListener("click", async ()=>{
   const name = document.getElementById("nfName").value.trim();
   if(!name || FOLDERS.some(f=>f.name===name)){ document.getElementById("nfName").focus(); return; }
+  const photoFile = document.getElementById("nfPhoto").files[0];
+  const photo = photoFile ? await readFileAsDataUrl(photoFile) : null;
   try{
     const f = await apiFetch("/api/admin/folders", {method:"POST", body: JSON.stringify({
-      name, description: document.getElementById("nfDesc").value.trim()
+      name, description: document.getElementById("nfDesc").value.trim(),
+      photo, color: photo ? "" : selectedNfColor
     })});
     FOLDERS.push(f);
     selectedFolder = f.id;
     document.getElementById("nfName").value = "";
     document.getElementById("nfDesc").value = "";
+    document.getElementById("nfPhoto").value = "";
+    selectedNfColor = NF_COLORS[0].v;
+    renderNfColorPicker();
     document.getElementById("newFolderForm").style.display = "none";
     renderFolderPicker();
     showToast("Папка «"+name+"» создана ✓");
@@ -3634,11 +3699,14 @@ document.getElementById("caAdd").addEventListener("click", async ()=>{
     document.getElementById("caTg").value = "";
     document.getElementById("caAmount").value = "";
     document.getElementById("caNote").value = "";
+    document.getElementById("crmAddOverlay").classList.remove("open");
     showToast("Заявка добавлена ✓");
   }catch(e){}
 });
 
-document.getElementById("crmRefresh").addEventListener("click", (e)=>{ e.preventDefault(); loadParticipants(); });
+document.getElementById("crmAddOpen").addEventListener("click", ()=>{ document.getElementById("crmAddOverlay").classList.add("open"); });
+document.getElementById("crmAddClose").addEventListener("click", ()=>{ document.getElementById("crmAddOverlay").classList.remove("open"); });
+document.getElementById("crmAddOverlay").addEventListener("click", e=>{ if(e.target.id==="crmAddOverlay") e.currentTarget.classList.remove("open"); });
 </script>
 </body></html>"""
 
@@ -4303,7 +4371,7 @@ async def api_signup_add(request):
 # ---------- материалы-админка: папки / темы / материалы / календарь / мероприятия Милы ----------
 def _folder_json(r) -> dict:
     return {"id": r["id"], "name": r["name"], "description": r["description"] or "",
-            "topics": r["topics"] or "", "photo": r["photo_url"]}
+            "topics": r["topics"] or "", "photo": r["photo_url"], "color": r["dot_color"] or ""}
 
 
 def _material_json(r) -> dict:
@@ -4337,12 +4405,14 @@ async def api_folders_add(request):
     if not name:
         return web.json_response({"error": "name required"}, status=400)
     fid = str(data.get("id") or uuid.uuid4().hex[:10])
+    next_sort = await DB_POOL.fetchval("SELECT COALESCE(MAX(sort), 0) + 1 FROM folders")
     await DB_POOL.execute(
-        "INSERT INTO folders (id, name, description, topics, photo_url, created) VALUES ($1,$2,$3,$4,$5,$6) "
+        "INSERT INTO folders (id, name, description, topics, photo_url, dot_color, created, sort) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) "
         "ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description, "
-        "topics=EXCLUDED.topics, photo_url=COALESCE(EXCLUDED.photo_url, folders.photo_url)",
+        "topics=EXCLUDED.topics, photo_url=COALESCE(EXCLUDED.photo_url, folders.photo_url), "
+        "dot_color=EXCLUDED.dot_color",
         fid, name, str(data.get("description", "")).strip(), str(data.get("topics", "")).strip(),
-        data.get("photo") or None, time.time(),
+        data.get("photo") or None, str(data.get("color", "")).strip(), time.time(), next_sort,
     )
     row = await DB_POOL.fetchrow("SELECT * FROM folders WHERE id=$1", fid)
     return web.json_response(_folder_json(row), status=201)
