@@ -2675,8 +2675,7 @@ ADMIN_APP_HTML = """<!doctype html>
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sys)}
 h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
 
-.shell{max-width:760px;margin:0 auto;padding:28px 20px 70px}
-.shell.wide{max-width:1180px}
+.shell{max-width:1180px;margin:0 auto;padding:28px 20px 70px}
 .top{display:flex;align-items:center;gap:10px;margin-bottom:4px}
 .top .mark{width:28px;height:28px;border-radius:8px;background:var(--lav);color:#fff;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
@@ -2827,8 +2826,6 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
     <div class="name">Serenity Moon · админка</div>
     <a href="/admin/logout" class="logout">выйти</a>
   </div>
-  <div class="sub">CRM — реальные заявки марафона. Материалы/Календарь/Мероприятия — пока визуальный прототип (без сохранения).</div>
-
   <div class="tabs">
     <div class="tab" data-tab="t-progress">Участницы</div>
     <div class="tab active" data-tab="t-content">Материалы</div>
@@ -2839,15 +2836,6 @@ details.crm-add summary{cursor:pointer;font-size:13px;color:var(--lav-ink);font-
 
   <div id="t-progress" style="display:none">
     <div class="crm-wrap">
-      <div class="crm-top">
-        <div class="crm-actions">
-          <a href="#" id="progressRefresh" class="secondary">обновить</a>
-        </div>
-      </div>
-      <div class="crm-stats">
-        <div class="crm-stat"><div class="l">участниц</div><div class="v" id="progTotal">0</div></div>
-        <div class="crm-stat"><div class="l">молчат 3+ дня</div><div class="v wait" id="progQuiet">0</div></div>
-      </div>
       <div class="crm-toolbar">
         <div class="crm-chips" id="progFilterChips">
           <div class="crm-chip on" data-f="all">все</div>
@@ -3050,7 +3038,7 @@ document.querySelectorAll(".tab").forEach(t=>{
     TABS.forEach(id=>{ document.getElementById(id).style.display = (id===t.dataset.tab) ? "" : "none"; });
     document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress");
     if(t.dataset.tab==="t-participants" && !crmLoaded) loadParticipants();
-    if(t.dataset.tab==="t-progress" && !progressLoaded) loadProgress();
+    if(t.dataset.tab==="t-progress") loadProgress();
   });
 });
 
@@ -3071,8 +3059,6 @@ function isQuiet(iso){
 }
 function renderProgress(){
   const quiet = PARTICIPANT_PROGRESS.filter(p=>isQuiet(p.last_active));
-  document.getElementById("progTotal").textContent = PARTICIPANT_PROGRESS.length;
-  document.getElementById("progQuiet").textContent = quiet.length;
   const rows = progressFilter === "quiet" ? quiet : PARTICIPANT_PROGRESS;
   document.getElementById("progBody").innerHTML = rows.length ? rows.map((p,i)=>`<tr>
     <td>${i+1}</td>
@@ -3103,7 +3089,6 @@ async function loadProgress(){
   progressLoaded = true;
   renderProgress();
 }
-document.getElementById("progressRefresh").addEventListener("click", e=>{ e.preventDefault(); loadProgress(); });
 document.getElementById("progFilterChips").addEventListener("click", e=>{
   const chip = e.target.closest(".crm-chip"); if(!chip) return;
   document.querySelectorAll("#progFilterChips .crm-chip").forEach(c=>c.classList.remove("on"));
