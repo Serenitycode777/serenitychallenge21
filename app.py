@@ -1914,15 +1914,46 @@ function openDay(d){
       `<p class="note" style="margin:0">В этот день привычки ещё не были выбраны.</p>`;
     return;
   }
-  const checks = d===TODAY ? liveChecked : HABIT_IDS.map(id=>doneForHabitOnDay(id, d));
-  const rows = HABITS.map((h,i)=>{
-    const c = checks[i];
-    return `<div class="hab ${c?'done':''}">
-      <span class="markvisual ${c?'on':''}">${ICONS_CHECK}</span>
-      <span class="hab-text">${h}</span></div>`;
-  }).join("");
-  document.getElementById("overlayBody").innerHTML =
-    `<div class="checklist" style="padding:4px 10px;box-shadow:none">${rows}</div>`;
+  const dateStr = dateForDay(d);
+  const log = logForDate(dateStr);
+  let checks = d===TODAY ? liveChecked.slice() : HABIT_IDS.map(id => !!(log.habits_done||{})[id]);
+  let closed = d===TODAY ? dayClosed : !!log.closed;
+
+  function persist(nowClosed){
+    const habits_done = {};
+    HABIT_IDS.forEach((id,i)=>{ habits_done[id] = !!checks[i]; });
+    if(nowClosed !== undefined) closed = nowClosed;
+    STATE.logsByDate[dateStr] = {habits_done, closed};
+    if(d===TODAY){ liveChecked = checks.slice(); dayClosed = closed; renderChecklist(); }
+    apiFetch("/api/cabinet/logs", {method:"PUT", body:{date:dateStr, habits_done, closed}}).catch(()=>{});
+    renderHeat(); renderProgress();
+  }
+
+  function draw(){
+    const rows = HABITS.map((h,i)=>{
+      const c = checks[i];
+      return `<label class="hab ${c?'done':''}" for="pd${i}">
+        <span class="markwrap"><input type="checkbox" id="pd${i}" ${c?'checked':''} ${closed?'disabled':''}>
+        <span class="markvisual">${ICONS_CHECK}</span></span>
+        <span class="hab-text">${h}</span></label>`;
+    }).join("");
+    document.getElementById("overlayBody").innerHTML =
+      `<div class="checklist" style="padding:4px 10px;box-shadow:none">${rows}</div>
+       <button class="btn primary" id="pdCloseBtn" ${closed?'disabled':''} style="width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5 9.5 17 19 7"/></svg>
+         ${closed?'День закрыт':'Закрыть день'}
+       </button>`;
+    HABITS.forEach((_,i)=>{
+      document.getElementById("pd"+i).addEventListener("change", e=>{
+        checks[i] = e.target.checked; playPopSound(); persist(); draw();
+      });
+    });
+    document.getElementById("pdCloseBtn").addEventListener("click", ()=>{
+      if(closed) return;
+      playPopSound(); persist(true); draw();
+    });
+  }
+  draw();
 }
 document.getElementById("closePanel").onclick=()=>{ playPopSound(); if(onboarding) onboarding = false; document.getElementById("overlay").classList.remove("open"); };
 document.getElementById("overlay").addEventListener("click",e=>{if(e.target.id==="overlay"){ if(onboarding) onboarding = false; e.currentTarget.classList.remove("open"); }});
