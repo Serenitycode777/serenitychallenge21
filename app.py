@@ -496,7 +496,7 @@ CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><m
 .btn:active,.editlink:active,.close-x:active,.chip:active,.habchip:active,.hab-edit:active,
 .evt-row:active,.hday:active,.mcard:active,.evcard a:active{transform:scale(.96)}
 .btn,.editlink,.close-x,.chip,.habchip{transition:transform .1s}
-html,body{height:100%}
+html,body{height:100%;touch-action:pan-x pan-y}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sys)}
 h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
 .eyebrow{font-family:var(--font-head);font-style:italic;font-size:13px;color:var(--lav-ink);margin:0 0 4px}
@@ -2601,7 +2601,7 @@ ADMIN_APP_HTML = """<!doctype html>
   --font-head:"Cormorant Garamond",Georgia,"Times New Roman",serif;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sys)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sys);touch-action:pan-x pan-y}
 h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.01em}
 
 .shell{max-width:1180px;margin:0 auto;padding:28px 20px 70px}
