@@ -502,19 +502,19 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 
 .app{max-width:460px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;position:relative}
 .app[hidden]{display:none}
-.topbar{padding:10px 18px 6px;padding-top:calc(10px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px}
-.topbar .mark{width:26px;height:26px;object-fit:contain}
+.topbar{padding:10px 18px 6px;padding-top:calc(10px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.topbar .mark{width:30px;height:30px;object-fit:contain}
 .topbar .name{font-family:var(--font-head);font-weight:600;font-size:16px;letter-spacing:.02em}
 .name small{display:block;font-weight:400;font-size:10px;color:var(--ink-soft);letter-spacing:.02em;margin-top:1px}
 .marathon-eyebrow{font-family:var(--sys);font-size:13px;font-weight:700;text-transform:uppercase;
   letter-spacing:.07em;color:var(--sage-ink);text-align:center;margin:0 0 12px}
 
-main{flex:1;padding:0 18px calc(88px + env(safe-area-inset-bottom,0px))}
+main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)))}
 .screen[hidden]{display:none}
 
 .bottomnav{
   position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; z-index:30;
-  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-bottom:min(16px, env(safe-area-inset-bottom,0px));
   background:var(--surface); border-top:1px solid var(--line);
   box-shadow:0 -8px 24px -16px rgba(51,46,61,.25);
 }
@@ -611,6 +611,12 @@ main{flex:1;padding:0 18px calc(88px + env(safe-area-inset-bottom,0px))}
 h3 .info-hint{margin-left:6px;vertical-align:middle}
 
 .statrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px}
+@media (max-width:899px){
+  .statrow{grid-template-columns:1fr 1fr}
+  .statrow #diamondCard{order:1}
+  .statrow #countdownCard{order:2}
+  .statrow #achCard{order:3;grid-column:1/-1}
+}
 .statrow .heatcard{margin-bottom:0;padding:11px 10px}
 .statrow .diamond-icon{font-size:21px}
 .statrow .diamond-val{font-size:16px}
