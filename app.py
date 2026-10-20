@@ -181,7 +181,7 @@ def normalize_email(e: str) -> str:
 
 # ---------- материалы ----------
 MATERIALS_FILE = HERE / "data" / "materials.json"  # больше не источник правды, см. seed_materials_once()
-MARATHON_START = "2026-11-09"
+MARATHON_START = "2026-10-19"  # ВРЕМЕННО для теста по просьбе Ники (2026-10-20) — вернуть на 2026-11-09 перед реальным запуском
 MARATHON_TZ = "America/New_York"
 
 
