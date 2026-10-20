@@ -778,6 +778,9 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .avatar{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,var(--lav),var(--sand));
   display:flex;align-items:center;justify-content:center;color:#fff;position:relative;cursor:pointer}
 .avatar svg{width:28px;height:28px}
+.avatar .remove{position:absolute;top:-2px;right:-2px;width:22px;height:22px;border-radius:50%;background:var(--surface);
+  border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft)}
+.avatar .remove svg{width:11px;height:11px}
 .avatar .camera{position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;background:var(--surface);
   border:1px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink-soft)}
 .avatar .camera svg{width:13px;height:13px}
@@ -1183,6 +1186,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
       <div class="avatar-row">
         <div class="avatar" id="mainAvatar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20c1.5-4 4.5-6 7.5-6s6 2 7.5 6"/></svg>
+          <div class="remove" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6 6 18"/></svg></div>
           <div class="camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-2.5h5L16 7"/></svg></div>
         </div>
       </div>
@@ -2469,6 +2473,7 @@ function renderProfileTile(){
   bits.push("редактировать");
   document.querySelector("#v3tile .v3-txt").innerHTML = name + "<small>" + bits.join(" · ") + "</small>";
   document.querySelectorAll(".avatar img").forEach(img=>img.remove());
+  document.querySelectorAll(".avatar .remove").forEach(btn=>btn.hidden = !p.photo_url);
   if(p.photo_url){
     document.querySelectorAll(".avatar").forEach(av=>{
       const img = document.createElement("img");
@@ -2493,9 +2498,24 @@ document.getElementById("avatarFileInput").addEventListener("change", async (e)=
     }
   }catch(err){}
 });
+async function removePhoto(){
+  if(!confirm("Удалить фото профиля?")) return;
+  const p = STATE.profile || {};
+  try{
+    await apiFetch("/api/cabinet/profile", {method:"PUT", body:{
+      name:p.name||"", age:p.age||null, city:p.city||"", bio:p.bio||"", photo_url:null
+    }});
+  }catch(e){}
+  STATE.profile = Object.assign({}, p, {photo_url:null});
+  renderProfileTile();
+  playPopSound();
+}
 function wireCameraButtons(){
   document.querySelectorAll(".camera").forEach(btn=>{
     btn.onclick = (e)=>{ e.stopPropagation(); document.getElementById("avatarFileInput").click(); };
+  });
+  document.querySelectorAll(".avatar .remove").forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); removePhoto(); };
   });
 }
 wireCameraButtons();
@@ -2507,6 +2527,7 @@ function openProfileEdit(){
     <div class="avatar-row" style="margin-top:0">
       <div class="avatar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20c1.5-4 4.5-6 7.5-6s6 2 7.5 6"/></svg>
+        <div class="remove" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6 6 18"/></svg></div>
         <div class="camera"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l1.5-2.5h5L16 7"/></svg></div>
       </div>
     </div>
@@ -2526,7 +2547,8 @@ function openProfileEdit(){
     const city = document.getElementById("profCity").value.trim();
     const bio = document.getElementById("profBio").value.trim();
     try{
-      await apiFetch("/api/cabinet/profile", {method:"PUT", body:{name, age, city, bio}});
+      const photo_url = (STATE.profile||{}).photo_url || null;
+      await apiFetch("/api/cabinet/profile", {method:"PUT", body:{name, age, city, bio, photo_url}});
       STATE.profile = Object.assign({}, STATE.profile, {name, age, city, bio});
       renderProfileTile();
     }catch(e){}
