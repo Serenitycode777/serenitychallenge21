@@ -2897,7 +2897,6 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
   <div id="t-calendar" style="display:none">
     <div class="card">
       <h2>Текущие эфиры марафона</h2>
-      <div class="hint">видны участницам на страничках «Сегодня» и «Материалы»</div>
       <div class="evlist" id="evList"></div>
     </div>
     <div class="card">
@@ -2935,7 +2934,6 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
   <div id="t-events" style="display:none">
     <div class="card">
       <h2>Мероприятия Милы</h2>
-      <div class="hint">не марафон — её другие ретриты/вебинары, показываются на странице «Профиль» у участниц</div>
       <div class="evlist" id="mevList"></div>
     </div>
     <div class="card">
