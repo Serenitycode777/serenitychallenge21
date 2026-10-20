@@ -2642,6 +2642,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .save{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:13px;font-weight:600;
   font-size:13.5px;cursor:pointer;margin-top:18px;transition:transform .1s}
 .save:active{transform:scale(.98)}
+.editlink{display:block;width:100%;text-align:center;background:none;border:none;color:var(--ink-soft);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sys)}
 .err{font-size:12px;color:#c0564f;margin-top:6px;display:none}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;
   font-size:13px;font-weight:500;padding:11px 20px;border-radius:999px;box-shadow:0 14px 30px -10px rgba(0,0,0,.4);
@@ -2907,6 +2908,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
         <input type="text" id="eLink" placeholder="https://zoom.us/...">
       </div>
       <button class="save" id="saveEvent">Добавить в календарь</button>
+      <button class="editlink" id="cancelEditEvent" type="button" hidden style="margin-top:8px">Отменить редактирование</button>
     </div>
   </div>
 
@@ -2935,6 +2937,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
         <div class="chipgrid" id="mevColorPicker"></div>
       </div>
       <button class="save" id="saveEventMila">Добавить мероприятие</button>
+      <button class="editlink" id="cancelEditMev" type="button" hidden style="margin-top:8px">Отменить редактирование</button>
     </div>
   </div>
 
@@ -3170,7 +3173,17 @@ function buildDatePicker(baseId, startMonth){
   });
   pop.addEventListener("click", (e)=>e.stopPropagation());
   render();
-  return { reset(){ selected=null; hidden.value=""; btn.textContent="Выбрать дату"; btn.classList.remove("has-val"); render(); } };
+  return {
+    reset(){ selected=null; hidden.value=""; btn.textContent="Выбрать дату"; btn.classList.remove("has-val"); render(); },
+    setValue(iso){
+      selected = iso; hidden.value = iso;
+      const dt = new Date(iso+"T00:00:00");
+      view = new Date(iso+"T00:00:00");
+      btn.textContent = dt.toLocaleDateString("ru-RU",{day:"numeric",month:"short",year:"numeric"});
+      btn.classList.add("has-val");
+      render();
+    }
+  };
 }
 document.addEventListener("click", ()=>{ document.querySelectorAll(".dpicker-pop").forEach(p=>p.style.display="none"); });
 const mDayPicker = buildDatePicker("mDay", "2026-11-01");
@@ -3375,6 +3388,7 @@ function renderEvents(){
       <div class="evday">${d.num}<br><span style="font-size:8px;font-weight:600;text-transform:uppercase">${d.lbl}</span></div>
       <div class="evbody"><div class="evttl">${e.title}</div><div class="evmeta">${e.time||""}${past?' · прошёл':''}</div></div>
       <div class="evtag">${e.type||""}</div>
+      <button class="evbtn" data-edit="${e.id}" aria-label="редактировать">✎</button>
       <button class="evbtn" data-del="${e.id}">✕</button>
     </div>`;
   }).join("") : `<div class="hint" style="margin:0">пока нет эфиров</div>`;
@@ -3386,9 +3400,42 @@ function renderEvents(){
         renderEvents();
         renderEvtPick();
         showToast("Эфир удалён");
+        if(String(editingEventId)===b.dataset.del) cancelEditEvent();
       }catch(e){}
     });
   });
+  list.querySelectorAll("[data-edit]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const ev = EVENTS.find(e=>String(e.id)===b.dataset.edit);
+      if(ev) startEditEvent(ev);
+    });
+  });
+}
+let editingEventId = null;
+function startEditEvent(ev){
+  editingEventId = ev.id;
+  eDayPicker.setValue(ev.date);
+  document.getElementById("eTitle").value = ev.title || "";
+  document.getElementById("eTime").value = ev.time || "";
+  document.getElementById("eLink").value = ev.link || "";
+  if(ev.type && !EVENT_TYPES.includes(ev.type)) EVENT_TYPES.push(ev.type);
+  selectedType = ev.type || EVENT_TYPES[0];
+  renderTypePicker();
+  const btn = document.getElementById("saveEvent");
+  btn.textContent = "Сохранить изменения";
+  document.getElementById("cancelEditEvent").hidden = false;
+  document.getElementById("eTitle").closest("section, div")?.scrollIntoView({block:"center", behavior:"smooth"});
+}
+function cancelEditEvent(){
+  editingEventId = null;
+  eDayPicker.reset();
+  document.getElementById("eTitle").value = "";
+  document.getElementById("eTime").value = "";
+  document.getElementById("eLink").value = "";
+  selectedType = EVENT_TYPES[0];
+  renderTypePicker();
+  document.getElementById("saveEvent").textContent = "Добавить в календарь";
+  document.getElementById("cancelEditEvent").hidden = true;
 }
 function renderEvtPick(){
   const sel = document.getElementById("evtPick");
@@ -3410,19 +3457,27 @@ document.getElementById("saveEvent").addEventListener("click", async ()=>{
   const title = document.getElementById("eTitle").value.trim();
   if(!eventDate){ document.getElementById("eDayWrap").scrollIntoView({block:"center"}); return; }
   if(!title){ document.getElementById("eTitle").focus(); return; }
+  const body = JSON.stringify({
+    date: eventDate, title, type: selectedType,
+    time: document.getElementById("eTime").value.trim() || "19:00 мск",
+    link: document.getElementById("eLink").value.trim(),
+  });
   try{
-    await apiFetch("/api/admin/calendar-events", {method:"POST", body: JSON.stringify({
-      date: eventDate, title, type: selectedType,
-      time: document.getElementById("eTime").value.trim() || "19:00 мск",
-      link: document.getElementById("eLink").value.trim(),
-    })});
+    if(editingEventId){
+      await apiFetch(`/api/admin/calendar-events/${editingEventId}`, {method:"PUT", body});
+      showToast("Эфир «"+title+"» обновлён ✓");
+      cancelEditEvent();
+    } else {
+      await apiFetch("/api/admin/calendar-events", {method:"POST", body});
+      showToast("Эфир «"+title+"» добавлен в календарь ✓");
+      eDayPicker.reset();
+      document.getElementById("eTitle").value = "";
+      document.getElementById("eLink").value = "";
+    }
     await loadCalendarEvents();
-    showToast("Эфир «"+title+"» добавлен в календарь ✓");
-    eDayPicker.reset();
-    document.getElementById("eTitle").value = "";
-    document.getElementById("eLink").value = "";
   }catch(e){}
 });
+document.getElementById("cancelEditEvent").addEventListener("click", cancelEditEvent);
 
 const MEV_COLORS = [
   {v:"lav", l:"Лавандовый", css:"var(--lav)"},
@@ -3450,6 +3505,7 @@ function renderMevList(){
     return `<div class="mevrow">
       <div class="ph" style="background:${c.css}"></div>
       <div class="b"><h4>${e.title}</h4><div class="dt">${e.date_place}</div></div>
+      <button class="evbtn" data-medit="${e.id}" aria-label="редактировать">✎</button>
       <button class="evbtn" data-del="${e.id}">✕</button>
     </div>`;
   }).join("") : `<div class="hint" style="margin:0">пока нет мероприятий</div>`;
@@ -3460,9 +3516,38 @@ function renderMevList(){
         MILA_EVENTS = MILA_EVENTS.filter(e=>String(e.id)!==b.dataset.del);
         renderMevList();
         showToast("Мероприятие удалено");
+        if(String(editingMevId)===b.dataset.del) cancelEditMev();
       }catch(e){}
     });
   });
+  wrap.querySelectorAll("[data-medit]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const ev = MILA_EVENTS.find(e=>String(e.id)===b.dataset.medit);
+      if(ev) startEditMev(ev);
+    });
+  });
+}
+let editingMevId = null;
+function startEditMev(ev){
+  editingMevId = ev.id;
+  document.getElementById("mevTitle").value = ev.title || "";
+  document.getElementById("mevDate").value = ev.date_place || "";
+  document.getElementById("mevLink").value = (ev.link && ev.link!=="#") ? ev.link : "";
+  selectedMevColor = ev.color || MEV_COLORS[0].v;
+  renderMevColorPicker();
+  document.getElementById("saveEventMila").textContent = "Сохранить изменения";
+  document.getElementById("cancelEditMev").hidden = false;
+  document.getElementById("mevTitle").scrollIntoView({block:"center", behavior:"smooth"});
+}
+function cancelEditMev(){
+  editingMevId = null;
+  document.getElementById("mevTitle").value = "";
+  document.getElementById("mevDate").value = "";
+  document.getElementById("mevLink").value = "";
+  selectedMevColor = MEV_COLORS[0].v;
+  renderMevColorPicker();
+  document.getElementById("saveEventMila").textContent = "Добавить мероприятие";
+  document.getElementById("cancelEditMev").hidden = true;
 }
 async function loadMilaEvents(){
   try{ MILA_EVENTS = await apiFetch("/api/admin/mila-events"); }catch(e){ MILA_EVENTS = []; }
@@ -3474,18 +3559,26 @@ document.getElementById("saveEventMila").addEventListener("click", async ()=>{
   const datePlace = document.getElementById("mevDate").value.trim();
   if(!title){ document.getElementById("mevTitle").focus(); return; }
   if(!datePlace){ document.getElementById("mevDate").focus(); return; }
+  const body = JSON.stringify({
+    title, date_place: datePlace,
+    link: document.getElementById("mevLink").value.trim() || "#", color: selectedMevColor,
+  });
   try{
-    await apiFetch("/api/admin/mila-events", {method:"POST", body: JSON.stringify({
-      title, date_place: datePlace,
-      link: document.getElementById("mevLink").value.trim() || "#", color: selectedMevColor,
-    })});
+    if(editingMevId){
+      await apiFetch(`/api/admin/mila-events/${editingMevId}`, {method:"PUT", body});
+      showToast("Мероприятие «"+title+"» обновлено ✓");
+      cancelEditMev();
+    } else {
+      await apiFetch("/api/admin/mila-events", {method:"POST", body});
+      showToast("Мероприятие «"+title+"» добавлено ✓");
+      document.getElementById("mevTitle").value = "";
+      document.getElementById("mevDate").value = "";
+      document.getElementById("mevLink").value = "";
+    }
     await loadMilaEvents();
-    showToast("Мероприятие «"+title+"» добавлено ✓");
-    document.getElementById("mevTitle").value = "";
-    document.getElementById("mevDate").value = "";
-    document.getElementById("mevLink").value = "";
   }catch(e){}
 });
+document.getElementById("cancelEditMev").addEventListener("click", cancelEditMev);
 
 /* ---- CRM: реальные данные с /api/admin/* на этом же сервере — та же cookie-сессия,
    что открыла эту страницу, никаких токенов/паролей в js не нужно ---- */
@@ -4589,6 +4682,30 @@ async def api_calendar_add(request):
     return web.json_response(_calendar_json(row), status=201)
 
 
+async def api_calendar_update(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    ev_id = int(request.match_info["id"])
+    data = await request.json()
+    title = str(data.get("title", "")).strip()
+    date_str = str(data.get("date", "")).strip()
+    if not title or not date_str:
+        return web.json_response({"error": "title and date required"}, status=400)
+    try:
+        ev_date = date.fromisoformat(date_str)
+    except ValueError:
+        return web.json_response({"error": "bad date"}, status=400)
+    await DB_POOL.execute(
+        "UPDATE calendar_events SET date=$2, title=$3, type=$4, time=$5, link=$6 WHERE id=$1",
+        ev_id, ev_date, title, str(data.get("type", "")).strip(), str(data.get("time", "")).strip(),
+        str(data.get("link", "")).strip(),
+    )
+    row = await DB_POOL.fetchrow("SELECT * FROM calendar_events WHERE id=$1", ev_id)
+    if row is None:
+        return web.json_response({"error": "not_found"}, status=404)
+    return web.json_response(_calendar_json(row))
+
+
 async def api_calendar_delete(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
@@ -4617,6 +4734,25 @@ async def api_mila_events_add(request):
     )
     row = await DB_POOL.fetchrow("SELECT * FROM mila_events WHERE id=$1", row_id)
     return web.json_response(_mila_event_json(row), status=201)
+
+
+async def api_mila_events_update(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    ev_id = int(request.match_info["id"])
+    data = await request.json()
+    title = str(data.get("title", "")).strip()
+    date_place = str(data.get("date_place", "")).strip()
+    if not title or not date_place:
+        return web.json_response({"error": "title and date_place required"}, status=400)
+    await DB_POOL.execute(
+        "UPDATE mila_events SET title=$2, date_place=$3, link=$4, color=$5 WHERE id=$1",
+        ev_id, title, date_place, str(data.get("link", "")).strip(), str(data.get("color", "lav")).strip(),
+    )
+    row = await DB_POOL.fetchrow("SELECT * FROM mila_events WHERE id=$1", ev_id)
+    if row is None:
+        return web.json_response({"error": "not_found"}, status=404)
+    return web.json_response(_mila_event_json(row))
 
 
 async def api_mila_events_delete(request):
@@ -4771,9 +4907,11 @@ def make_app():
         web.post("/api/admin/materials/upload", api_materials_upload),
         web.get("/api/admin/calendar-events", api_calendar_list),
         web.post("/api/admin/calendar-events", api_calendar_add),
+        web.put("/api/admin/calendar-events/{id}", api_calendar_update),
         web.delete("/api/admin/calendar-events/{id}", api_calendar_delete),
         web.get("/api/admin/mila-events", api_mila_events_list),
         web.post("/api/admin/mila-events", api_mila_events_add),
+        web.put("/api/admin/mila-events/{id}", api_mila_events_update),
         web.delete("/api/admin/mila-events/{id}", api_mila_events_delete),
         web.route("OPTIONS", "/{tail:.*}", cors_preflight),
     ])
