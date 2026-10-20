@@ -476,16 +476,20 @@ CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><m
 <meta property="og:description" content="Личный кабинет участницы марафона «Начни сегодня!»">
 <meta property="og:image" content="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png">
 <meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Montserrat:wght@400;500;600&display=swap">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <style>
 :root{
   --lav:#AA9DB8; --lav-ink:#6B5A7C; --sage:#6A9993; --sage-ink:#3F6660;
   --sand:#CBBAA8; --sand-ink:#8A6F55; --ink:#332E3D; --ink-soft:#6B6475;
-  --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#EEF0F1; --line:#E2E4E6;
+  --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#F4F5F6; --line:#E6E8E9;
   --shadow:0 10px 30px -14px rgba(51,46,61,.22); color-scheme:light;
   --h0:#ECEFEC; --h0-text:#6B6475; --h30:#B6CFC6; --h30-text:#3F6660;
   --h60:#7FA89C; --h60-text:#FFFFFF; --h100:#4C7D73; --h100-text:#FFFFFF; --h-future:#FFFFFF;
-  --sys: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
+  --sys: "Montserrat",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
+  --font-head: "Cormorant Garamond",Georgia,"Times New Roman",serif;
 }
 *{box-sizing:border-box}
 .btn:active,.editlink:active,.close-x:active,.chip:active,.habchip:active,.hab-edit:active,
@@ -493,14 +497,14 @@ CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><m
 .btn,.editlink,.close-x,.chip,.habchip{transition:transform .1s}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sys)}
-h1,h2,h3{font-family:var(--sys);font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
-.eyebrow{font-family:var(--sys);font-style:italic;font-size:13px;color:var(--lav-ink);margin:0 0 4px}
+h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.eyebrow{font-family:var(--font-head);font-style:italic;font-size:13px;color:var(--lav-ink);margin:0 0 4px}
 
 .app{max-width:460px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;position:relative}
 .app[hidden]{display:none}
 .topbar{padding:10px 18px 6px;padding-top:calc(10px + env(safe-area-inset-top,0px));display:flex;align-items:center;gap:10px}
 .topbar .mark{width:26px;height:26px;object-fit:contain}
-.topbar .name{font-family:var(--sys);font-weight:600;font-size:14px;letter-spacing:.02em}
+.topbar .name{font-family:var(--font-head);font-weight:600;font-size:16px;letter-spacing:.02em}
 .name small{display:block;font-weight:400;font-size:10px;color:var(--ink-soft);letter-spacing:.02em;margin-top:1px}
 .marathon-eyebrow{font-family:var(--sys);font-size:13px;font-weight:700;text-transform:uppercase;
   letter-spacing:.07em;color:var(--sage-ink);text-align:center;margin:0 0 12px}
@@ -696,6 +700,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .btn svg{width:15px;height:15px}
 .btn.primary{background:var(--lav);color:#fff}
 .btn.primary:disabled{background:var(--surface-2);color:var(--ink-soft);cursor:default}
+.btn.primary.is-closed{background:var(--surface-2);color:var(--ink-soft)}
 .btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
 .share-out{margin-top:14px}
 .share-out img{width:100%;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow)}
@@ -1939,7 +1944,7 @@ function openDay(d){
     }).join("");
     document.getElementById("overlayBody").innerHTML =
       `<div class="checklist" style="padding:4px 10px;box-shadow:none">${rows}</div>
-       <button class="btn primary" id="pdCloseBtn" ${closed?'disabled':''} style="width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+       <button class="btn primary${closed?' is-closed':''}" id="pdCloseBtn" style="width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5 9.5 17 19 7"/></svg>
          ${closed?'День закрыт':'Закрыть день'}
        </button>`;
@@ -1949,8 +1954,7 @@ function openDay(d){
       });
     });
     document.getElementById("pdCloseBtn").addEventListener("click", ()=>{
-      if(closed) return;
-      playPopSound(); persist(true); draw();
+      playPopSound(); persist(!closed); draw();
     });
   }
   draw();
@@ -2012,12 +2016,18 @@ function renderChecklist(){
     saveTodayLog();
   }));
   const btn = document.getElementById("closeDayBtn");
-  btn.disabled = dayClosed || HABITS.length === 0;
+  btn.disabled = HABITS.length === 0;
+  btn.classList.toggle("is-closed", dayClosed);
   btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5 9.5 17 19 7"/></svg> ${dayClosed?'День закрыт':'Закрыть день'}`;
 }
 document.getElementById("closeDayBtn").addEventListener("click", ()=>{
-  if(dayClosed || HABITS.length === 0) return;
+  if(HABITS.length === 0) return;
   playPopSound();
+  if(dayClosed){
+    dayClosed = false; renderChecklist(); renderHeat();
+    saveTodayLog(false); renderProgress();
+    return;
+  }
   dayClosed = true; renderChecklist(); renderHeat();
   const done = liveChecked.filter(Boolean).length;
   document.getElementById("fdDay").textContent = TODAY;
@@ -2541,24 +2551,28 @@ ADMIN_APP_HTML = """<!doctype html>
 <meta name="robots" content="noindex, nofollow">
 <title>Serenity Moon — админка</title>
 <link rel="icon" type="image/png" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Montserrat:wght@400;500;600&display=swap">
 <style>
 :root{
   --lav:#AA9DB8; --lav-ink:#6B5A7C; --sage:#6A9993; --sage-ink:#3F6660;
   --sand:#CBBAA8; --sand-ink:#8A6F55; --ink:#332E3D; --ink-soft:#6B6475;
-  --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#EEF0F1; --line:#E2E4E6;
+  --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#F4F5F6; --line:#E6E8E9;
   --ok:#5C8A5C; --ok-bg:#E7F1E4; --warn:#B98A3E; --warn-bg:#FBF0DE;
   --shadow:0 10px 30px -14px rgba(51,46,61,.22);
-  --sys:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
+  --sys:"Montserrat",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
+  --font-head:"Cormorant Garamond",Georgia,"Times New Roman",serif;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sys)}
-h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.01em}
 
 .shell{max-width:1180px;margin:0 auto;padding:28px 20px 70px}
 .top{display:flex;align-items:center;gap:10px;margin-bottom:4px}
 .top .mark{width:28px;height:28px;border-radius:8px;background:var(--lav);color:#fff;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
-.top .name{font-weight:600;font-size:15px}
+.top .name{font-family:var(--font-head);font-weight:600;font-size:17px}
 .top .logout{margin-left:auto;font-size:12px;color:var(--ink-soft);text-decoration:none}
 .sub{font-size:12.5px;color:var(--ink-soft);margin:6px 0 22px}
 
