@@ -469,7 +469,7 @@ details.addform summary{{cursor:pointer;font-size:13.5px;color:#5A5266;font-weig
 # с сервера (не claude.ai-артефакт), под той же cookie-сессией, что и остальной /admin.
 # Материалы/Календарь/Мероприятия пока только в браузере участницы (сбрасываются при
 # обновлении), CRM работает по-настоящему.
-CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Serenity Moon</title>
 <link rel="icon" type="image/png" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png">
 <meta property="og:title" content="Serenity Moon">
@@ -1326,6 +1326,12 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 </div>
 
 <script>
+/* ---------- блокировка зума на десктопе (моб. зум убран через viewport) ---------- */
+document.addEventListener("wheel", e=>{ if(e.ctrlKey) e.preventDefault(); }, {passive:false});
+document.addEventListener("keydown", e=>{
+  if((e.ctrlKey||e.metaKey) && ["+","-","=","0"].includes(e.key)) e.preventDefault();
+});
+
 /* ---------- каталог привычек (справочник, не пользовательские данные) ---------- */
 const CATALOG = {
   "Тело": [
@@ -2569,7 +2575,7 @@ document.getElementById("logoutBtn").addEventListener("click", ()=>{
 
 ADMIN_APP_HTML = """<!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="robots" content="noindex, nofollow">
 <title>Serenity Moon — админка</title>
 <link rel="icon" type="image/png" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png">
@@ -2982,6 +2988,12 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 <div class="toast" id="toast">Сохранено ✓</div>
 
 <script>
+/* ---------- блокировка зума на десктопе (моб. зум убран через viewport) ---------- */
+document.addEventListener("wheel", e=>{ if(e.ctrlKey) e.preventDefault(); }, {passive:false});
+document.addEventListener("keydown", e=>{
+  if((e.ctrlKey||e.metaKey) && ["+","-","=","0"].includes(e.key)) e.preventDefault();
+});
+
 const TABS = ["t-progress","t-content","t-calendar","t-events","t-participants"];
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
