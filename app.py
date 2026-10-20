@@ -2727,6 +2727,16 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .mevrow .b h4{font-size:13px;font-weight:600;margin:0}
 .mevrow .b .dt{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
 .mevrow .evbtn{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:4px 6px;flex-shrink:0}
+.foldercard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:14px}
+.foldercard .fhead{display:flex;align-items:center;gap:12px}
+.foldercard .dot{width:42px;height:42px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--surface-2)}
+.foldercard .dot img{width:100%;height:100%;object-fit:cover}
+.foldercard .fbody{flex:1;min-width:0}
+.foldercard .fbody h3{font-size:16px;font-weight:600;margin:0}
+.foldercard .fbody .topics{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.foldercard .factions{display:flex;gap:2px;flex-shrink:0}
+.foldercard .factions .evbtn{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:4px 6px}
+.foldercard .mlist{margin-top:12px;display:flex;flex-direction:column;gap:6px}
 
 .cchip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface-2);
   border:1.5px solid var(--line);border-radius:999px;padding:6px 13px 6px 8px;cursor:pointer;user-select:none}
@@ -3325,21 +3335,27 @@ function renderMaterialsList(){
   if(!FOLDERS.length){ wrap.innerHTML = `<div class="hint" style="margin:0">пока нет папок — создай первую через «+ добавить»</div>`; return; }
   wrap.innerHTML = FOLDERS.map(f=>{
     const mats = MATERIALS.filter(m=>m.folder_id===f.id);
+    const colorCss = (NF_COLORS.find(c=>c.v===f.color)||{}).css || "var(--surface-2)";
+    const dotInner = f.photo ? `<img src="${f.photo}" alt="${f.name}">` : "";
+    const dotStyle = f.photo ? "" : ` style="background:${colorCss}"`;
     const matsHtml = mats.length ? mats.map(m=>{
       const fmt = FORMATS.find(x=>x.v===m.format);
-      return `<div class="evrow" style="margin:6px 0 0 14px">
+      return `<div class="evrow">
         <div class="evbody"><div class="evttl">${m.title}</div><div class="evmeta">${fmt?fmt.l:(m.format||"")}${m.day?` · день ${m.day}`:''}</div></div>
         <button class="evbtn" data-matedit="${m.id}" aria-label="редактировать">✎</button>
         <button class="evbtn" data-matdel="${m.id}">✕</button>
       </div>`;
-    }).join("") : `<div class="hint" style="margin:4px 0 0 14px">материалов нет</div>`;
-    return `<div style="margin-bottom:16px">
-      <div class="evrow" style="background:transparent;border:none;padding:2px 0">
-        <div class="evbody"><div class="evttl" style="font-weight:700">${f.name}</div>${f.description?`<div class="evmeta">${f.description}</div>`:''}</div>
-        <button class="evbtn" data-folderedit="${f.id}" aria-label="редактировать папку">✎</button>
-        <button class="evbtn" data-folderdel="${f.id}">✕</button>
+    }).join("") : `<div class="hint" style="margin:0">материалов нет</div>`;
+    return `<div class="foldercard">
+      <div class="fhead">
+        <div class="dot"${dotStyle}>${dotInner}</div>
+        <div class="fbody"><h3>${f.name}</h3>${f.description?`<div class="topics">${f.description}</div>`:''}</div>
+        <div class="factions">
+          <button class="evbtn" data-folderedit="${f.id}" aria-label="редактировать папку">✎</button>
+          <button class="evbtn" data-folderdel="${f.id}">✕</button>
+        </div>
       </div>
-      ${matsHtml}
+      <div class="mlist">${matsHtml}</div>
     </div>`;
   }).join("");
   wrap.querySelectorAll("[data-matdel]").forEach(b=>{
