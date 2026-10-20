@@ -471,10 +471,11 @@ details.addform summary{{cursor:pointer;font-size:13.5px;color:#5A5266;font-weig
 # обновлении), CRM работает по-настоящему.
 CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Serenity Moon</title>
-<link rel="icon" type="image/png" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png">
+<link rel="icon" type="image/jpeg" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/app-icon.jpg">
+<link rel="apple-touch-icon" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/app-icon.jpg">
 <meta property="og:title" content="Serenity Moon">
 <meta property="og:description" content="Личный кабинет участницы марафона «Начни сегодня!»">
-<meta property="og:image" content="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png">
+<meta property="og:image" content="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/app-icon.jpg">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2584,7 +2585,8 @@ ADMIN_APP_HTML = """<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="robots" content="noindex, nofollow">
 <title>Serenity Moon — админка</title>
-<link rel="icon" type="image/png" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png">
+<link rel="icon" type="image/jpeg" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/app-icon.jpg">
+<link rel="apple-touch-icon" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/app-icon.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Montserrat:wght@400;500;600&display=swap">
