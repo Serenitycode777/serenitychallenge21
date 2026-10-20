@@ -2807,7 +2807,16 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 
   <div id="t-content">
     <div class="card">
-      <h2>Новый материал</h2>
+      <h2>Материалы</h2>
+      <div class="hint">сгруппированы по папкам (авторам) — так же, как участницы видят их на странице «Материалы»</div>
+      <div id="materialsList"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <h2 style="margin:0">Новый материал</h2>
+        <button class="editlink" id="toggleMaterialForm" type="button" style="width:auto;white-space:nowrap">+ добавить</button>
+      </div>
+      <div id="materialFormBody" style="display:none;margin-top:14px">
       <div class="hint">видео, аудио или pdf — папку и тему можно выбрать из уже существующих или создать прямо здесь</div>
       <div class="field">
         <label>Папка <span class="req">*</span></label>
@@ -2871,6 +2880,8 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
         <input type="text" id="mLink" placeholder="https://..." style="margin-top:8px">
       </div>
       <button class="save" id="saveMaterial">Сохранить материал</button>
+      <button class="editlink" id="cancelEditMaterial" type="button" hidden style="margin-top:8px">Отменить редактирование</button>
+      </div>
     </div>
   </div>
 
@@ -3251,27 +3262,142 @@ async function loadFolders(){
 }
 document.getElementById("nfCreate").addEventListener("click", async ()=>{
   const name = document.getElementById("nfName").value.trim();
-  if(!name || FOLDERS.some(f=>f.name===name)){ document.getElementById("nfName").focus(); return; }
+  const dup = FOLDERS.some(f=>f.name===name && f.id!==editingFolderId);
+  if(!name || dup){ document.getElementById("nfName").focus(); return; }
   const photoFile = document.getElementById("nfPhoto").files[0];
   const photo = photoFile ? await readFileAsDataUrl(photoFile) : null;
+  const wasEditing = editingFolderId;
   try{
-    const f = await apiFetch("/api/admin/folders", {method:"POST", body: JSON.stringify({
+    const body = {
       name, description: document.getElementById("nfDesc").value.trim(),
       photo, color: photo ? "" : selectedNfColor
-    })});
-    FOLDERS.push(f);
+    };
+    if(wasEditing) body.id = wasEditing;
+    const f = await apiFetch("/api/admin/folders", {method:"POST", body: JSON.stringify(body)});
+    if(wasEditing){
+      FOLDERS = FOLDERS.map(x=>x.id===f.id?f:x);
+      showToast("Папка «"+name+"» обновлена ✓");
+    } else {
+      FOLDERS.push(f);
+      showToast("Папка «"+name+"» создана ✓");
+    }
     selectedFolder = f.id;
+    editingFolderId = null;
     document.getElementById("nfName").value = "";
     document.getElementById("nfDesc").value = "";
     document.getElementById("nfPhoto").value = "";
     selectedNfColor = NF_COLORS[0].v;
     renderNfColorPicker();
+    document.getElementById("nfCreate").textContent = "Создать";
     document.getElementById("newFolderForm").style.display = "none";
     renderFolderPicker();
-    showToast("Папка «"+name+"» создана ✓");
+    renderMaterialsList();
   }catch(e){}
 });
-loadFolders();
+let editingFolderId = null;
+function startEditFolder(f){
+  editingFolderId = f.id;
+  openMaterialForm(true);
+  document.getElementById("newFolderForm").style.display = "flex";
+  renderFolderPicker();
+  document.getElementById("nfName").value = f.name || "";
+  document.getElementById("nfDesc").value = f.description || "";
+  selectedNfColor = f.color || NF_COLORS[0].v;
+  renderNfColorPicker();
+  document.getElementById("nfCreate").textContent = "Сохранить изменения";
+  document.getElementById("newFolderForm").scrollIntoView({block:"center", behavior:"smooth"});
+}
+function cancelEditFolder(){
+  editingFolderId = null;
+  document.getElementById("nfName").value = "";
+  document.getElementById("nfDesc").value = "";
+  document.getElementById("nfPhoto").value = "";
+  selectedNfColor = NF_COLORS[0].v;
+  renderNfColorPicker();
+  document.getElementById("nfCreate").textContent = "Создать";
+  document.getElementById("newFolderForm").style.display = "none";
+  renderFolderPicker();
+}
+
+let MATERIALS = []; // [{id,folder_id,title,format,tags,day,url,calendar_event_id}] — грузится с сервера
+function renderMaterialsList(){
+  const wrap = document.getElementById("materialsList");
+  if(!FOLDERS.length){ wrap.innerHTML = `<div class="hint" style="margin:0">пока нет папок — создай первую через «+ добавить»</div>`; return; }
+  wrap.innerHTML = FOLDERS.map(f=>{
+    const mats = MATERIALS.filter(m=>m.folder_id===f.id);
+    const matsHtml = mats.length ? mats.map(m=>{
+      const fmt = FORMATS.find(x=>x.v===m.format);
+      return `<div class="evrow" style="margin:6px 0 0 14px">
+        <div class="evbody"><div class="evttl">${m.title}</div><div class="evmeta">${fmt?fmt.l:(m.format||"")}${m.day?` · день ${m.day}`:''}</div></div>
+        <button class="evbtn" data-matedit="${m.id}" aria-label="редактировать">✎</button>
+        <button class="evbtn" data-matdel="${m.id}">✕</button>
+      </div>`;
+    }).join("") : `<div class="hint" style="margin:4px 0 0 14px">материалов нет</div>`;
+    return `<div style="margin-bottom:16px">
+      <div class="evrow" style="background:transparent;border:none;padding:2px 0">
+        <div class="evbody"><div class="evttl" style="font-weight:700">${f.name}</div>${f.description?`<div class="evmeta">${f.description}</div>`:''}</div>
+        <button class="evbtn" data-folderedit="${f.id}" aria-label="редактировать папку">✎</button>
+        <button class="evbtn" data-folderdel="${f.id}">✕</button>
+      </div>
+      ${matsHtml}
+    </div>`;
+  }).join("");
+  wrap.querySelectorAll("[data-matdel]").forEach(b=>{
+    b.addEventListener("click", async ()=>{
+      if(!confirm("Удалить материал?")) return;
+      try{
+        await apiFetch(`/api/admin/materials/${b.dataset.matdel}`, {method:"DELETE"});
+        MATERIALS = MATERIALS.filter(m=>String(m.id)!==b.dataset.matdel);
+        renderMaterialsList();
+        showToast("Материал удалён");
+        if(String(editingMaterialId)===b.dataset.matdel) cancelEditMaterial();
+      }catch(e){}
+    });
+  });
+  wrap.querySelectorAll("[data-matedit]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const m = MATERIALS.find(x=>String(x.id)===b.dataset.matedit);
+      if(m) startEditMaterial(m);
+    });
+  });
+  wrap.querySelectorAll("[data-folderdel]").forEach(b=>{
+    b.addEventListener("click", async ()=>{
+      if(MATERIALS.some(m=>m.folder_id===b.dataset.folderdel)){
+        alert("В этой папке есть материалы — сначала удали или перенеси их");
+        return;
+      }
+      if(!confirm("Удалить папку?")) return;
+      try{
+        await apiFetch(`/api/admin/folders/${b.dataset.folderdel}`, {method:"DELETE"});
+        FOLDERS = FOLDERS.filter(f=>f.id!==b.dataset.folderdel);
+        renderMaterialsList();
+        renderFolderPicker();
+        showToast("Папка удалена");
+      }catch(e){}
+    });
+  });
+  wrap.querySelectorAll("[data-folderedit]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      const f = FOLDERS.find(x=>x.id===b.dataset.folderedit);
+      if(f) startEditFolder(f);
+    });
+  });
+}
+async function loadMaterials(){
+  try{ MATERIALS = await apiFetch("/api/admin/materials"); }catch(e){ MATERIALS = []; }
+  renderMaterialsList();
+}
+function openMaterialForm(show){
+  document.getElementById("materialFormBody").style.display = show ? "" : "none";
+  document.getElementById("toggleMaterialForm").textContent = show ? "свернуть" : "+ добавить";
+}
+document.getElementById("toggleMaterialForm").addEventListener("click", ()=>{
+  const open = document.getElementById("materialFormBody").style.display !== "none";
+  if(open && editingMaterialId) cancelEditMaterial();
+  if(open && editingFolderId) cancelEditFolder();
+  openMaterialForm(!open);
+});
+loadFolders().then(loadMaterials);
 
 document.getElementById("evtHintDot").addEventListener("click", ()=>{
   document.getElementById("evtHintDot").classList.toggle("on");
@@ -3288,6 +3414,13 @@ function isoDateToMarathonDay(iso){
   if(!iso) return null;
   const a = new Date(MARATHON_START_ISO+"T00:00:00"), b = new Date(iso+"T00:00:00");
   return Math.round((b-a)/86400000) + 1;
+}
+function dayToIso(day){
+  if(!day) return "";
+  const [y,mn,dd] = MARATHON_START_ISO.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, mn-1, dd));
+  dt.setUTCDate(dt.getUTCDate() + (day-1));
+  return dt.toISOString().slice(0,10);
 }
 
 async function uploadMaterialFile(file){
@@ -3316,6 +3449,43 @@ document.getElementById("mFileBox").addEventListener("drop", e=>{
   e.preventDefault();
   if(e.dataTransfer.files[0]) uploadMaterialFile(e.dataTransfer.files[0]);
 });
+let editingMaterialId = null;
+function startEditMaterial(m){
+  editingMaterialId = m.id;
+  openMaterialForm(true);
+  selectedFolder = m.folder_id; renderFolderPicker();
+  document.getElementById("mTitle").value = m.title || "";
+  selectedFormat = m.format || FORMATS[0].v; renderFormatPicker();
+  if(m.day) mDayPicker.setValue(dayToIso(m.day)); else mDayPicker.reset();
+  renderMaterialThemes();
+  (m.tags||[]).forEach(t=>{
+    const chip = document.querySelector(`#mThemes .tchip[data-t="${t}"]`);
+    if(chip) chip.classList.add("on");
+  });
+  document.getElementById("mLink").value = (m.url && m.url!=="#") ? m.url : "";
+  document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
+  const hasEvent = !!m.calendar_event_id;
+  evtToggle.classList.toggle("on", hasEvent);
+  document.getElementById("evtPickWrap").style.display = hasEvent ? "" : "none";
+  if(hasEvent) document.getElementById("evtPick").value = m.calendar_event_id;
+  document.getElementById("saveMaterial").textContent = "Сохранить изменения";
+  document.getElementById("cancelEditMaterial").hidden = false;
+  document.getElementById("materialFormBody").scrollIntoView({block:"center", behavior:"smooth"});
+}
+function cancelEditMaterial(){
+  editingMaterialId = null;
+  document.getElementById("mTitle").value = "";
+  document.getElementById("mLink").value = "";
+  document.getElementById("mFile").value = "";
+  document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
+  mDayPicker.reset();
+  document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
+  evtToggle.classList.remove("on");
+  document.getElementById("evtPickWrap").style.display = "none";
+  document.getElementById("saveMaterial").textContent = "Сохранить материал";
+  document.getElementById("cancelEditMaterial").hidden = true;
+}
+document.getElementById("cancelEditMaterial").addEventListener("click", cancelEditMaterial);
 document.getElementById("saveMaterial").addEventListener("click", async ()=>{
   const title = document.getElementById("mTitle").value.trim();
   const themeIds = [...document.querySelectorAll("#mThemes .tchip.on")].map(c=>c.dataset.t);
@@ -3323,20 +3493,28 @@ document.getElementById("saveMaterial").addEventListener("click", async ()=>{
   if(!themeIds.length){ document.getElementById("themeErr").style.display = "block"; return; }
   if(!title){ document.getElementById("mTitle").focus(); return; }
   const evOn = evtToggle.classList.contains("on");
+  const body = JSON.stringify({
+    folder_id: selectedFolder, title, format: selectedFormat,
+    day: isoDateToMarathonDay(document.getElementById("mDay").value),
+    tags: themeIds, url: document.getElementById("mLink").value.trim() || "#",
+    calendar_event_id: evOn ? (document.getElementById("evtPick").value || null) : null,
+  });
   try{
-    await apiFetch("/api/admin/materials", {method:"POST", body: JSON.stringify({
-      folder_id: selectedFolder, title, format: selectedFormat,
-      day: isoDateToMarathonDay(document.getElementById("mDay").value),
-      tags: themeIds, url: document.getElementById("mLink").value.trim() || "#",
-      calendar_event_id: evOn ? (document.getElementById("evtPick").value || null) : null,
-    })});
-    showToast("Материал «"+title+"» сохранён ✓");
-    document.getElementById("mTitle").value = "";
-    document.getElementById("mLink").value = "";
-    document.getElementById("mFile").value = "";
-    document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
-    mDayPicker.reset();
-    document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
+    if(editingMaterialId){
+      await apiFetch(`/api/admin/materials/${editingMaterialId}`, {method:"PUT", body});
+      showToast("Материал «"+title+"» обновлён ✓");
+      cancelEditMaterial();
+    } else {
+      await apiFetch("/api/admin/materials", {method:"POST", body});
+      showToast("Материал «"+title+"» сохранён ✓");
+      document.getElementById("mTitle").value = "";
+      document.getElementById("mLink").value = "";
+      document.getElementById("mFile").value = "";
+      document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
+      mDayPicker.reset();
+      document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
+    }
+    await loadMaterials();
   }catch(e){}
 });
 
@@ -4522,6 +4700,32 @@ async def api_materials_add(request):
     return web.json_response(_material_json(row), status=201)
 
 
+async def api_materials_update(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    mat_id = int(request.match_info["id"])
+    data = await request.json()
+    title = str(data.get("title", "")).strip()
+    folder_id = str(data.get("folder_id", "")).strip()
+    if not title or not folder_id:
+        return web.json_response({"error": "title and folder_id required"}, status=400)
+    day_raw = data.get("day")
+    try:
+        day = int(day_raw) if day_raw not in (None, "") else None
+    except (TypeError, ValueError):
+        day = None
+    await DB_POOL.execute(
+        "UPDATE materials SET folder_id=$2, title=$3, format=$4, tags=$5, day=$6, url=$7, calendar_event_id=$8 WHERE id=$1",
+        mat_id, folder_id, title, str(data.get("format", "link")).strip(),
+        json.dumps(data.get("tags", []), ensure_ascii=False), day,
+        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"),
+    )
+    row = await DB_POOL.fetchrow("SELECT * FROM materials WHERE id=$1", mat_id)
+    if row is None:
+        return web.json_response({"error": "not_found"}, status=404)
+    return web.json_response(_material_json(row))
+
+
 async def api_materials_delete(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
@@ -4903,6 +5107,7 @@ def make_app():
         web.delete("/api/admin/themes/{id}", api_themes_delete),
         web.get("/api/admin/materials", api_materials_list),
         web.post("/api/admin/materials", api_materials_add),
+        web.put("/api/admin/materials/{id}", api_materials_update),
         web.delete("/api/admin/materials/{id}", api_materials_delete),
         web.post("/api/admin/materials/upload", api_materials_upload),
         web.get("/api/admin/calendar-events", api_calendar_list),
