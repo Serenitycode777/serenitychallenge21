@@ -481,7 +481,7 @@ CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><m
 :root{
   --lav:#AA9DB8; --lav-ink:#6B5A7C; --sage:#6A9993; --sage-ink:#3F6660;
   --sand:#CBBAA8; --sand-ink:#8A6F55; --ink:#332E3D; --ink-soft:#6B6475;
-  --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#F2ECE6; --line:#E7DED6;
+  --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#EEF0F1; --line:#E2E4E6;
   --shadow:0 10px 30px -14px rgba(51,46,61,.22); color-scheme:light;
   --h0:#ECEFEC; --h0-text:#6B6475; --h30:#B6CFC6; --h30-text:#3F6660;
   --h60:#7FA89C; --h60-text:#FFFFFF; --h100:#4C7D73; --h100-text:#FFFFFF; --h-future:#FFFFFF;
@@ -1046,7 +1046,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><path d="M12 2.5v2.5M12 19v2.5M4.5 12H2M22 12h-2.5M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8"/></svg>
       Сегодня</button>
     <button class="navbtn" data-tab="home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V11l4-3 4 7 4-9 4 6v7"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V14.5M9.5 20V9M15 20V12M20 20V5.5"/></svg>
       Прогресс</button>
     <button class="navbtn" data-tab="materials">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
@@ -1206,7 +1206,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><path d="M12 2.5v2.5M12 19v2.5M4.5 12H2M22 12h-2.5M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8"/></svg>
       Сегодня</button>
     <button class="navbtn" data-tab="home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V11l4-3 4 7 4-9 4 6v7"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V14.5M9.5 20V9M15 20V12M20 20V5.5"/></svg>
       Прогресс</button>
     <button class="navbtn" data-tab="materials">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
@@ -2514,7 +2514,7 @@ ADMIN_APP_HTML = """<!doctype html>
 :root{
   --lav:#AA9DB8; --lav-ink:#6B5A7C; --sage:#6A9993; --sage-ink:#3F6660;
   --sand:#CBBAA8; --sand-ink:#8A6F55; --ink:#332E3D; --ink-soft:#6B6475;
-  --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#F2ECE6; --line:#E7DED6;
+  --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#EEF0F1; --line:#E2E4E6;
   --ok:#5C8A5C; --ok-bg:#E7F1E4; --warn:#B98A3E; --warn-bg:#FBF0DE;
   --shadow:0 10px 30px -14px rgba(51,46,61,.22);
   --sys:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
