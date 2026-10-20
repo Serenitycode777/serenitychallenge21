@@ -1894,7 +1894,12 @@ function renderHeat(){
   const marathonPct = Math.round(TODAY/21*100);
   document.getElementById("dayPct").textContent = marathonPct+"%";
   document.getElementById("dayPillFill").style.width = marathonPct+"%";
-  document.getElementById("daySub").textContent = "Ты уже прошла треть пути марафона — продолжай в своём темпе";
+  document.getElementById("daySub").textContent =
+    TODAY<=1 ? "Только начинаешь путь — вперёд, шаг за шагом" :
+    marathonPct<33 ? "Ты в начале пути марафона — продолжай в своём темпе" :
+    marathonPct<66 ? "Ты уже прошла треть пути марафона — продолжай в своём темпе" :
+    marathonPct<100 ? "Ты уже прошла больше половины пути марафона — продолжай в своём темпе" :
+    "Ты прошла весь марафон — поздравляю!";
 }
 
 function openDay(d){
