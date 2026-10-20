@@ -1569,17 +1569,42 @@ if(!document.getElementById("tab-"+initialTab)) initialTab = "home";
 
 /* ---------- аутентификация и загрузка реальных данных кабинета ---------- */
 const TOKEN_KEY = "serenityAccessToken";
+const REFRESH_KEY = "serenityRefreshToken";
 function getToken(){ try{ return localStorage.getItem(TOKEN_KEY); }catch(e){ return null; } }
 function setToken(t){ try{ if(t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); }catch(e){} }
+function getRefreshToken(){ try{ return localStorage.getItem(REFRESH_KEY); }catch(e){ return null; } }
+function setRefreshToken(t){ try{ if(t) localStorage.setItem(REFRESH_KEY, t); else localStorage.removeItem(REFRESH_KEY); }catch(e){} }
 
-async function apiFetch(url, opts){
+let refreshInFlight = null;
+async function trySilentRefresh(){
+  const rt = getRefreshToken();
+  if(!rt) return false;
+  if(!refreshInFlight){
+    refreshInFlight = fetch("/api/auth/refresh", {
+      method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({refresh_token: rt})
+    }).then(r=>r.json()).catch(()=>({ok:false})).finally(()=>{ refreshInFlight = null; });
+  }
+  const data = await refreshInFlight;
+  if(data && data.ok && data.access_token){
+    setToken(data.access_token);
+    setRefreshToken(data.refresh_token);
+    return true;
+  }
+  return false;
+}
+
+async function apiFetch(url, opts, _retried){
   opts = opts || {};
   const headers = Object.assign({}, opts.headers, {"Authorization": "Bearer " + (getToken()||"")});
   let body = opts.body;
   if(body && typeof body !== "string" && !(body instanceof FormData)){ body = JSON.stringify(body); headers["Content-Type"] = "application/json"; }
   const resp = await fetch(url, Object.assign({}, opts, {headers, body}));
   if(resp.status === 401){
+    if(!_retried && await trySilentRefresh()){
+      return apiFetch(url, opts, true);
+    }
     setToken(null);
+    setRefreshToken(null);
     showAuthScreen("сессия истекла — войди снова");
     throw new Error("unauthorized");
   }
@@ -1859,6 +1884,7 @@ async function submitAuth(){
       btn.disabled = false; return;
     }
     setToken(data.access_token);
+    setRefreshToken(data.refresh_token);
     btn.disabled = false;
     bootCabinet();
   }catch(e){
@@ -1876,6 +1902,7 @@ document.getElementById("authPassword").addEventListener("keydown", e=>{ if(e.ke
     isRecovery = params.get("type") === "recovery";
     if(tok){
       setToken(tok);
+      setRefreshToken(params.get("refresh_token"));
       try{ history.replaceState(null, "", location.pathname + location.search); }catch(e){}
     }
   }
@@ -2572,6 +2599,7 @@ function openProfileEdit(){
 document.getElementById("v3tile").addEventListener("click", openProfileEdit);
 document.getElementById("logoutBtn").addEventListener("click", ()=>{
   setToken(null);
+  setRefreshToken(null);
   location.reload();
 });
 
@@ -4046,6 +4074,37 @@ async def api_auth_login(request):
     })
 
 
+async def api_auth_refresh(request):
+    """Обменивает refresh_token на новую пару access/refresh — так участница не вылетает
+    из кабинета каждый час (время жизни access_token в Supabase по умолчанию — 1 час)."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    refresh_token = str(data.get("refresh_token", "")).strip()
+    if not refresh_token:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        return web.json_response({"ok": False, "error": "auth_not_configured"}, status=500)
+
+    async with ClientSession() as session:
+        async with session.post(
+            f"{SUPABASE_URL}/auth/v1/token?grant_type=refresh_token",
+            json={"refresh_token": refresh_token},
+            headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+        ) as resp:
+            result = await resp.json()
+            if resp.status >= 400:
+                msg = result.get("msg") or result.get("error_description") or "refresh_failed"
+                return web.json_response({"ok": False, "error": msg}, status=resp.status)
+
+    return web.json_response({
+        "ok": True,
+        "access_token": result.get("access_token"),
+        "refresh_token": result.get("refresh_token"),
+    })
+
+
 async def api_auth_recover(request):
     """Запрос письма восстановления пароля. Supabase всегда отвечает 200, даже если
     такого email нет — так мы не палим, кто зарегистрирован, кто нет."""
@@ -5087,6 +5146,7 @@ def make_app():
         web.get("/health", health),
         web.post("/api/auth/register", api_auth_register),
         web.post("/api/auth/login", api_auth_login),
+        web.post("/api/auth/refresh", api_auth_refresh),
         web.post("/api/auth/recover", api_auth_recover),
         web.put("/api/auth/set-password", api_auth_set_password),
         web.get("/api/auth/me", api_auth_me),
