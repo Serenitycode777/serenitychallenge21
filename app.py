@@ -1643,8 +1643,8 @@ function applyState(data){
 }
 
 function buildMaterialsState(){
-  AUTHORS = Object.assign({}, STATE.authors||{}, MASTERMIND_AUTHOR);
-  MATERIALS = MASTERMIND_MATERIALS.concat((STATE.materials||[]).map(m=>Object.assign({}, m, {tags: m.tags||[]})));
+  AUTHORS = Object.assign({}, STATE.authors||{});
+  MATERIALS = (STATE.materials||[]).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
   THEMES = [...new Set(MATERIALS.flatMap(m=>m.tags||[]))];
   document.getElementById("themeChips").innerHTML =
     `<button class="chip theme active" data-t="all">все темы</button>` +
