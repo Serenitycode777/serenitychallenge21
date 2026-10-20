@@ -2818,7 +2818,6 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
   <div id="t-content">
     <div class="card">
       <h2>Материалы</h2>
-      <div class="hint">сгруппированы по папкам (авторам) — так же, как участницы видят их на странице «Материалы»</div>
       <div id="materialsList"></div>
     </div>
     <div class="card">
