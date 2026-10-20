@@ -1002,20 +1002,20 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
   <h1 id="authTitle">Вход в кабинет</h1>
   <p class="sub" id="authSub">Марафон «Начни сегодня» · Serenity Moon</p>
-  <div class="authcard">
+  <form class="authcard" id="authForm">
     <p class="auth-err" id="authErr" hidden></p>
-    <div class="field"><label>email</label><input type="email" id="authEmail" autocomplete="email"></div>
+    <div class="field"><label>email</label><input type="email" id="authEmail" name="email" autocomplete="email"></div>
     <div class="field"><label>пароль</label><div class="pwd-wrap">
-      <input type="password" id="authPassword" autocomplete="current-password">
+      <input type="password" id="authPassword" name="password" autocomplete="current-password">
       <button type="button" class="pwd-eye" id="authPwdEye" aria-label="показать пароль">👁</button>
     </div></div>
     <div class="field" id="authPassword2Field" hidden><label>повтори пароль</label><div class="pwd-wrap">
-      <input type="password" id="authPassword2" autocomplete="new-password">
+      <input type="password" id="authPassword2" name="password2" autocomplete="new-password">
       <button type="button" class="pwd-eye" id="authPwdEye2" aria-label="показать пароль">👁</button>
     </div></div>
     <p class="auth-switch" id="authForgotWrap" style="margin:-2px 0 4px"><button id="authForgotBtn" type="button">Забыла пароль?</button></p>
-    <button class="auth-submit" id="authSubmit" type="button">Войти</button>
-  </div>
+    <button class="auth-submit" id="authSubmit" type="submit">Войти</button>
+  </form>
   <p class="auth-switch"><span id="authSwitchHint">Первый раз?</span> <button id="authSwitchMode" type="button">Зарегистрироваться</button></p>
 </div>
 
@@ -1023,11 +1023,11 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
   <h1>Восстановление пароля</h1>
   <p class="sub">Пришлём ссылку на email, по ней можно будет задать новый пароль</p>
-  <div class="authcard">
+  <form class="authcard" id="recoverForm">
     <p class="auth-err" id="recoverErr" hidden></p>
-    <div class="field"><label>email</label><input type="email" id="recoverEmail" autocomplete="email"></div>
-    <button class="auth-submit" id="recoverSubmit" type="button">Отправить ссылку</button>
-  </div>
+    <div class="field"><label>email</label><input type="email" id="recoverEmail" name="email" autocomplete="email"></div>
+    <button class="auth-submit" id="recoverSubmit" type="submit">Отправить ссылку</button>
+  </form>
   <p class="auth-switch"><button id="recoverBack" type="button">← назад ко входу</button></p>
 </div>
 
@@ -1035,18 +1035,18 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
   <h1>Новый пароль</h1>
   <p class="sub">Придумай новый пароль для входа в кабинет</p>
-  <div class="authcard">
+  <form class="authcard" id="newPasswordForm">
     <p class="auth-err" id="newPasswordErr" hidden></p>
     <div class="field"><label>новый пароль</label><div class="pwd-wrap">
-      <input type="password" id="newPassword1" autocomplete="new-password">
+      <input type="password" id="newPassword1" name="password" autocomplete="new-password">
       <button type="button" class="pwd-eye" id="newPwdEye1" aria-label="показать пароль">👁</button>
     </div></div>
     <div class="field"><label>повтори пароль</label><div class="pwd-wrap">
-      <input type="password" id="newPassword2" autocomplete="new-password">
+      <input type="password" id="newPassword2" name="password2" autocomplete="new-password">
       <button type="button" class="pwd-eye" id="newPwdEye2" aria-label="показать пароль">👁</button>
     </div></div>
-    <button class="auth-submit" id="newPasswordSubmit" type="button">Сохранить и войти</button>
-  </div>
+    <button class="auth-submit" id="newPasswordSubmit" type="submit">Сохранить и войти</button>
+  </form>
 </div>
 
 <div class="authscreen" id="authLoading" hidden><p class="auth-loading">Загружаем кабинет…</p></div>
@@ -1782,6 +1782,7 @@ document.getElementById("authSwitchMode").addEventListener("click", ()=>{
   document.getElementById("authPassword2Field").hidden = authMode !== "register";
   document.getElementById("authForgotWrap").hidden = authMode !== "login";
   document.getElementById("authErr").hidden = true;
+  document.getElementById("authPassword").autocomplete = authMode==="login" ? "current-password" : "new-password";
 });
 document.getElementById("authPwdEye").addEventListener("click", ()=>{
   const inp = document.getElementById("authPassword");
@@ -1803,7 +1804,8 @@ document.getElementById("recoverBack").addEventListener("click", ()=>{
   document.getElementById("recoverScreen").hidden = true;
   document.getElementById("authScreen").hidden = false;
 });
-document.getElementById("recoverSubmit").addEventListener("click", async ()=>{
+document.getElementById("recoverForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
   const email = document.getElementById("recoverEmail").value.trim();
   const errEl = document.getElementById("recoverErr");
   errEl.style.color = ""; errEl.hidden = true;
@@ -1828,7 +1830,8 @@ document.getElementById("newPwdEye2").addEventListener("click", ()=>{
   const inp = document.getElementById("newPassword2");
   inp.type = inp.type === "password" ? "text" : "password";
 });
-document.getElementById("newPasswordSubmit").addEventListener("click", async ()=>{
+document.getElementById("newPasswordForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
   const p1 = document.getElementById("newPassword1").value;
   const p2 = document.getElementById("newPassword2").value;
   const errEl = document.getElementById("newPasswordErr");
@@ -1891,8 +1894,7 @@ async function submitAuth(){
     errEl.textContent = "не получилось связаться с сервером, попробуй ещё раз"; errEl.hidden = false; btn.disabled = false;
   }
 }
-document.getElementById("authSubmit").addEventListener("click", submitAuth);
-document.getElementById("authPassword").addEventListener("keydown", e=>{ if(e.key === "Enter") submitAuth(); });
+document.getElementById("authForm").addEventListener("submit", e=>{ e.preventDefault(); submitAuth(); });
 
 (function bootOnLoad(){
   let isRecovery = false;
