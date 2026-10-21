@@ -2503,7 +2503,10 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
   openOverlay(m.title, eyebrow);
   const codeBox = m.mmId ? mmCodeBoxHtml(m.mmId) : "";
   const hasLink = m.url && m.url !== "#";
-  const openLink = hasLink ? `<button id="matOpenBtn" class="btn primary" style="margin:4px 0 10px">Открыть материал →</button>` : "";
+  const needsSign = hasLink && m.url.indexOf("storage:") === 0;
+  const openLink = !hasLink ? "" : needsSign
+    ? `<button id="matOpenBtn" class="btn primary" style="margin:4px 0 10px">Открыть материал →</button>`
+    : `<a id="matOpenBtn" href="${m.url}" target="_blank" rel="noopener" class="btn primary" style="margin:4px 0 10px;display:inline-block;text-decoration:none">Открыть материал →</a>`;
   document.getElementById("overlayBody").innerHTML =
     `<div class="mat" style="margin-bottom:10px"><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
       <div class="mat-body"><div class="mat-title">${m.title}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div></div>
@@ -2511,25 +2514,20 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
      ${codeBox}
      <button class="editlink" id="matBackBtn" type="button" style="margin-top:4px">${backLabel}</button>`;
   if(m.mmId) wireMmCodeBox(m.mmId);
-  if(hasLink){
+  if(needsSign){
     document.getElementById("matOpenBtn").addEventListener("click", async ()=>{
       playPopSound();
-      let target = m.url;
-      const win = window.open("", "_blank", "noopener");
-      let ok = true;
-      if(m.id){
-        try{
-          const resp = await apiFetch("/api/cabinet/materials/"+m.id+"/link");
-          const data = await resp.json();
-          if(resp.ok && data.ok) target = data.url; else ok = false;
-        }catch(e){ ok = false; }
-      }
-      if(!ok || !/^https?:\/\//.test(target||"")){
-        if(win) win.close();
+      try{
+        const resp = await apiFetch("/api/cabinet/materials/"+m.id+"/link");
+        const data = await resp.json();
+        if(resp.ok && data.ok && /^https?:\/\//.test(data.url)){
+          window.location.href = data.url;
+        } else {
+          alert("Не получилось открыть файл. Попробуй ещё раз через минуту — если не поможет, напиши нам.");
+        }
+      }catch(e){
         alert("Не получилось открыть файл. Попробуй ещё раз через минуту — если не поможет, напиши нам.");
-        return;
       }
-      win.location.href = target;
     });
   }
   document.getElementById("matBackBtn").addEventListener("click", onBack);
