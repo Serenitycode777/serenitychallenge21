@@ -2488,8 +2488,9 @@ function openMaterial(key){
     return `<div class="mat ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
       <div class="mat-body"><div class="mat-title">${m.title}${newBadge}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div>${status}</div>`;
   }).join("");
+  const anyLocked = items.some(m=>!(m.day===null||m.day<=TODAY));
   document.getElementById("overlayBody").innerHTML =
-    `${rows}<p class="note">Доступ к файлу открывается в день разблокировки.</p>`;
+    `${rows}${anyLocked?'<p class="note">Доступ к файлу открывается в день разблокировки.</p>':''}`;
   document.getElementById("overlayBody").querySelectorAll(".mat[data-i]").forEach(row=>{
     row.addEventListener("click", ()=>openMaterialDetail(key, Number(row.dataset.i)));
   });
