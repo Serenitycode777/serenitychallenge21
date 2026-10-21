@@ -660,7 +660,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
 .hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none}
 .hab.done{background:var(--surface-2)}
-.markvisual{width:24px;height:24px;border-radius:50%;border:2px dashed var(--line);background:var(--surface);
+.markvisual{width:24px;height:24px;border-radius:50%;border:2px solid var(--ink-soft);background:var(--surface);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;overflow:hidden}
 .markvisual svg{width:13px;height:13px;opacity:0;transition:.15s;flex-shrink:0}
 .markwrap{position:relative;width:40px;height:40px;margin-left:-8px;flex-shrink:0}
@@ -1066,6 +1066,9 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
     <button class="navbtn" data-tab="materials">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
       Материалы</button>
+    <button class="navbtn" data-tab="schedule">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+      Расписание</button>
     <button class="navbtn" data-tab="profile">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20c1.5-4 4.5-6 7.5-6s6 2 7.5 6"/></svg>
       Профиль</button>
@@ -1178,13 +1181,15 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
           <div class="mgrid" id="mgrid"></div>
           <div class="checklist" id="mflat" style="padding:4px 18px" hidden></div>
         </div>
-        <div class="mat-side">
-          <div class="heatcard">
-            <h3>Календарь</h3>
-            <div id="nextEventBanner"></div>
-            <div id="eventsList"></div>
-          </div>
-        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="tab-schedule" hidden>
+      <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <div class="heatcard">
+        <h3>Расписание</h3>
+        <div id="nextEventBanner"></div>
+        <div id="eventsList"></div>
       </div>
     </section>
 
@@ -1227,6 +1232,9 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
     <button class="navbtn" data-tab="materials">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
       Материалы</button>
+    <button class="navbtn" data-tab="schedule">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>
+      Расписание</button>
     <button class="navbtn" data-tab="profile">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20c1.5-4 4.5-6 7.5-6s6 2 7.5 6"/></svg>
       Профиль</button>
@@ -1255,7 +1263,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   <p class="fd-quote">«Маленькие шаги каждый день создают большие результаты»</p>
   <button class="fd-btn" id="fdClose">
     <svg viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="currentColor"/></svg>
-    Спокойной ночи</button>
+    <span id="fdCloseText">Ура! &#127881; Ты это сделала!</span></button>
 </div></div>
 
 <div class="star-overlay" id="starOverlay"><div class="star-card">
@@ -1623,6 +1631,7 @@ function showAuthScreen(err){
 
 let STATE = {marathon_start:"2026-11-09", logsByDate:{}, mastermind:{}, authors:{}, materials:[], events:[]};
 let MARATHON_START_ISO = "2026-11-09";
+let TODAY_DATE_ISO = "2026-11-09";
 let RU_MONTHS_SHORT = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
 let TODAY = 1;
 let HABITS = [];
@@ -1650,6 +1659,11 @@ function dayToDate(d){
   return dt;
 }
 function fmtDateRu(dt){ return dt.getUTCDate()+" "+RU_MONTHS_SHORT[dt.getUTCMonth()]; }
+function fmtIsoDateRu(iso){
+  if(!iso) return "";
+  const [y,m,dd] = iso.split("-").map(Number);
+  return fmtDateRu(new Date(Date.UTC(y, m-1, dd)));
+}
 function logForDate(dateStr){ return STATE.logsByDate[dateStr] || {habits_done:{}, closed:false}; }
 function doneCountForDay(d){
   if(d === TODAY) return liveChecked.filter(Boolean).length;
@@ -1672,6 +1686,7 @@ function applyState(data){
   (data.logs||[]).forEach(l=>{ STATE.logsByDate[l.date] = {habits_done: l.habits_done||{}, closed: !!l.closed}; });
   STATE.mastermind = data.mastermind || {};
   MARATHON_START_ISO = data.marathon_start || MARATHON_START_ISO;
+  TODAY_DATE_ISO = data.today_date || TODAY_DATE_ISO;
   TODAY = Math.min(21, Math.max(1, data.today));
   HABIT_IDS = (data.habits||[]).map(h=>h.id);
   HABITS = (data.habits||[]).map(h=>h.name);
@@ -2080,6 +2095,7 @@ document.getElementById("closeDayBtn").addEventListener("click", ()=>{
   document.getElementById("fdDone").textContent = done;
   document.getElementById("fdTotal").textContent = HABITS.length;
   document.getElementById("fdPraise").textContent = done===HABITS.length?"Ты держишь ритм ✨":done===0?"Завтра новый день":"Ты в процессе, и этого достаточно";
+  document.getElementById("fdCloseText").textContent = done===HABITS.length?"Ура! 🎉 Ты это сделала!":done===0?"Хорошо, до встречи":"Отлично, увидимся завтра";
   document.getElementById("fdOverlay").classList.add("open");
   saveTodayLog(true);
   renderProgress();
@@ -2350,10 +2366,11 @@ document.getElementById("shareBtn").addEventListener("click", ()=>{
   const grad=ctx.createLinearGradient(0,0,640,640); grad.addColorStop(0,"#AA9DB8"); grad.addColorStop(1,"#6A9993");
   ctx.fillStyle=grad; ctx.fillRect(0,0,640,640);
   ctx.fillStyle="#fff"; ctx.textAlign="center";
-  ctx.font="italic 22px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText("serenity moon · день "+TODAY+" из 21", 320, 90);
+  ctx.font="600 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText(fmtDateRu(dayToDate(TODAY)), 320, 56);
+  ctx.font="italic 22px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText("МАРАФОН «НАЧНИ СЕГОДНЯ!» · день "+TODAY+" из 21", 320, 92);
   ctx.font="700 40px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   const done=liveChecked.filter(Boolean).length;
-  ctx.fillText(done+" из "+HABITS.length+" привычек сегодня", 320, 150);
+  ctx.fillText(done+" из "+HABITS.length+" привычек сегодня", 320, 160);
   let y=230; ctx.font="500 24px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.textAlign="left";
   HABITS.forEach((h,i)=>{ ctx.fillText((liveChecked[i]?"✓":"○")+"  "+h, 90, y); y+=54; });
   ctx.textAlign="center"; ctx.font="italic 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -2375,32 +2392,47 @@ function matchesQuery(m){ if(!query) return true; return (m.title+" "+(m.tags||[
 function matRowHtml(m){
   const unlocked = m.day===null||m.day<=TODAY;
   const status = m.day===null ? `<span class="mat-status open">Открыто</span>`
-    : unlocked ? `<span class="mat-status open">День ${m.day}</span>` : `<span class="mat-status locked">${ICONS.lock} День ${m.day}</span>`;
+    : unlocked ? `<span class="mat-status open">Открыто ${fmtDateRu(dayToDate(m.day))}</span>` : `<span class="mat-status locked">${ICONS.lock} с ${fmtDateRu(dayToDate(m.day))}</span>`;
   const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
   return `<div class="mat ${unlocked?'':'is-locked'}"><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
     <div class="mat-body"><div class="mat-title">${m.title}${newBadge}</div><div class="mat-tags">${(AUTHORS[m.author]||{}).name||''} · #${(m.tags||[]).join(' #')}</div></div>${status}</div>`;
 }
 
+function evtDateParts(iso){
+  const [y,m,dd] = iso.split("-").map(Number);
+  return {dom: dd, mon: RU_MONTHS_SHORT[m-1]};
+}
+function mskToEt(raw){
+  if(!raw) return raw;
+  const re = /(\d{1,2}):(\d{2})(?:\s*[-–]\s*(\d{1,2}):(\d{2}))?/;
+  const m = raw.match(re);
+  if(!m) return raw;
+  const shift = (h,mi)=>{ let t = h*60+mi - 7*60; t = ((t % 1440)+1440)%1440; return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"); };
+  let out = shift(Number(m[1]), Number(m[2]));
+  if(m[3]!==undefined) out += "–"+shift(Number(m[3]), Number(m[4]));
+  return out;
+}
 function renderEvents(){
   const events = STATE.events || [];
-  const next = events.find(e=>e.day >= TODAY);
+  const next = events.find(e=>e.date >= TODAY_DATE_ISO);
   document.getElementById("nextEventBanner").innerHTML = next
-    ? `<div class="evt-next"><div class="lbl">Ближайший эфир</div><div class="ttl">${next.title}</div><div class="meta">День ${next.day}${next.time?(' · '+next.time):''}${next.type?(' · '+next.type):''}</div></div>`
+    ? `<div class="evt-next"><div class="lbl">Ближайший эфир</div><div class="ttl">${next.title}</div><div class="meta">${fmtIsoDateRu(next.date)}${next.time?(' · '+mskToEt(next.time)):''}${next.type?(' · '+next.type):''}</div></div>`
     : "";
   document.getElementById("eventsList").innerHTML = events.map(e=>{
-    const isPast = e.day < TODAY;
+    const isPast = e.date < TODAY_DATE_ISO;
+    const dp = evtDateParts(e.date);
     return `<div class="evt-row ${isPast?'past':''}">
-      <div class="evt-date"><div class="d">${e.day}</div><div class="l">день</div></div>
-      <div class="evt-body"><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':(e.time||'')}</div></div>
+      <div class="evt-date"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
+      <div class="evt-body"><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':mskToEt(e.time||'')}</div></div>
       ${isPast?'':(e.type?`<div class="evt-tag">${e.type}</div>`:'')}
     </div>`;
   }).join("");
 
-  const todayEv = events.find(e=>e.day === TODAY);
+  const todayEv = events.find(e=>e.date === TODAY_DATE_ISO);
   const alertEl = document.getElementById("todayEventAlert");
   alertEl.hidden = !todayEv;
   if(todayEv){
-    document.getElementById("todayEventTxt").innerHTML = `сегодня${todayEv.time?(' в '+todayEv.time):''} — <b>${todayEv.title}</b>`;
+    document.getElementById("todayEventTxt").innerHTML = `сегодня${todayEv.time?(' в '+mskToEt(todayEv.time)):''} — <b>${todayEv.title}</b>`;
   }
 }
 
@@ -2445,7 +2477,7 @@ function openMaterial(key){
   const rows = items.map((m,i)=>{
     const unlocked = m.day===null||m.day<=TODAY;
     const status = m.day===null ? `<span class="mat-status open">Открыто</span>`
-      : unlocked ? `<span class="mat-status open">День ${m.day}</span>` : `<span class="mat-status locked">${ICONS.lock} День ${m.day}</span>`;
+      : unlocked ? `<span class="mat-status open">Открыто ${fmtDateRu(dayToDate(m.day))}</span>` : `<span class="mat-status locked">${ICONS.lock} с ${fmtDateRu(dayToDate(m.day))}</span>`;
     const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
     return `<div class="mat ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
       <div class="mat-body"><div class="mat-title">${m.title}${newBadge}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div>${status}</div>`;
@@ -2475,14 +2507,15 @@ function openMaterialDetail(key, idx){
     document.getElementById("matOpenBtn").addEventListener("click", async ()=>{
       playPopSound();
       let target = m.url;
+      const win = window.open("", "_blank", "noopener");
       if(m.id){
         try{
           const resp = await apiFetch("/api/cabinet/materials/"+m.id+"/link");
           const data = await resp.json();
           if(resp.ok && data.ok) target = data.url;
-        }catch(e){ return; }
+        }catch(e){ if(win) win.close(); return; }
       }
-      window.open(target, "_blank", "noopener");
+      if(win) win.location.href = target; else window.open(target, "_blank", "noopener");
     });
   }
   document.getElementById("matBackBtn").addEventListener("click", ()=>openMaterial(key));
@@ -2838,7 +2871,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       </div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Привычек</th><th>% выполнения</th><th>💎</th><th>Мастермайнды</th><th>Была в кабинете</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Телеграм</th><th>Привычек</th><th>% выполнения</th><th>💎</th><th>Мастермайнды</th><th>Была в кабинете</th><th></th></tr></thead>
           <tbody id="progBody"></tbody>
         </table>
       </div>
@@ -3087,6 +3120,7 @@ function renderProgress(){
     <td>${i+1}</td>
     <td>${p.name || "—"}</td>
     <td>${p.email || "—"}</td>
+    <td>${p.telegram || "—"}</td>
     <td>${p.habit_count}</td>
     <td>${p.avg_pct}%</td>
     <td>${p.perfect_days + p.mastermind_count*5}</td>
@@ -4353,7 +4387,7 @@ async def api_cabinet_bootstrap(request):
     cal_rows = await DB_POOL.fetch("SELECT * FROM calendar_events ORDER BY date")
     start = date.fromisoformat(MARATHON_START)
     events = [{
-        "day": (r["date"] - start).days + 1, "title": r["title"],
+        "day": (r["date"] - start).days + 1, "date": r["date"].isoformat(), "title": r["title"],
         "time": r["time"] or "", "type": r["type"] or "", "link": r["link"] or "",
     } for r in cal_rows]
 
@@ -4362,6 +4396,7 @@ async def api_cabinet_bootstrap(request):
 
     return web.json_response({
         "ok": True, "profile": profile, "habits": habits, "logs": logs, "today": today,
+        "today_date": datetime.now(ZoneInfo(MARATHON_TZ)).date().isoformat(),
         "marathon_start": MARATHON_START, "mastermind": mastermind,
         "authors": materials_data["authors"], "materials": materials_data["materials"], "events": events,
         "mila_events": mila_events,
@@ -4492,12 +4527,16 @@ async def admin_export(request):
         raise web.HTTPFound("/admin/login")
     rows = await DB_POOL.fetch("SELECT * FROM signups ORDER BY created DESC")
     cols = ["id", "name", "email", "phone", "instagram", "method", "amount", "status", "note", "created", "confirmed"]
+    headers = ["#", "name", "email", "phone", "телеграм", "method", "amount", "status", "note", "created", "confirmed"]
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(cols)
-    for r in rows:
+    writer.writerow(headers)
+    for i, r in enumerate(rows, start=1):
         row = []
         for c in cols:
+            if c == "id":
+                row.append(i)
+                continue
             v = r[c]
             if c in ("created", "confirmed") and v:
                 v = time.strftime("%Y-%m-%d %H:%M", time.localtime(v))
@@ -4542,6 +4581,8 @@ async def api_admin_participants(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
     profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind FROM profiles ORDER BY created DESC")
+    signup_rows = await DB_POOL.fetch("SELECT email_norm, instagram FROM signups WHERE instagram IS NOT NULL AND instagram <> ''")
+    telegram_by_email = {r["email_norm"]: r["instagram"] for r in signup_rows}
     result = []
     for p in profiles:
         uid = p["id"]
@@ -4563,8 +4604,9 @@ async def api_admin_participants(request):
         avg_pct = round((pct_sum / len(logs)) * 100) if logs else 0
         mm = _jsonb(p["mastermind"]) or {}
         mm_count = sum(1 for v in mm.values() if v) if isinstance(mm, dict) else 0
+        telegram = telegram_by_email.get(normalize_email(p["email"] or ""), "")
         result.append({
-            "id": str(uid), "name": p["name"] or "", "email": p["email"] or "",
+            "id": str(uid), "name": p["name"] or "", "email": p["email"] or "", "telegram": telegram,
             "habit_count": habit_count, "avg_pct": avg_pct, "perfect_days": perfect_days,
             "mastermind_count": mm_count, "last_active": last_date.isoformat() if last_date else None,
         })
