@@ -2516,14 +2516,20 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
       playPopSound();
       let target = m.url;
       const win = window.open("", "_blank", "noopener");
+      let ok = true;
       if(m.id){
         try{
           const resp = await apiFetch("/api/cabinet/materials/"+m.id+"/link");
           const data = await resp.json();
-          if(resp.ok && data.ok) target = data.url;
-        }catch(e){ if(win) win.close(); return; }
+          if(resp.ok && data.ok) target = data.url; else ok = false;
+        }catch(e){ ok = false; }
       }
-      if(win) win.location.href = target; else window.open(target, "_blank", "noopener");
+      if(!ok || !/^https?:\/\//.test(target||"")){
+        if(win) win.close();
+        alert("Не получилось открыть файл. Попробуй ещё раз через минуту — если не поможет, напиши нам.");
+        return;
+      }
+      win.location.href = target;
     });
   }
   document.getElementById("matBackBtn").addEventListener("click", onBack);
