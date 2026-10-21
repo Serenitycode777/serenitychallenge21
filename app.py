@@ -2389,12 +2389,12 @@ const PHOTOS = {
 
 function matchesQuery(m){ if(!query) return true; return (m.title+" "+(m.tags||[]).join(" ")).toLowerCase().includes(query); }
 
-function matRowHtml(m){
+function matRowHtml(m,i){
   const unlocked = m.day===null||m.day<=TODAY;
   const status = m.day===null ? `<span class="mat-status open">Открыто</span>`
     : unlocked ? `<span class="mat-status open">Открыто ${fmtDateRu(dayToDate(m.day))}</span>` : `<span class="mat-status locked">${ICONS.lock} с ${fmtDateRu(dayToDate(m.day))}</span>`;
   const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
-  return `<div class="mat ${unlocked?'':'is-locked'}"><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
+  return `<div class="mat ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
     <div class="mat-body"><div class="mat-title">${m.title}${newBadge}</div><div class="mat-tags">${(AUTHORS[m.author]||{}).name||''} · #${(m.tags||[]).join(' #')}</div></div>${status}</div>`;
 }
 
@@ -2450,6 +2450,12 @@ function renderMaterials(){
     );
     flat.innerHTML = items.length ? items.map(matRowHtml).join("") :
       `<p class="note" style="margin:12px 0">Ничего не нашлось</p>`;
+    flat.querySelectorAll(".mat[data-i]").forEach(row=>{
+      const m = items[Number(row.dataset.i)];
+      row.addEventListener("click", ()=>openMaterialDetailFor(m, (AUTHORS[m.author]||{}).name||"", "← назад", ()=>{
+        document.getElementById("overlay").classList.remove("open");
+      }));
+    });
     return;
   }
 
@@ -2489,10 +2495,11 @@ function openMaterial(key){
   });
 }
 function openMaterialDetail(key, idx){
-  const a = AUTHORS[key];
   const items = MATERIALS.filter(m=>m.author===key);
-  const m = items[idx];
-  openOverlay(m.title, a.name);
+  openMaterialDetailFor(items[idx], (AUTHORS[key]||{}).name||"", "← к материалам "+((AUTHORS[key]||{}).name||""), ()=>openMaterial(key));
+}
+function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
+  openOverlay(m.title, eyebrow);
   const codeBox = m.mmId ? mmCodeBoxHtml(m.mmId) : "";
   const hasLink = m.url && m.url !== "#";
   const openLink = hasLink ? `<button id="matOpenBtn" class="btn primary" style="margin:4px 0 10px">Открыть материал →</button>` : "";
@@ -2501,7 +2508,7 @@ function openMaterialDetail(key, idx){
       <div class="mat-body"><div class="mat-title">${m.title}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div></div>
      ${openLink}
      ${codeBox}
-     <button class="editlink" id="matBackBtn" type="button" style="margin-top:4px">← к материалам ${a.name}</button>`;
+     <button class="editlink" id="matBackBtn" type="button" style="margin-top:4px">${backLabel}</button>`;
   if(m.mmId) wireMmCodeBox(m.mmId);
   if(hasLink){
     document.getElementById("matOpenBtn").addEventListener("click", async ()=>{
@@ -2518,7 +2525,7 @@ function openMaterialDetail(key, idx){
       if(win) win.location.href = target; else window.open(target, "_blank", "noopener");
     });
   }
-  document.getElementById("matBackBtn").addEventListener("click", ()=>openMaterial(key));
+  document.getElementById("matBackBtn").addEventListener("click", onBack);
 }
 document.getElementById("themeChips").addEventListener("click",e=>{
   const b=e.target.closest(".chip"); if(!b) return;
