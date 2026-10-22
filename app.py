@@ -877,9 +877,9 @@ a.evt-next{display:block}
 .panel-head2.has-back{padding-left:50px}
 .panel-head2 .eyebrow2{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin:0 0 4px}
 .panel-head2 h2{font-size:19px;color:#fff}
-.close-x{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.22);border:none;width:28px;height:28px;
+.close-x{position:absolute;top:50%;right:14px;transform:translateY(-50%);background:rgba(255,255,255,.22);border:none;width:28px;height:28px;
   border-radius:50%;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.back-arrow{position:absolute;top:14px;left:14px;background:rgba(255,255,255,.22);border:none;width:28px;height:28px;
+.back-arrow{position:absolute;top:50%;left:14px;transform:translateY(-50%);background:rgba(255,255,255,.22);border:none;width:28px;height:28px;
   border-radius:50%;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 #overlayBody{padding:18px 22px calc(22px + env(safe-area-inset-bottom,0px));overflow-y:auto}
 .info-panel{max-width:400px;max-height:min(480px,80vh)}
@@ -1426,7 +1426,7 @@ document.addEventListener("keydown", e=>{
 /* ---------- каталог привычек (справочник, не пользовательские данные) ---------- */
 const CATALOG = {
   "Тело": [
-    {name:"Полноценный сон",when:"Каждую ночь",dur:"7-8 час.",desc:"Ложитесь спать до 10-11 вечера. Это поможет вам лучше спать и повысить уровень энергии по утрам. Поддержание постоянного циркадного ритма чрезвычайно полезно для здоровья.",why:"Во сне тело восстанавливается, а мозг закрепляет всё, что ты узнала и прожила за день – без этого остальные привычки держатся хуже."},
+    {name:"Полноценный сон",when:"Каждую ночь",dur:"7-8 час.",noTime:true,desc:"Ложитесь спать до 10-11 вечера. Это поможет вам лучше спать и повысить уровень энергии по утрам. Поддержание постоянного циркадного ритма чрезвычайно полезно для здоровья.",why:"Во сне тело восстанавливается, а мозг закрепляет всё, что ты узнала и прожила за день – без этого остальные привычки держатся хуже."},
     {name:"Стакан тёплой воды",when:"Утро",dur:"1 мин.",desc:"Натощак выпивайте 1 стакан тёплой воды (можно с лимоном). Запускает организм и помогает ему проснуться.",why:"После ночи организм немного обезвожен – вода мягко запускает обмен веществ и пищеварение."},
     {name:"100 прыжков на месте",when:"Утро",dur:"2 мин.",desc:"Опускайтесь на полную стопу. Отличный вариант запуска организма по утрам.",why:"Короткая физическая встряска утром усиливает кровообращение и помогает проснуться без кофеина."},
     {name:"Пить 1,5-2 литра воды",when:"В течение дня",dur:"1,5-2 л.",desc:"Пей воду маленькими порциями на протяжении дня, не дожидаясь жажды. Поддерживает энергию, кожу и работу всех систем организма.",why:"Даже лёгкое обезвоживание снижает концентрацию и энергию – регулярная вода держит тело в тонусе весь день."},
@@ -1472,8 +1472,6 @@ const CATALOG = {
     {name:"Планирование",when:"Утро/Вечер",dur:"5-10 мин.",desc:"В твоей жизни будет меньше хаоса, если ты будешь планировать.",why:"Несколько минут планирования снимают тревогу неопределённости и экономят силы на решения в течение дня."}
   ],
   "Без вредного": [
-    {name:"Не курить",when:"Каждый день",dur:"Весь день",desc:"День без сигарет – вклад в своё здоровье и энергию.",why:"Восстановление лёгких и сосудов начинается уже в первые часы без сигарет."},
-    {name:"Без алкоголя",when:"Каждый день",dur:"Весь день",desc:"День без алкоголя – более чистый сон и больше энергии с утра.",why:"Алкоголь ухудшает качество сна, даже если кажется, что помогает быстрее уснуть."},
     {name:"Меньше соцсетей",when:"Ежедневно",dur:"По желанию",desc:"Сократи бесцельный скролл – освободившееся время и внимание можно отдать себе.",why:"Бесцельный скролл истощает внимание почти так же, как многозадачность – пауза в нём освобождает ресурс для себя."}
   ]
 };
@@ -1821,7 +1819,7 @@ function parseDurToMinutes(dur){
 function defaultHabitConfigFor(name){
   const cfg = defaultHabitConfig();
   const meta = findHabitMeta(name);
-  cfg.minutes = meta ? parseDurToMinutes(meta.dur) : 5;
+  cfg.minutes = (meta && meta.noTime) ? 0 : (meta ? parseDurToMinutes(meta.dur) : 5);
   return cfg;
 }
 const MIN_UNITS = ["мин","мин.","минут","минута","минуты","минуту"];
@@ -1835,11 +1833,12 @@ function unitMinuteMultiplier(u){
 }
 function isTimeUnit(u){ return unitMinuteMultiplier(u) > 0; }
 function habitMinutes(name){
+  const meta = findHabitMeta(name);
+  if(meta && meta.noTime) return 0;
   const cfg = habitConfig[name] || defaultHabitConfig();
   const mult = unitMinuteMultiplier(cfg.unit);
   if(cfg.qtyOn && mult > 0) return (Number(cfg.target) || 0) * mult;
   if(Number(cfg.minutes) > 0) return Number(cfg.minutes);
-  const meta = findHabitMeta(name);
   return meta ? parseDurToMinutes(meta.dur) : 5;
 }
 function formatMinutesRu(mins){
