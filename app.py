@@ -779,7 +779,7 @@ a.evt-next{display:block}
 .evt-next .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;opacity:.85;margin-bottom:3px}
 .evt-next .ttl{font-size:14.5px;font-weight:600;margin-bottom:2px}
 .evt-next .meta{font-size:11.5px;opacity:.9}
-.evt-row{display:flex;align-items:center;gap:11px;padding:11px 12px;background:var(--surface-2);border-radius:14px;margin:6px 0}
+.evt-row{display:flex;align-items:center;gap:11px;padding:11px 12px;background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;margin:7px 0}
 .evt-row:first-of-type{border-top:none}
 .evt-date{width:36px;flex-shrink:0;text-align:center}
 .evt-date .d{font-size:15px;font-weight:700;line-height:1;color:var(--ink)}
@@ -821,7 +821,7 @@ a.evt-next{display:block}
 .chip.active{background:var(--lav);border-color:var(--lav);color:#fff}
 .chip.active.theme{background:var(--sage);border-color:var(--sage)}
 .mgrid{display:flex;flex-direction:column;gap:10px;background:var(--surface);border-radius:18px;padding:12px;box-shadow:var(--shadow)}
-.mcard{background:var(--surface-2);border:none;border-radius:14px;padding:16px;cursor:pointer;
+.mcard{background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;padding:16px;cursor:pointer;
   display:flex;gap:14px;align-items:flex-start}
 .mcard[hidden]{display:none}
 .dot{width:36px;height:36px;border-radius:50%;flex-shrink:0;overflow:hidden}
@@ -904,7 +904,7 @@ a.evt-next{display:block}
 .info-why-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--sage-ink);font-weight:600;margin-bottom:5px}
 .info-why-txt{font-size:12.5px;color:var(--ink-soft);line-height:1.55;font-style:italic}
 .sub{color:var(--ink-soft);font-size:13px;margin:2px 0 18px}
-.mat{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--surface-2);border-radius:14px;margin:6px 0}
+.mat{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;margin:7px 0}
 .mat:first-of-type{border-top:none}
 .mat.is-locked{opacity:.55}
 .mat-icon{width:34px;height:34px;border-radius:10px;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center}
