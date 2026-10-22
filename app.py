@@ -738,8 +738,12 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   .share-out img{width:260px;display:block;margin:0 auto}
 }
 .share-note{font-size:11px;color:var(--ink-soft);margin-top:8px;line-height:1.5;text-align:center}
-.share-links{display:flex;gap:10px;margin-top:12px}
-.share-links .btn{font-size:12.5px;padding:12px 10px}
+.share-divider{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--ink-soft);font-size:10.5px;
+  font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.share-divider::before,.share-divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.share-links{display:flex;flex-direction:column;gap:8px;max-width:240px;margin:0 auto}
+.share-links .btn{font-size:12px;padding:9px 14px}
+.share-links .btn svg{width:14px;height:14px}
 .evening-rem{display:flex;gap:10px;border:1.5px dashed var(--line);border-radius:14px;padding:13px 15px;margin-top:14px}
 .evening-rem svg{width:17px;height:17px;color:var(--sage-ink);flex-shrink:0;margin-top:1px}
 .evening-rem .lead{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
@@ -2508,11 +2512,21 @@ document.getElementById("shareBtn").addEventListener("click", ()=>{
   ctx.fillStyle=grad; ctx.fillRect(0,0,640,640);
   ctx.fillStyle="#fff"; ctx.textAlign="center";
   ctx.font="32px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText("🌙", 320, 58);
-  ctx.font="700 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText(fmtDateRu(dayToDate(TODAY)).toUpperCase(), 320, 88);
-  ctx.font="italic 20px Georgia, 'Times New Roman', serif"; ctx.fillText("Марафон «Начни сегодня!» · день "+TODAY, 320, 114);
+  const dateText=fmtDateRu(dayToDate(TODAY)).toUpperCase();
+  const marathonText="Марафон «Начни сегодня!» · день "+TODAY;
+  ctx.font="700 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  const dateW=ctx.measureText(dateText).width;
+  ctx.font="italic 20px Georgia, 'Times New Roman', serif";
+  const marathonW=ctx.measureText(marathonText).width;
+  const boxW=Math.max(dateW,marathonW)+56, boxH=64, boxX=320-boxW/2, boxY=70;
+  ctx.strokeStyle="rgba(255,255,255,.4)"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 14); ctx.stroke();
+  ctx.fillStyle="#fff";
+  ctx.font="700 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText(dateText, 320, boxY+26);
+  ctx.font="italic 20px Georgia, 'Times New Roman', serif"; ctx.fillText(marathonText, 320, boxY+50);
   const done=liveChecked.filter(Boolean).length;
-  ctx.font="600 58px Georgia, 'Times New Roman', serif"; ctx.fillText(done+" из "+HABITS.length, 320, 198);
-  ctx.font="italic 22px Georgia, 'Times New Roman', serif"; ctx.fillText("привычек сегодня", 320, 228);
+  ctx.font="600 58px Georgia, 'Times New Roman', serif"; ctx.fillText(done+" из "+HABITS.length, 320, boxY+boxH+70);
+  ctx.font="italic 22px Georgia, 'Times New Roman', serif"; ctx.fillText("привычек сегодня", 320, boxY+boxH+100);
   let y=290; ctx.font="500 22px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.textAlign="left";
   HABITS.forEach((h,i)=>{
     const cy = y-7, cx = 92, r = 9;
@@ -2528,7 +2542,9 @@ document.getElementById("shareBtn").addEventListener("click", ()=>{
   ctx.textAlign="center"; ctx.font="italic 18px Georgia, 'Times New Roman', serif";
   ctx.fillText("Маленькие шаги каждый день создают большие результаты", 320, 580);
   const out=document.getElementById("shareOut"); out.hidden=false;
-  out.innerHTML = `<img src="${c.toDataURL('image/png')}" alt="карточка дня">
+  out.innerHTML = `<div class="share-divider">твой день</div>
+    <img src="${c.toDataURL('image/png')}" alt="карточка дня">
+    <div class="share-divider">поделиться в</div>
     <div class="share-links">
       <a class="btn ghost" href="${TG_CHANNEL_URL}" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.5 4.2 2.9 11.4c-.9.4-.9 1.6.1 1.9l4.6 1.5 1.8 5.4c.3.8 1.3 1 1.9.4l2.6-2.5 4.7 3.5c.7.5 1.7.1 1.9-.7L23 5.6c.2-1-.7-1.8-1.5-1.4Z"/></svg>
