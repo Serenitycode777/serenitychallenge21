@@ -1624,7 +1624,7 @@ function showInfoSimple(title, html){
 }
 document.getElementById("diamondInfoBtn").addEventListener("click", ()=>{
   playPopSound();
-  showInfoSimple("Бриллианты 💎", `Набери <b>27 бриллиантов</b> – и участвуешь в розыгрыше подарков.
+  showInfoSimple("Бриллианты 💎", `Набери <b>21–27 бриллиантов</b> – и участвуешь в розыгрыше подарков. Главное – не пропускать дни, идеальных случаев может и не быть.
     <div class="info-rules">
       <div class="info-rule">+1 за день со 100% привычек · максимум 21</div>
       <div class="info-rule">+3 за мастермайнд по кодовому слову · 2 эфира</div>
