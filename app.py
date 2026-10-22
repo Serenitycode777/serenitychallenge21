@@ -666,6 +666,11 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mm-done{font-size:12.5px;color:var(--sage-ink);font-weight:600;flex:1}
 
 /* сегодня */
+.chanchat-row{display:flex;gap:8px;justify-content:center;margin:0 0 14px}
+.chanchat-btn{display:flex;align-items:center;gap:6px;font-family:var(--sys);font-size:12.5px;font-weight:600;
+  color:var(--lav-ink);background:rgba(170,157,184,.12);border-radius:999px;padding:8px 16px;
+  text-decoration:none;flex:1;max-width:160px;justify-content:center}
+.chanchat-btn svg{width:14px;height:14px;flex-shrink:0}
 .affirm-row{display:flex;gap:9px;align-items:stretch;margin:10px 0 18px}
 .affirm-date{flex:0 0 78px;background:linear-gradient(135deg,var(--lav),var(--sage) 130%);border-radius:18px;
   color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
@@ -694,6 +699,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   .markwrap input:checked + .markvisual, .markvisual.on{animation:none}
 }
 .hab-text{font-size:15px;flex:1}
+.hab-mins{font-size:12px;color:var(--ink-soft);font-weight:400}
 .hab.done .hab-text{color:var(--lav-ink);text-decoration:line-through;font-weight:500}
 .hab-streak{font-size:11.5px;color:var(--sand-ink);font-weight:600;white-space:nowrap;flex-shrink:0}
 .checklist-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}
@@ -1215,6 +1221,14 @@ a.evt-next{display:block}
     <section class="screen" id="tab-today">
       <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Сегодня</h1>
+      <div class="chanchat-row">
+        <a class="chanchat-btn" id="chanLinkBtn" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.5 4.2 2.9 11.4c-.9.4-.9 1.6.1 1.9l4.6 1.5 1.8 5.4c.3.8 1.3 1 1.9.4l2.6-2.5 4.7 3.5c.7.5 1.7.1 1.9-.7L23 5.6c.2-1-.7-1.8-1.5-1.4Z"/></svg>
+          Канал</a>
+        <a class="chanchat-btn" id="chatLinkBtn" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12c0-4.4 3.8-8 8.5-8s8.5 3.6 8.5 8-3.8 8-8.5 8c-1.1 0-2.2-.2-3.1-.6L4 20l1.1-4.3C4.4 14.6 4 13.3 4 12Z"/></svg>
+          Чат</a>
+      </div>
       <div class="affirm-row">
         <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
         <div class="affirm"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
@@ -1260,6 +1274,7 @@ a.evt-next{display:block}
             <div class="search-drop" id="searchDrop" hidden></div>
           </div>
           <div class="filters">
+            <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
             <div class="filter-row"><span class="flabel">по теме</span><div class="chipset" id="themeChips"></div></div>
           </div>
           <div class="mgrid" id="mgrid"></div>
@@ -1760,6 +1775,8 @@ let TODAY_DATE_ISO = "2026-11-09";
 let RU_MONTHS_SHORT = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
 const TG_CHANNEL_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
 const TG_CHAT_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
+document.getElementById("chanLinkBtn").href = TG_CHANNEL_URL;
+document.getElementById("chatLinkBtn").href = TG_CHAT_URL;
 let TODAY = 1;
 let HABITS = [];
 let HABIT_IDS = [];
@@ -1877,7 +1894,11 @@ function buildMaterialsState(){
   document.getElementById("themeChips").innerHTML =
     `<button class="chip theme active" data-t="all">все темы</button>` +
     THEMES.map(t=>`<button class="chip theme" data-t="${t}">${t}</button>`).join("");
-  activeTheme = "all"; query = "";
+  document.getElementById("folderChips").innerHTML =
+    `<button class="chip folder active" data-f="all">все папки</button>` +
+    Object.entries(AUTHORS).filter(([key])=>MATERIALS.some(m=>m.author===key))
+      .map(([key,a])=>`<button class="chip folder" data-f="${key}">${a.name}</button>`).join("");
+  activeTheme = "all"; activeFolder = "all"; query = "";
 }
 
 function renderMilaEvents(){
@@ -2249,10 +2270,12 @@ function renderChecklist(){
   }
   const box = document.getElementById("checklist");
   box.innerHTML = HABITS.map((h,i)=>{
+    const mins = habitMinutes(h);
+    const minsTag = mins > 0 ? ` <span class="hab-mins">(${formatMinutesRu(mins)})</span>` : "";
     return `<label class="hab ${liveChecked[i]?'done':''}" for="hb${i}">
     <span class="markwrap"><input type="checkbox" id="hb${i}" ${liveChecked[i]?'checked':''} ${dayClosed?'disabled':''}>
     <span class="markvisual">${ICONS_CHECK}</span></span>
-    <span class="hab-text">${h}</span>
+    <span class="hab-text">${h}${minsTag}</span>
     </label>`;
   }).join("");
   HABITS.forEach((_,i)=>document.getElementById("hb"+i).addEventListener("change",e=>{
@@ -2609,20 +2632,11 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.fillText("Маленькие шаги каждый день создают большие результаты", 320, 580);
   const out=document.getElementById("shareOut"); out.hidden=false;
   out.innerHTML = `<div class="share-divider">твой день</div>
-    <img src="${c.toDataURL('image/png')}" alt="карточка дня">
-    <div class="share-divider">поделиться в</div>
-    <div class="share-links">
-      <a class="btn ghost" href="${TG_CHANNEL_URL}" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.5 4.2 2.9 11.4c-.9.4-.9 1.6.1 1.9l4.6 1.5 1.8 5.4c.3.8 1.3 1 1.9.4l2.6-2.5 4.7 3.5c.7.5 1.7.1 1.9-.7L23 5.6c.2-1-.7-1.8-1.5-1.4Z"/></svg>
-        Канал «Начни Сегодня»</a>
-      <a class="btn ghost" href="${TG_CHAT_URL}" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12c0-4.4 3.8-8 8.5-8s8.5 3.6 8.5 8-3.8 8-8.5 8c-1.1 0-2.2-.2-3.1-.6L4 20l1.1-4.3C4.4 14.6 4 13.3 4 12Z"/></svg>
-        Чат «Начни Сегодня»</a>
-    </div>`;
+    <img src="${c.toDataURL('image/png')}" alt="карточка дня">`;
 });
 
 /* ---------- материалы ---------- */
-let activeTheme="all", query="";
+let activeTheme="all", activeFolder="all", query="";
 const PHOTOS = {
   mila: "https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/mila.jpg",
   maria: "https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/maria.jpg",
@@ -2687,13 +2701,14 @@ function renderEvents(){
 function renderMaterials(){
   const grid = document.getElementById("mgrid");
   const flat = document.getElementById("mflat");
-  const flatMode = activeTheme !== "all" || !!query;
+  const flatMode = activeTheme !== "all" || activeFolder !== "all" || !!query;
   grid.hidden = flatMode;
   flat.hidden = !flatMode;
 
   if(flatMode){
     const items = MATERIALS.filter(m=>
       (activeTheme==="all"||(m.tags||[]).includes(activeTheme)) &&
+      (activeFolder==="all"||m.author===activeFolder) &&
       matchesQuery(m)
     );
     flat.innerHTML = items.length ? items.map(matRowHtml).join("") :
@@ -2811,6 +2826,11 @@ document.getElementById("themeChips").addEventListener("click",e=>{
   const b=e.target.closest(".chip"); if(!b) return;
   document.querySelectorAll("#themeChips .chip").forEach(c=>c.classList.remove("active"));
   b.classList.add("active"); activeTheme=b.dataset.t; renderMaterials();
+});
+document.getElementById("folderChips").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b) return;
+  document.querySelectorAll("#folderChips .chip").forEach(c=>c.classList.remove("active"));
+  b.classList.add("active"); activeFolder=b.dataset.f; renderMaterials();
 });
 const searchBox=document.getElementById("searchBox"), searchDrop=document.getElementById("searchDrop");
 searchBox.addEventListener("input",()=>{
