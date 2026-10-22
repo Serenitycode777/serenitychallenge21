@@ -675,8 +675,9 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .affirm .elbl{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin-bottom:8px}
 .affirm .txt{font-family:var(--sys);font-size:18px;font-weight:600;line-height:1.3}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
-.hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none}
-.hab.done{background:var(--surface-2)}
+.hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none;background:var(--surface-2)}
+.hab.done{background:rgba(106,153,147,.14)}
+.habits-card .checklist{background:none;border:none;box-shadow:none;padding:12px 0 0;margin-bottom:0}
 .markvisual{width:24px;height:24px;border-radius:50%;border:2px solid var(--ink-soft);background:var(--surface);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;overflow:hidden}
 .markvisual svg{width:13px;height:13px;opacity:0;transition:.15s;flex-shrink:0}
@@ -700,10 +701,10 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .habits-card{background:var(--surface);border-radius:16px;padding:14px 16px;margin:4px 0 14px}
 .habits-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .habits-card-top h3{margin:0;font-size:13.5px;font-family:var(--sys);font-weight:600;color:var(--ink-soft);line-height:1.35}
-.habits-card-status{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;
+.habits-card-status{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding-top:10px;
   border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-soft);line-height:1.4}
 .hcs-pill{font-size:11px;font-weight:700;color:var(--sage-ink);background:rgba(106,153,147,.13);
-  border-radius:999px;padding:3px 10px;flex-shrink:0}
+  border-radius:999px;padding:3px 10px;flex-shrink:0;margin-top:1px}
 .editlink{background:none;border:none;color:var(--lav-ink);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sys)}
 .checklist-head .editlink{background:var(--surface);border:1.5px solid var(--line);border-radius:999px;
   padding:7px 14px;box-shadow:0 2px 6px -2px rgba(0,0,0,.08)}
@@ -1214,8 +1215,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
           <button class="editlink" id="addHabitBtn" type="button">Изменить привычки</button>
         </div>
         <div class="habits-card-status"><span class="hcs-pill" id="dayStatusPill" hidden></span><span id="dayStatus"></span></div>
+        <div class="checklist" id="checklist"></div>
       </div>
-      <div class="checklist" id="checklist"></div>
       <div class="evening-rem" id="eveningRem" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         <div>
