@@ -3145,6 +3145,9 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
           <tbody id="progBody"></tbody>
         </table>
       </div>
+      <div class="crm-bottom-actions">
+        <a href="/admin/export-progress.csv" class="primary" target="_blank">скачать CSV</a>
+      </div>
     </div>
   </div>
 
@@ -4910,6 +4913,46 @@ async def admin_export(request):
     return resp
 
 
+async def admin_export_progress(request):
+    if not authed(request):
+        raise web.HTTPFound("/admin/login")
+    profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind FROM profiles ORDER BY created DESC")
+    signup_rows = await DB_POOL.fetch("SELECT email_norm, instagram FROM signups WHERE instagram IS NOT NULL AND instagram <> ''")
+    telegram_by_email = {r["email_norm"]: r["instagram"] for r in signup_rows}
+    headers = ["#", "имя", "email", "телеграм", "привычек", "% выполнения", "бриллиантов", "мастермайндов", "была в кабинете"]
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(headers)
+    for i, p in enumerate(profiles, start=1):
+        uid = p["id"]
+        habit_count = await DB_POOL.fetchval("SELECT COUNT(*) FROM habit_selections WHERE user_id=$1", uid) or 0
+        logs = await DB_POOL.fetch(
+            "SELECT log_date, habits_done FROM daily_logs WHERE user_id=$1 ORDER BY log_date", uid
+        )
+        perfect_days = 0
+        pct_sum = 0.0
+        last_date = None
+        for l in logs:
+            hd = _jsonb(l["habits_done"]) or {}
+            done = sum(1 for v in hd.values() if v)
+            if habit_count and done >= habit_count:
+                perfect_days += 1
+            if habit_count:
+                pct_sum += min(1.0, done / habit_count)
+            last_date = l["log_date"]
+        avg_pct = round((pct_sum / len(logs)) * 100) if logs else 0
+        mm = _jsonb(p["mastermind"]) or {}
+        mm_count = sum(1 for v in mm.values() if v) if isinstance(mm, dict) else 0
+        telegram = telegram_by_email.get(normalize_email(p["email"] or ""), "")
+        diamonds = perfect_days + mm_count * 3
+        last_active = last_date.isoformat() if last_date else "ни разу"
+        writer.writerow([i, p["name"] or "", p["email"] or "", telegram, habit_count,
+                          f"{avg_pct}%", diamonds, f"{mm_count}/2", last_active])
+    resp = web.Response(text="﻿" + buf.getvalue(), content_type="text/csv", charset="utf-8")
+    resp.headers["Content-Disposition"] = 'attachment; filename="serenity-progress.csv"'
+    return resp
+
+
 async def admin_logout(request):
     resp = web.HTTPFound("/admin/login")
     resp.del_cookie(COOKIE, path="/")
@@ -5549,6 +5592,7 @@ def make_app():
         web.post("/admin/delete/{id}", admin_delete),
         web.post("/admin/add", admin_add),
         web.get("/admin/export.csv", admin_export),
+        web.get("/admin/export-progress.csv", admin_export_progress),
         web.get("/admin/logout", admin_logout),
         web.get("/health", health),
         web.post("/api/auth/register", api_auth_register),
