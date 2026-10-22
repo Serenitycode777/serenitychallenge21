@@ -3028,6 +3028,19 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .foldercard .factions .evbtn{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:4px 6px}
 .foldercard .mlist{margin-top:12px;display:flex;flex-direction:column;gap:6px}
 
+.mstep{border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden;background:var(--surface)}
+.mstep-head{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer}
+.mstep.open .mstep-head{background:var(--surface-2)}
+.mstep-num{width:22px;height:22px;border-radius:50%;background:var(--sage);color:#fff;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mstep.done .mstep-num{background:var(--lav)}
+.mstep-title{font-size:13.5px;font-weight:600;flex:1;min-width:0}
+.mstep-val{font-size:11.5px;color:var(--ink-soft);max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mstep-chev{width:16px;height:16px;flex-shrink:0;color:var(--ink-soft);transition:transform .15s}
+.mstep.open .mstep-chev{transform:rotate(90deg)}
+.mstep-body{display:none;padding:4px 16px 16px}
+.mstep.open .mstep-body{display:block}
+
 .cchip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface-2);
   border:1.5px solid var(--line);border-radius:999px;padding:6px 13px 6px 8px;cursor:pointer;user-select:none}
 .cchip.on{border-color:var(--ink)}
@@ -3117,67 +3130,101 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       </div>
       <div id="materialFormBody" style="display:none;margin-top:14px">
       <div class="hint">видео, аудио или pdf — папку и тему можно выбрать из уже существующих или создать прямо здесь</div>
-      <div class="field">
-        <label>Папка <span class="req">*</span></label>
-        <div class="chipgrid" id="folderPicker"></div>
-        <div class="nf-form" id="newFolderForm" style="display:none">
-          <div class="addtheme">
-            <input type="text" id="nfName" placeholder="Название папки">
-            <input type="text" id="nfDesc" placeholder="Описание (необязательно)">
+
+      <div class="mstep" data-mstep="folder" id="mstepFolder">
+        <div class="mstep-head" data-mstephead="folder">
+          <span class="mstep-num">1</span>
+          <span class="mstep-title">Куда положить</span>
+          <span class="mstep-val" id="mstepValFolder"></span>
+          <svg class="mstep-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+        <div class="mstep-body">
+          <div class="field">
+            <label>Папка <span class="req">*</span></label>
+            <div class="chipgrid" id="folderPicker"></div>
+            <div class="nf-form" id="newFolderForm" style="display:none">
+              <div class="addtheme">
+                <input type="text" id="nfName" placeholder="Название папки">
+                <input type="text" id="nfDesc" placeholder="Описание (необязательно)">
+              </div>
+              <div class="nf-photo-row">
+                <span>Фото папки (необязательно)</span>
+                <input type="file" id="nfPhoto" accept="image/*">
+              </div>
+              <details class="nf-color-acc">
+                <summary>цвет / градиент, если без фото</summary>
+                <div class="nf-swatches" id="nfColorPicker"></div>
+              </details>
+              <button id="nfCreate" class="nf-create-btn">Создать</button>
+            </div>
           </div>
-          <div class="nf-photo-row">
-            <span>Фото папки (необязательно)</span>
-            <input type="file" id="nfPhoto" accept="image/*">
+        </div>
+      </div>
+
+      <div class="mstep" data-mstep="what" id="mstepWhat">
+        <div class="mstep-head" data-mstephead="what">
+          <span class="mstep-num">2</span>
+          <span class="mstep-title">Что загружаешь</span>
+          <span class="mstep-val" id="mstepValWhat"></span>
+          <svg class="mstep-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+        <div class="mstep-body">
+          <div class="field">
+            <label>Название <span class="req">*</span></label>
+            <input type="text" id="mTitle" placeholder="Например: Видео-практика дыхания">
           </div>
-          <details class="nf-color-acc">
-            <summary>цвет / градиент, если без фото</summary>
-            <div class="nf-swatches" id="nfColorPicker"></div>
-          </details>
-          <button id="nfCreate" class="nf-create-btn">Создать</button>
+          <div class="field">
+            <label>Формат <span class="req">*</span></label>
+            <div class="chipgrid" id="mFormatPicker"></div>
+          </div>
+          <div class="field">
+            <label>Файл или ссылка</label>
+            <input type="file" id="mFile" hidden>
+            <div class="filebox" id="mFileBox">перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже</div>
+            <input type="text" id="mLink" placeholder="https://..." style="margin-top:8px">
+          </div>
         </div>
       </div>
-      <div class="field">
-        <label>Название <span class="req">*</span></label>
-        <input type="text" id="mTitle" placeholder="Например: Видео-практика дыхания">
-      </div>
-      <div class="field">
-        <label>Формат <span class="req">*</span></label>
-        <div class="chipgrid" id="mFormatPicker"></div>
-      </div>
-      <div class="field">
-        <label>Дата открытия</label>
-        <div class="dpicker" id="mDayWrap"></div>
-      </div>
-      <div class="field">
-        <label>Тема <span class="req">*</span></label>
-        <div class="chipgrid" id="mThemes"></div>
-        <div class="addtheme" id="newThemeForm" style="display:none">
-          <input type="text" id="newThemeInput" placeholder="Новая тема, например: йога">
-          <button id="addThemeBtn">Добавить</button>
+
+      <div class="mstep" data-mstep="when" id="mstepWhen">
+        <div class="mstep-head" data-mstephead="when">
+          <span class="mstep-num">3</span>
+          <span class="mstep-title">Когда и как</span>
+          <span class="mstep-val" id="mstepValWhen"></span>
+          <svg class="mstep-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
         </div>
-        <div class="err" id="themeErr">выбери хотя бы одну тему — без неё материал не найти по фильтру</div>
-      </div>
-      <div class="field" id="evtLinkField">
-        <div class="toggle-row">
-          <span class="l"><span class="hintdot" id="evtHintDot">?</span>Привязать к эфиру календаря</span>
-          <button class="sw" id="evtLinkToggle"></button>
+        <div class="mstep-body">
+          <div class="field">
+            <label>Дата открытия</label>
+            <div class="dpicker" id="mDayWrap"></div>
+          </div>
+          <div class="field">
+            <label>Тема <span class="req">*</span></label>
+            <div class="chipgrid" id="mThemes"></div>
+            <div class="addtheme" id="newThemeForm" style="display:none">
+              <input type="text" id="newThemeInput" placeholder="Новая тема, например: йога">
+              <button id="addThemeBtn">Добавить</button>
+            </div>
+            <div class="err" id="themeErr">выбери хотя бы одну тему — без неё материал не найти по фильтру</div>
+          </div>
+          <div class="field" id="evtLinkField">
+            <div class="toggle-row">
+              <span class="l"><span class="hintdot" id="evtHintDot">?</span>Привязать к эфиру календаря</span>
+              <button class="sw" id="evtLinkToggle"></button>
+            </div>
+            <div class="note hintnote" id="evtHintNote">Включай, если это запись прошедшего онлайн-эфира (Zoom), а не изначально записанное видео/аудио</div>
+            <div id="evtPickWrap" style="display:none;margin-top:10px">
+              <select id="evtPick">
+                <option>День 3 — Мастермайнд #1</option>
+                <option>День 10 — Онлайн-практика дыхания</option>
+                <option>День 15 — Мастермайнд #2</option>
+              </select>
+              <div class="note" style="margin-top:8px">после сохранения статус этого эфира в календаре сам сменится на «запись доступна»</div>
+            </div>
+          </div>
         </div>
-        <div class="note hintnote" id="evtHintNote">Включай, если это запись прошедшего онлайн-эфира (Zoom), а не изначально записанное видео/аудио</div>
-        <div id="evtPickWrap" style="display:none;margin-top:10px">
-          <select id="evtPick">
-            <option>День 3 — Мастермайнд #1</option>
-            <option>День 10 — Онлайн-практика дыхания</option>
-            <option>День 15 — Мастермайнд #2</option>
-          </select>
-          <div class="note" style="margin-top:8px">после сохранения статус этого эфира в календаре сам сменится на «запись доступна»</div>
-        </div>
       </div>
-      <div class="field">
-        <label>Файл или ссылка</label>
-        <input type="file" id="mFile" hidden>
-        <div class="filebox" id="mFileBox">перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже</div>
-        <input type="text" id="mLink" placeholder="https://..." style="margin-top:8px">
-      </div>
+
       <button class="save" id="saveMaterial">Сохранить материал</button>
       <button class="editlink" id="cancelEditMaterial" type="button" hidden style="margin-top:8px">Отменить редактирование</button>
       </div>
@@ -3395,7 +3442,7 @@ function renderMaterialThemes(){
     + `<div class="tchip" id="themePlusChip">+ своя тема</div>`;
   wrap.querySelectorAll(".tchip").forEach(c=>{
     if(c.id === "themePlusChip") return;
-    c.addEventListener("click", ()=>{ c.classList.toggle("on"); document.getElementById("themeErr").style.display="none"; });
+    c.addEventListener("click", ()=>{ c.classList.toggle("on"); document.getElementById("themeErr").style.display="none"; updateMStepSummaries(); });
   });
   document.getElementById("themePlusChip").addEventListener("click", ()=>{
     const f = document.getElementById("newThemeForm");
@@ -3419,12 +3466,13 @@ document.getElementById("addThemeBtn").addEventListener("click", async ()=>{
     renderMaterialThemes();
     document.querySelector(`#mThemes .tchip[data-t="${t.id}"]`).classList.add("on");
     document.getElementById("themeErr").style.display="none";
+    updateMStepSummaries();
     showToast("Тема «"+v+"» добавлена ✓");
   }catch(e){}
 });
 loadThemes();
 
-function buildDatePicker(baseId, startMonth){
+function buildDatePicker(baseId, startMonth, onChange){
   const wrap = document.getElementById(baseId+"Wrap");
   wrap.innerHTML = `<button type="button" class="dpicker-btn" id="${baseId}Btn">Выбрать дату</button>
     <div class="dpicker-pop" id="${baseId}Pop" style="display:none">
@@ -3465,6 +3513,7 @@ function buildDatePicker(baseId, startMonth){
         btn.classList.add("has-val");
         pop.style.display = "none";
         render();
+        if(onChange) onChange();
       });
     });
   }
@@ -3495,7 +3544,7 @@ function buildDatePicker(baseId, startMonth){
   };
 }
 document.addEventListener("click", ()=>{ document.querySelectorAll(".dpicker-pop").forEach(p=>p.style.display="none"); });
-const mDayPicker = buildDatePicker("mDay", "2026-11-01");
+const mDayPicker = buildDatePicker("mDay", "2026-11-01", ()=>updateMStepSummaries());
 const eDayPicker = buildDatePicker("eDay", "2026-11-01");
 
 const FORMATS = [{v:"video",l:"Видео"},{v:"audio",l:"Аудио"},{v:"pdf",l:"PDF"},{v:"link",l:"Ссылка"},{v:"photo",l:"Фото"}];
@@ -3504,7 +3553,7 @@ function renderFormatPicker(){
   const wrap = document.getElementById("mFormatPicker");
   wrap.innerHTML = FORMATS.map(f=>`<div class="tchip${f.v===selectedFormat?" on":""}" data-f="${f.v}">${f.l}</div>`).join("");
   wrap.querySelectorAll(".tchip").forEach(c=>{
-    c.addEventListener("click", ()=>{ selectedFormat = c.dataset.f; renderFormatPicker(); });
+    c.addEventListener("click", ()=>{ selectedFormat = c.dataset.f; renderFormatPicker(); updateMStepSummaries(); });
   });
 }
 renderFormatPicker();
@@ -3545,6 +3594,7 @@ function renderFolderPicker(){
       selectedFolder = c.dataset.f;
       document.getElementById("newFolderForm").style.display = "none";
       renderFolderPicker();
+      updateMStepSummaries();
     });
   });
   document.getElementById("folderPlusChip").addEventListener("click", ()=>{
@@ -3590,6 +3640,7 @@ document.getElementById("nfCreate").addEventListener("click", async ()=>{
     document.getElementById("newFolderForm").style.display = "none";
     renderFolderPicker();
     renderMaterialsList();
+    updateMStepSummaries();
   }catch(e){}
 });
 let editingFolderId = null;
@@ -3636,12 +3687,10 @@ function renderMaterialsList(){
       </div>`;
     }).join("") : `<div class="hint" style="margin:0">материалов нет</div>`;
     const isOpen = openFolderIds.has(f.id);
-    const countLbl = mats.length ? mats.length+(mats.length===1?" материал":mats.length<5?" материала":" материалов") : "пусто";
     return `<div class="foldercard">
       <div class="fhead" data-foldertoggle="${f.id}" style="cursor:pointer">
         <div class="dot"${dotStyle}>${dotInner}</div>
         <div class="fbody"><h3>${f.name}</h3>${f.description?`<div class="topics">${f.description}</div>`:''}</div>
-        <div class="fcount">${countLbl}</div>
         <svg class="fchev ${isOpen?'open':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
         <div class="factions">
           <button class="evbtn" data-folderedit="${f.id}" aria-label="редактировать папку">✎</button>
@@ -3704,9 +3753,47 @@ async function loadMaterials(){
   try{ MATERIALS = await apiFetch("/api/admin/materials"); }catch(e){ MATERIALS = []; }
   renderMaterialsList();
 }
+let openMStep = "folder";
+function setMStepOpen(key){
+  openMStep = key;
+  document.querySelectorAll(".mstep").forEach(el=>{
+    el.classList.toggle("open", el.dataset.mstep===key);
+  });
+}
+document.querySelectorAll("[data-mstephead]").forEach(h=>{
+  h.addEventListener("click", ()=>{
+    const key = h.dataset.mstephead;
+    if(openMStep !== key) setMStepOpen(key);
+  });
+});
+function updateMStepSummaries(){
+  const f = FOLDERS.find(x=>x.id===selectedFolder);
+  document.getElementById("mstepValFolder").textContent = f ? f.name : "";
+  document.getElementById("mstepFolder").classList.toggle("done", !!selectedFolder);
+
+  const title = document.getElementById("mTitle").value.trim();
+  const fmt = FORMATS.find(x=>x.v===selectedFormat);
+  const whatParts = [];
+  if(title) whatParts.push(title);
+  if(fmt) whatParts.push(fmt.l);
+  document.getElementById("mstepValWhat").textContent = whatParts.join(" · ");
+  document.getElementById("mstepWhat").classList.toggle("done", !!title);
+
+  const themeCount = document.querySelectorAll("#mThemes .tchip.on").length;
+  const dayVal = document.getElementById("mDay") ? document.getElementById("mDay").value : "";
+  const whenParts = [];
+  if(dayVal){
+    const dt = new Date(dayVal+"T00:00:00");
+    whenParts.push(dt.toLocaleDateString("ru-RU",{day:"numeric",month:"short"}));
+  }
+  if(themeCount) whenParts.push(themeCount+(themeCount===1?" тема":" темы"));
+  document.getElementById("mstepValWhen").textContent = whenParts.join(" · ");
+  document.getElementById("mstepWhen").classList.toggle("done", themeCount>0);
+}
 function openMaterialForm(show){
   document.getElementById("materialFormBody").style.display = show ? "" : "none";
   document.getElementById("toggleMaterialForm").textContent = show ? "свернуть" : "+ добавить";
+  if(show){ setMStepOpen("folder"); updateMStepSummaries(); }
 }
 document.getElementById("toggleMaterialForm").addEventListener("click", ()=>{
   const open = document.getElementById("materialFormBody").style.display !== "none";
@@ -3757,6 +3844,7 @@ async function uploadMaterialFile(file){
     showToast("ошибка загрузки файла");
   }
 }
+document.getElementById("mTitle").addEventListener("input", updateMStepSummaries);
 document.getElementById("mFileBox").addEventListener("click", ()=>document.getElementById("mFile").click());
 document.getElementById("mFile").addEventListener("change", e=>{
   if(e.target.files[0]) uploadMaterialFile(e.target.files[0]);
@@ -3787,6 +3875,7 @@ function startEditMaterial(m){
   if(hasEvent) document.getElementById("evtPick").value = m.calendar_event_id;
   document.getElementById("saveMaterial").textContent = "Сохранить изменения";
   document.getElementById("cancelEditMaterial").hidden = false;
+  updateMStepSummaries();
   document.getElementById("materialFormBody").scrollIntoView({block:"center", behavior:"smooth"});
 }
 function cancelEditMaterial(){
@@ -3801,14 +3890,16 @@ function cancelEditMaterial(){
   document.getElementById("evtPickWrap").style.display = "none";
   document.getElementById("saveMaterial").textContent = "Сохранить материал";
   document.getElementById("cancelEditMaterial").hidden = true;
+  setMStepOpen("folder");
+  updateMStepSummaries();
 }
 document.getElementById("cancelEditMaterial").addEventListener("click", cancelEditMaterial);
 document.getElementById("saveMaterial").addEventListener("click", async ()=>{
   const title = document.getElementById("mTitle").value.trim();
   const themeIds = [...document.querySelectorAll("#mThemes .tchip.on")].map(c=>c.dataset.t);
-  if(!selectedFolder){ document.getElementById("folderPicker").scrollIntoView({block:"center"}); return; }
-  if(!themeIds.length){ document.getElementById("themeErr").style.display = "block"; return; }
-  if(!title){ document.getElementById("mTitle").focus(); return; }
+  if(!selectedFolder){ setMStepOpen("folder"); document.getElementById("folderPicker").scrollIntoView({block:"center"}); return; }
+  if(!title){ setMStepOpen("what"); document.getElementById("mTitle").focus(); return; }
+  if(!themeIds.length){ setMStepOpen("when"); document.getElementById("themeErr").style.display = "block"; document.getElementById("themeErr").scrollIntoView({block:"center"}); return; }
   const evOn = evtToggle.classList.contains("on");
   const body = JSON.stringify({
     folder_id: selectedFolder, title, format: selectedFormat,
@@ -3830,6 +3921,8 @@ document.getElementById("saveMaterial").addEventListener("click", async ()=>{
       document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
       mDayPicker.reset();
       document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
+      setMStepOpen("folder");
+      updateMStepSummaries();
     }
     await loadMaterials();
   }catch(e){}
