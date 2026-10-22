@@ -676,7 +676,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .affirm .txt{font-family:var(--sys);font-size:18px;font-weight:600;line-height:1.3}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
 .hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none;background:var(--surface-2)}
-.hab.done{background:rgba(106,153,147,.14)}
+.hab.done{background:rgba(170,157,184,.14)}
 .habits-card .checklist{background:none;border:none;box-shadow:none;padding:12px 0 0;margin-bottom:0}
 .markvisual{width:24px;height:24px;border-radius:50%;border:1.3px solid var(--ink-soft);background:var(--surface);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;overflow:hidden}
@@ -692,7 +692,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   .markwrap input:checked + .markvisual, .markvisual.on{animation:none}
 }
 .hab-text{font-size:14px;flex:1}
-.hab.done .hab-text{color:var(--sage-ink);text-decoration:line-through;font-weight:500}
+.hab.done .hab-text{color:var(--lav-ink);text-decoration:line-through;font-weight:500}
 .hab-streak{font-size:11.5px;color:var(--sand-ink);font-weight:600;white-space:nowrap;flex-shrink:0}
 .checklist-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}
 .checklist-head h3{font-size:13.5px;font-family:var(--sys);font-weight:600;color:var(--ink-soft)}
