@@ -833,6 +833,9 @@ a.evt-next{display:block}
   border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
 .folder-back{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;color:var(--ink-soft);
   cursor:pointer;margin:2px 0 8px}
+.filter-row{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.filter-row .chipset{display:flex;flex-wrap:wrap;gap:10px 7px}
+.flabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);width:100%}
 .chip{font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--sys)}
 .chip.active{background:var(--lav);border-color:var(--lav);color:#fff}
@@ -1298,6 +1301,7 @@ a.evt-next{display:block}
             </button>
             <div class="filter-dd" id="themeFilterDd" hidden></div>
           </div>
+          <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
           <div class="mgrid" id="mgrid"></div>
           <div class="checklist" id="mflat" style="padding:4px 18px" hidden></div>
         </div>
@@ -1915,6 +1919,10 @@ function buildMaterialsState(){
   activeTheme = "all"; activeFolder = "all"; query = "";
   renderThemeFilterOptions();
   updateThemeFilterBtn();
+  document.getElementById("folderChips").innerHTML =
+    `<button class="chip folder active" data-f="all">все папки</button>` +
+    Object.entries(AUTHORS).filter(([key])=>MATERIALS.some(m=>m.author===key))
+      .map(([key,a])=>`<button class="chip folder" data-f="${key}">${a.name}</button>`).join("");
 }
 function renderThemeFilterOptions(){
   const dd = document.getElementById("themeFilterDd");
@@ -2741,6 +2749,7 @@ function renderMaterials(){
   const flatMode = activeTheme !== "all" || activeFolder !== "all" || !!query;
   grid.hidden = flatMode;
   flat.hidden = !flatMode;
+  document.querySelectorAll("#folderChips .chip").forEach(c=>c.classList.toggle("active", c.dataset.f===activeFolder));
 
   if(flatMode){
     const items = MATERIALS.filter(m=>
@@ -2884,6 +2893,10 @@ document.addEventListener("click", (e)=>{
   const dd = document.getElementById("themeFilterDd");
   const btn = document.getElementById("themeFilterBtn");
   if(!dd.hidden && !dd.contains(e.target) && !btn.contains(e.target)) dd.hidden = true;
+});
+document.getElementById("folderChips").addEventListener("click", e=>{
+  const b = e.target.closest(".chip"); if(!b) return;
+  activeFolder = b.dataset.f; renderMaterials();
 });
 const searchBox=document.getElementById("searchBox"), searchDrop=document.getElementById("searchDrop");
 searchBox.addEventListener("input",()=>{
