@@ -509,6 +509,8 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 .name small{display:block;font-weight:400;font-size:10px;color:var(--ink-soft);letter-spacing:.02em;margin-top:1px}
 .marathon-eyebrow{font-family:var(--sys);font-size:13px;font-weight:700;text-transform:uppercase;
   letter-spacing:.07em;color:var(--sage-ink);text-align:center;margin:0 0 12px}
+.page-title{font-family:var(--font-head);font-weight:600;font-size:26px;text-align:center;color:var(--ink);
+  margin:0 0 16px;text-wrap:balance}
 
 main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)))}
 .screen[hidden]{display:none}
@@ -1098,6 +1100,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   <main><div class="maininner">
     <section class="screen" id="tab-home" hidden>
       <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <h1 class="page-title">Прогресс</h1>
       <div class="hcard dayhero">
         <div class="dh-top"><span class="dh-title">День <span id="bigDayTxt">8</span> из 21</span><span class="dh-pct" id="dayPct">38%</span></div>
         <div class="dh-pill"><i id="dayPillFill"></i></div>
@@ -1108,7 +1111,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
           <div class="diamond-row">
             <div class="diamond-icon">💎</div>
             <div class="diamond-text">
-              <div class="diamond-val"><span id="diamondVal">0</span><span class="diamond-max">/21</span></div>
+              <div class="diamond-val"><span id="diamondVal">0</span><span class="diamond-max">/27</span></div>
               <div class="diamond-lbl">бриллианты</div>
             </div>
             <button class="info-hint" id="diamondInfoBtn" type="button" aria-label="как начисляются бриллианты">?</button>
@@ -1156,6 +1159,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
     <section class="screen" id="tab-today">
       <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <h1 class="page-title">Сегодня</h1>
       <div class="affirm-row">
         <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
         <div class="affirm"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
@@ -1188,6 +1192,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
     <section class="screen" id="tab-materials" hidden>
       <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <h1 class="page-title">Материалы</h1>
       <div class="mat-layout">
         <div class="mat-main">
           <div class="search-wrap">
@@ -1206,6 +1211,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
     <section class="screen" id="tab-schedule" hidden>
       <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <h1 class="page-title">Расписание</h1>
       <div class="heatcard">
         <div id="nextEventBanner"></div>
         <div id="eventsList"></div>
@@ -1213,6 +1219,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
     </section>
 
     <section class="screen" id="tab-profile" hidden>
+      <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <h1 class="page-title">Профиль</h1>
       <input type="file" id="avatarFileInput" accept="image/*" hidden>
       <div class="avatar-row">
         <div class="avatar" id="mainAvatar">
@@ -1696,15 +1704,20 @@ function doneForHabitOnDay(id, d){
   return !!hd[id];
 }
 function defaultHabitConfig(){ return {days:[0,1,2,3,4,5,6], qtyOn:false, target:8, unit:"", minutes:0}; }
-const TIME_UNITS = ["мин","мин.","минут","минута","минуты","минуту","час","часа","часов","ч","ч."];
-function isTimeUnit(u){
-  if(!u) return false;
+const MIN_UNITS = ["мин","мин.","минут","минута","минуты","минуту"];
+const HOUR_UNITS = ["час","часа","часов","ч","ч."];
+function unitMinuteMultiplier(u){
+  if(!u) return 0;
   const s = u.trim().toLowerCase();
-  return TIME_UNITS.some(t => s === t || s.startsWith(t));
+  if(MIN_UNITS.some(t => s === t || s.startsWith(t))) return 1;
+  if(HOUR_UNITS.some(t => s === t || s.startsWith(t))) return 60;
+  return 0;
 }
+function isTimeUnit(u){ return unitMinuteMultiplier(u) > 0; }
 function habitMinutes(name){
   const cfg = habitConfig[name] || defaultHabitConfig();
-  if(cfg.qtyOn && isTimeUnit(cfg.unit)) return Number(cfg.target) || 0;
+  const mult = unitMinuteMultiplier(cfg.unit);
+  if(cfg.qtyOn && mult > 0) return (Number(cfg.target) || 0) * mult;
   return Number(cfg.minutes) || 0;
 }
 function totalMinutes(names){
