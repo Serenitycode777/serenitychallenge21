@@ -1945,6 +1945,13 @@ function updateThemeFilterBtn(){
   document.getElementById("themeFilterBtn").classList.toggle("active", active);
   document.getElementById("themeFilterLabel").textContent = active ? activeTheme : "фильтр";
 }
+function setActiveFolder(f){
+  activeFolder = f;
+  activeTheme = "all";
+  renderThemeFilterOptions();
+  updateThemeFilterBtn();
+  renderMaterials();
+}
 
 function renderMilaEvents(){
   const wrap = document.getElementById("profileMilaEvents");
@@ -2774,7 +2781,7 @@ function renderMaterials(){
     flat.innerHTML = headerHtml + (items.length ? items.map(matRowHtml).join("") :
       `<p class="note" style="margin:12px 0">Ничего не нашлось</p>`);
     const backBtn = flat.querySelector("#folderBackBtn");
-    if(backBtn) backBtn.addEventListener("click", ()=>{ activeFolder = "all"; renderMaterials(); });
+    if(backBtn) backBtn.addEventListener("click", ()=>setActiveFolder("all"));
     flat.querySelectorAll(".mat[data-i]").forEach(row=>{
       const m = items[Number(row.dataset.i)];
       row.addEventListener("click", ()=>openMaterialDetailFor(m, (AUTHORS[m.author]||{}).name||"", "← назад", ()=>{
@@ -2797,7 +2804,7 @@ function renderMaterials(){
     const hasNew = items.some(m=>m.day===TODAY);
     card.innerHTML = `<div class="dot"${dotStyleAttr}>${dotInner}</div><div class="body"><h3>${a.name}${hasNew?'<span class="mat-new">Новое</span>':''}</h3><div class="topics">${a.topics||''}</div>
       <div class="foot"><span>${a.desc||''}</span></div></div>`;
-    card.addEventListener("click", ()=>{ activeFolder = key; renderMaterials(); });
+    card.addEventListener("click", ()=>setActiveFolder(key));
     grid.appendChild(card);
   });
 }
@@ -2896,7 +2903,7 @@ document.addEventListener("click", (e)=>{
 });
 document.getElementById("folderChips").addEventListener("click", e=>{
   const b = e.target.closest(".chip"); if(!b) return;
-  activeFolder = b.dataset.f; renderMaterials();
+  setActiveFolder(b.dataset.f);
 });
 const searchBox=document.getElementById("searchBox"), searchDrop=document.getElementById("searchDrop");
 searchBox.addEventListener("input",()=>{
