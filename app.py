@@ -1294,7 +1294,7 @@ a.evt-next{display:block}
             </div>
             <button class="filter-btn" id="themeFilterBtn" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-              фильтр<span class="filter-badge" id="themeFilterBadge" hidden></span>
+              <span id="themeFilterLabel">фильтр</span>
             </button>
             <div class="filter-dd" id="themeFilterDd" hidden></div>
           </div>
@@ -1935,9 +1935,7 @@ function renderThemeFilterOptions(){
 function updateThemeFilterBtn(){
   const active = activeTheme !== "all";
   document.getElementById("themeFilterBtn").classList.toggle("active", active);
-  const badge = document.getElementById("themeFilterBadge");
-  badge.hidden = !active;
-  if(active) badge.textContent = "1";
+  document.getElementById("themeFilterLabel").textContent = active ? activeTheme : "фильтр";
 }
 
 function renderMilaEvents(){
