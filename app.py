@@ -1239,6 +1239,10 @@ a.evt-next{display:block}
     <section class="screen" id="tab-today">
       <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Сегодня</h1>
+      <div class="affirm-row">
+        <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
+        <div class="affirm"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
+      </div>
       <div class="chanchat-row">
         <a class="chanchat-btn" id="chanLinkBtn" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.5 4.2 2.9 11.4c-.9.4-.9 1.6.1 1.9l4.6 1.5 1.8 5.4c.3.8 1.3 1 1.9.4l2.6-2.5 4.7 3.5c.7.5 1.7.1 1.9-.7L23 5.6c.2-1-.7-1.8-1.5-1.4Z"/></svg>
@@ -1246,10 +1250,6 @@ a.evt-next{display:block}
         <a class="chanchat-btn" id="chatLinkBtn" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12c0-4.4 3.8-8 8.5-8s8.5 3.6 8.5 8-3.8 8-8.5 8c-1.1 0-2.2-.2-3.1-.6L4 20l1.1-4.3C4.4 14.6 4 13.3 4 12Z"/></svg>
           Чат</a>
-      </div>
-      <div class="affirm-row">
-        <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
-        <div class="affirm"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
       </div>
       <div class="evt-alert" id="todayEventAlert" hidden>
         <span class="evt-alert-dot"></span>
