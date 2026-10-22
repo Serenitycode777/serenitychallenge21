@@ -529,7 +529,7 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .navbtn svg{width:21px;height:21px;color:currentColor}
 .navbtn:active{transform:scale(.98)}
-.navbtn.active{background:rgba(0,0,0,.07);color:var(--ink);font-weight:500}
+.navbtn.active{background:rgba(0,0,0,.055);border:1px solid var(--line);color:var(--sage-ink);font-weight:600}
 @media (hover:hover){
   .navbtn:hover{background:rgba(0,0,0,.04);color:var(--ink)}
   .navbtn.active:hover{background:rgba(0,0,0,.08)}
@@ -594,10 +594,10 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
 .heatgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:4px}
 .hday{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;
   font-weight:600;cursor:pointer;border:1.5px solid transparent;position:relative}
-.hday-corner{position:absolute;top:2px;right:3px;font-size:6.5px;font-weight:500;opacity:.75}
-.hday-main{display:flex;flex-direction:column;align-items:center;line-height:1.1}
-.hday-dd{font-size:11px;font-weight:700}
-.hday-mm{font-size:6.5px;font-weight:400;opacity:.85}
+.hday-corner{position:absolute;top:3px;right:4px;font-size:9px;font-weight:600;opacity:.8}
+.hday-main{display:flex;flex-direction:column;align-items:center;line-height:1.05}
+.hday-dd{font-size:16px;font-weight:700}
+.hday-mm{font-size:8.5px;font-weight:500;opacity:.9;margin-top:1px}
 .hday.d0{background:var(--h0);color:var(--h0-text)}
 .hday.d30{background:var(--h30);color:var(--h30-text)}
 .hday.d60{background:var(--h60);color:var(--h60-text)}
@@ -606,8 +606,8 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
 .hday.istoday{border-color:#D4A94C;border-width:2.5px;box-shadow:0 0 0 4px rgba(212,169,76,.4),0 0 14px rgba(212,169,76,.5)}
 .hint{font-size:11.5px;color:var(--ink-soft);text-align:center;line-height:1.5}
 
-.info-hint{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface-2);
-  color:var(--ink-soft);font-size:11.5px;font-weight:700;cursor:pointer;flex-shrink:0;display:inline-flex;
+.info-hint{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--lav);background:var(--surface);
+  color:var(--lav-ink);font-size:11.5px;font-weight:700;cursor:pointer;flex-shrink:0;display:inline-flex;
   align-items:center;justify-content:center;line-height:1;padding:0;font-family:var(--sys)}
 h3 .info-hint{margin-left:6px;vertical-align:middle}
 
@@ -653,8 +653,14 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mm-done{font-size:12.5px;color:var(--sage-ink);font-weight:600;flex:1}
 
 /* сегодня */
+.affirm-row{display:flex;gap:9px;align-items:stretch;margin:10px 0 18px}
+.affirm-date{flex:0 0 78px;background:linear-gradient(135deg,var(--lav),var(--sage) 130%);border-radius:18px;
+  color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:10px 6px;box-shadow:var(--shadow)}
+.affirm-date .num{font-family:var(--font-head);font-size:28px;font-weight:600;line-height:1}
+.affirm-date .mon{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;opacity:.85;margin-top:3px}
 .affirm{background:linear-gradient(135deg,var(--lav),var(--sage) 130%);border-radius:18px;padding:22px 20px;
-  color:#fff;text-align:center;margin:10px 0 18px;box-shadow:var(--shadow)}
+  color:#fff;text-align:center;box-shadow:var(--shadow);flex:1;min-width:0}
 .affirm .elbl{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin-bottom:8px}
 .affirm .txt{font-family:var(--sys);font-size:18px;font-weight:600;line-height:1.3}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
@@ -678,9 +684,12 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .hab-streak{font-size:11.5px;color:var(--sand-ink);font-weight:600;white-space:nowrap;flex-shrink:0}
 .checklist-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}
 .checklist-head h3{font-size:13.5px;font-family:var(--sys);font-weight:600;color:var(--ink-soft)}
+.today-mins{font-size:12px;font-weight:600;color:var(--sage-ink);margin:0 0 6px}
 .day-status{font-size:13.5px;color:var(--ink-soft);margin:0 0 12px;line-height:1.4}
 .day-status b{color:var(--ink);font-weight:700}
 .editlink{background:none;border:none;color:var(--lav-ink);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sys)}
+.checklist-head .editlink{background:var(--surface);border:1.5px solid var(--line);border-radius:999px;
+  padding:7px 14px;box-shadow:0 2px 6px -2px rgba(0,0,0,.08)}
 .pickcat{margin-bottom:20px}
 .pickcat h4{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:9px}
 .chipgrid{display:flex;flex-wrap:wrap;gap:8px}
@@ -689,16 +698,21 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .habchip span.htxt{font-size:13px;color:var(--ink)}
 .habchip.checked{background:var(--sage);border-color:var(--sage)}
 .habchip.checked span.htxt{color:#fff}
-.habchip .hinfo{width:19px;height:19px;border-radius:50%;border:none;background:var(--surface-2);color:var(--ink-soft);
+.habchip .hinfo{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--lav);background:var(--surface);color:var(--lav-ink);
   font-size:11px;font-weight:700;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .habchip.checked .hinfo{background:rgba(255,255,255,.3);color:#fff}
 .pickintro{background:var(--surface);padding:0 0 16px;font-size:12.5px;color:var(--ink-soft);text-align:center;line-height:1.5}
 .pickintro p{margin:0 0 8px}
 .pickintro p:last-child{margin-bottom:0;color:var(--sage-ink);font-weight:600}
+.addhabit-btn{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--lav);border-radius:999px;
+  background:var(--surface);color:var(--lav-ink);font-size:13px;font-weight:600;padding:9px 16px;
+  cursor:pointer;font-family:var(--sys);margin-top:6px;transition:transform .1s}
+.addhabit-btn:active{transform:scale(.97)}
 .custom-row{display:flex;gap:8px;margin-bottom:18px}
 .custom-row input{flex:1;font-family:var(--sys);font-size:13.5px;border:1px solid var(--line);
   border-radius:12px;padding:10px 13px;color:var(--ink);background:var(--surface)}
 .custom-row button{border:none;background:var(--lav);color:#fff;border-radius:12px;padding:0 16px;font-weight:600;cursor:pointer}
+.pick-total{text-align:center;font-size:12.5px;font-weight:600;color:var(--sage-ink);margin:0 0 10px}
 .savepick{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:13px;font-weight:600;
   font-size:13.5px;cursor:pointer;position:sticky;bottom:0}
 .actions{display:flex;gap:10px;margin-top:16px;margin-bottom:10px}
@@ -712,6 +726,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .share-out{margin-top:14px}
 .share-out img{width:100%;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow)}
 .share-note{font-size:11px;color:var(--ink-soft);margin-top:8px;line-height:1.5;text-align:center}
+.share-links{display:flex;gap:10px;margin-top:12px}
+.share-links .btn{font-size:12.5px;padding:12px 10px}
 .evening-rem{display:flex;gap:10px;border:1.5px dashed var(--line);border-radius:14px;padding:13px 15px;margin-top:14px}
 .evening-rem svg{width:17px;height:17px;color:var(--sage-ink);flex-shrink:0;margin-top:1px}
 .evening-rem .lead{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
@@ -744,9 +760,6 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   .mat-layout{display:flex;gap:20px;align-items:flex-start}
   .mat-main{flex:1;min-width:0}
   .mat-side{width:280px;flex-shrink:0;margin-top:0;position:sticky;top:40px}
-  .hday-dd{font-size:14px}
-  .hday-mm{font-size:8px}
-  .hday-corner{font-size:8px}
 }
 .search-wrap{position:relative;margin:10px 0 16px}
 .search-box{width:100%;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);
@@ -938,10 +951,13 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .hm-stepper{display:inline-flex;align-items:center;gap:12px;background:var(--surface-2);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:500;color:var(--ink)}
 .hm-stepper button{background:none;border:none;font-size:16px;color:var(--ink);cursor:pointer;width:18px;height:18px;
   display:flex;align-items:center;justify-content:center;line-height:1;font-family:var(--sys)}
-.hm-unit-input{border:none;background:transparent;text-align:right;font-size:14px;font-weight:500;color:var(--ink);
-  width:70px;font-family:var(--sys)}
-.hm-unit-input::placeholder{color:var(--line)}
-.hm-unit-input:focus{outline:none}
+.hm-stepper-input{border:none;background:transparent;text-align:center;width:34px;font-size:14px;font-weight:500;
+  color:var(--ink);font-family:var(--sys);padding:0;-moz-appearance:textfield}
+.hm-stepper-input::-webkit-outer-spin-button,.hm-stepper-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.hm-unit-input{border:1px solid var(--line);background:var(--surface);border-radius:999px;text-align:right;
+  font-size:14px;font-weight:500;color:var(--ink);width:84px;padding:5px 12px;font-family:var(--sys)}
+.hm-unit-input::placeholder{color:var(--ink-soft)}
+.hm-unit-input:focus{outline:none;border-color:var(--lav)}
 .hm-footer{display:flex;flex-direction:column;gap:8px}
 .hm-save{width:100%;padding:13.5px;background:var(--lav);color:#fff;border:none;border-radius:16px;font-weight:500;
   font-size:14px;cursor:pointer;transition:transform .1s;font-family:var(--sys)}
@@ -1140,13 +1156,17 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
     <section class="screen" id="tab-today">
       <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
-      <div class="affirm"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
+      <div class="affirm-row">
+        <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
+        <div class="affirm"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
+      </div>
       <div class="evt-alert" id="todayEventAlert" hidden>
         <span class="evt-alert-dot"></span>
         <span class="evt-alert-txt" id="todayEventTxt"></span>
         <span class="evt-alert-tag">Zoom</span>
       </div>
       <div class="checklist-head"><h3>Твои привычки</h3><button class="editlink" id="addHabitBtn" type="button">Изменить привычки</button></div>
+      <p class="today-mins" id="todayMinutesNote"></p>
       <p class="day-status" id="dayStatus"></p>
       <div class="checklist" id="checklist"></div>
       <div class="evening-rem" id="eveningRem" hidden>
@@ -1187,7 +1207,6 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
     <section class="screen" id="tab-schedule" hidden>
       <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
       <div class="heatcard">
-        <h3>Расписание</h3>
         <div id="nextEventBanner"></div>
         <div id="eventsList"></div>
       </div>
@@ -1312,7 +1331,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
           <span class="lbl">цель</span>
           <span class="hm-stepper">
             <button type="button" data-step="-1" data-target="target">–</button>
-            <span id="habitTargetVal">8</span>
+            <input class="hm-stepper-input" id="habitTargetVal" type="number" inputmode="numeric" min="1" value="8">
             <button type="button" data-step="1" data-target="target">+</button>
           </span>
         </div>
@@ -1320,13 +1339,9 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
           <span class="lbl">единица</span>
           <input class="hm-unit-input" id="habitUnitInput" type="text" placeholder="стак.">
         </div>
-        <div class="hm-qty-line">
-          <span class="lbl">шаг</span>
-          <span class="hm-stepper">
-            <button type="button" data-step="-1" data-target="step">–</button>
-            <span id="habitStepVal">1</span>
-            <button type="button" data-step="1" data-target="step">+</button>
-          </span>
+        <div class="hm-qty-line" id="habitMinutesLine">
+          <span class="lbl">сколько минут</span>
+          <input class="hm-unit-input" id="habitMinutesInput" type="number" inputmode="numeric" min="0" placeholder="мин.">
         </div>
       </div>
     </div>
@@ -1446,9 +1461,9 @@ function renderStars(){
     return `<div class="star-item"><div class="star-icon ${unlocked?'unlocked':''}">⭐</div><div class="star-day">${d} день</div></div>`;
   }).join("");
 }
-function mastermindBonus(){ return Object.keys(STATE.mastermind||{}).filter(k=>STATE.mastermind[k]).length * 5; }
+function mastermindBonus(){ return Object.keys(STATE.mastermind||{}).filter(k=>STATE.mastermind[k]).length * 3; }
 function mmCodeBoxHtml(mmId){
-  if(STATE.mastermind && STATE.mastermind[String(mmId)]) return `<div class="mm-row"><span class="mm-done">✓ бриллиант получен (+5 💎)</span></div>`;
+  if(STATE.mastermind && STATE.mastermind[String(mmId)]) return `<div class="mm-row"><span class="mm-done">✓ бриллиант получен (+3 💎)</span></div>`;
   return `<div class="mm-row">
     <div class="mm-field"><input class="mm-input" type="text" placeholder="кодовое слово из эфира" id="mmInput${mmId}">
     <p class="mm-err" id="mmErr${mmId}" hidden>неверное слово</p></div>
@@ -1483,7 +1498,7 @@ function showInfoSimple(title, html){
 }
 document.getElementById("diamondInfoBtn").addEventListener("click", ()=>{
   playPopSound();
-  showInfoSimple("Бриллианты 💎", "+1 бриллиант за каждый день, в который закрыты все твои привычки на 100%. Максимум — 21 (по одному за каждый день марафона). Плюс +5 за каждый мастермайнд, если ввести кодовое слово после эфира.<br><br><i>Будь честна с самой собой: цель марафона не в том, чтобы поучаствовать в розыгрыше, а в том, чтобы изменить свою жизнь.</i>");
+  showInfoSimple("Бриллианты 💎", "+1 бриллиант за каждый день, в который закрыты все твои привычки на 100%. Максимум — 21 (по одному за каждый день марафона). Плюс +3 за каждый мастермайнд, если ввести кодовое слово после эфира.<br><br><i>Будь честна с самой собой: цель марафона не в том, чтобы поучаствовать в розыгрыше, а в том, чтобы изменить свою жизнь.</i>");
 });
 document.getElementById("achInfoBtn").addEventListener("click", ()=>{
   playPopSound();
@@ -1633,6 +1648,8 @@ let STATE = {marathon_start:"2026-11-09", logsByDate:{}, mastermind:{}, authors:
 let MARATHON_START_ISO = "2026-11-09";
 let TODAY_DATE_ISO = "2026-11-09";
 let RU_MONTHS_SHORT = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+const TG_CHANNEL_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
+const TG_CHAT_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
 let TODAY = 1;
 let HABITS = [];
 let HABIT_IDS = [];
@@ -1678,7 +1695,21 @@ function doneForHabitOnDay(id, d){
   const hd = logForDate(dateForDay(d)).habits_done || {};
   return !!hd[id];
 }
-function defaultHabitConfig(){ return {days:[0,1,2,3,4,5,6], qtyOn:false, target:8, unit:"", step:1}; }
+function defaultHabitConfig(){ return {days:[0,1,2,3,4,5,6], qtyOn:false, target:8, unit:"", minutes:0}; }
+const TIME_UNITS = ["мин","мин.","минут","минута","минуты","минуту","час","часа","часов","ч","ч."];
+function isTimeUnit(u){
+  if(!u) return false;
+  const s = u.trim().toLowerCase();
+  return TIME_UNITS.some(t => s === t || s.startsWith(t));
+}
+function habitMinutes(name){
+  const cfg = habitConfig[name] || defaultHabitConfig();
+  if(cfg.qtyOn && isTimeUnit(cfg.unit)) return Number(cfg.target) || 0;
+  return Number(cfg.minutes) || 0;
+}
+function totalMinutes(names){
+  return names.reduce((sum,n)=>sum+habitMinutes(n), 0);
+}
 
 function applyState(data){
   STATE = data;
@@ -2048,12 +2079,19 @@ function renderChecklist(){
   if(yestMissed){ affirmPool = AFFIRM_SUPPORT; affirmIdx = TODAY; }
   else if(streakNow >= 3){ affirmPool = AFFIRM_CELEBRATE; affirmIdx = TODAY; }
   document.getElementById("affirmText").textContent = "«"+affirmPool[((affirmIdx%affirmPool.length)+affirmPool.length)%affirmPool.length]+"»";
+  const affirmDt = dayToDate(TODAY);
+  document.getElementById("affirmDateNum").textContent = affirmDt.getUTCDate();
+  document.getElementById("affirmDateMon").textContent = RU_MONTHS_SHORT[affirmDt.getUTCMonth()];
   const openerText = SOCIAL_OPENERS[(TODAY-1)%SOCIAL_OPENERS.length].replace(/15/, String(todayCount()));
   document.getElementById("socialOpener").textContent = openerText;
   document.getElementById("socialCloser").textContent = SOCIAL_CLOSERS[(TODAY-1+2)%SOCIAL_CLOSERS.length];
   document.getElementById("eveningRem").hidden = new Date().getHours() < 18;
   const doneCount = liveChecked.filter(Boolean).length;
   const remaining = HABITS.length - doneCount;
+  const todayDow = (dayToDate(TODAY).getUTCDay()+6)%7;
+  const todayHabits = HABITS.filter(h=>{ const cfg=habitConfig[h]; return !cfg || !cfg.days || cfg.days.includes(todayDow); });
+  const todayMins = totalMinutes(todayHabits);
+  document.getElementById("todayMinutesNote").textContent = (todayHabits.length && todayMins>0) ? `сегодня это ~${todayMins} минут` : "";
   const statusEl = document.getElementById("dayStatus");
   if(HABITS.length === 0){
     statusEl.innerHTML = `Пока не выбраны привычки — нажми «Изменить привычки».`;
@@ -2142,6 +2180,13 @@ function showChipDetail(name){
 }
 document.getElementById("closeInfoPanel").addEventListener("click", ()=>{ playPopSound(); document.getElementById("infoOverlay").classList.remove("open"); });
 document.getElementById("infoOverlay").addEventListener("click",e=>{if(e.target.id==="infoOverlay")e.currentTarget.classList.remove("open");});
+function renderPickTotal(){
+  const el = document.getElementById("pickTotal");
+  if(!el) return;
+  if(!pickSelection.length){ el.textContent = ""; return; }
+  const mins = totalMinutes(pickSelection);
+  el.textContent = mins > 0 ? `выбрано ${pickSelection.length} · ~${mins} минут в день` : `выбрано ${pickSelection.length}`;
+}
 function renderPicker(){
   let html = `<div class="pickintro">
     <p>🌿 Выбери от 1 до ${MAX_HABITS} привычек, которые ты готова выполнять ежедневно в течение 21 дня.</p>
@@ -2154,11 +2199,13 @@ function renderPicker(){
   const customOnes = pickSelection.filter(h=>!findHabitMeta(h));
   html += `<div class="pickcat"><h4>Свои привычки</h4>
     <div class="chipgrid" id="customList">${customOnes.map(chipHtml).join("")}</div>
-    <button class="editlink" id="customAddBtn" type="button" style="margin-top:2px">+ добавить свою привычку</button>
+    <button class="addhabit-btn" id="customAddBtn" type="button">+ добавить свою привычку</button>
     </div>
     <p class="note" id="pickWarn" hidden style="margin:0 0 10px">Выбери хотя бы одну привычку, чтобы сохранить</p>
+    <p class="pick-total" id="pickTotal"></p>
     <button class="savepick" id="savePick">${onboarding ? "Начать марафон 🌙" : "Сохранить"}</button>`;
   document.getElementById("overlayBody").innerHTML = html;
+  renderPickTotal();
   document.getElementById("overlayBody").querySelectorAll(".habchip").forEach(chip=>{
     chip.addEventListener("click", (e)=>{
       if(e.target.closest(".hinfo")) return;
@@ -2251,8 +2298,10 @@ function renderHabitModalDays(){
 function renderHabitModalQty(){
   document.getElementById("habitQtyToggle").classList.toggle("on", hmState.qtyOn);
   document.getElementById("habitQtyExpand").classList.toggle("collapsed", !hmState.qtyOn);
-  document.getElementById("habitTargetVal").textContent = hmState.target;
-  document.getElementById("habitStepVal").textContent = hmState.step;
+  document.getElementById("habitTargetVal").value = hmState.target;
+  document.getElementById("habitMinutesInput").value = hmState.minutes || "";
+  const unit = document.getElementById("habitUnitInput").value;
+  document.getElementById("habitMinutesLine").hidden = hmState.qtyOn && isTimeUnit(unit);
 }
 function openHabitModal(opts){
   hmState = opts || {mode:"checklist"};
@@ -2264,7 +2313,7 @@ function openHabitModal(opts){
   document.getElementById("habitModalTitle").textContent = isEdit ? "редактировать привычку" : "новая привычка";
   document.getElementById("habitNameInput").value = name;
   const cfg = (name && habitConfig[name]) ? habitConfig[name] : defaultHabitConfig();
-  hmState.days = [...cfg.days]; hmState.qtyOn = cfg.qtyOn; hmState.target = cfg.target; hmState.step = cfg.step;
+  hmState.days = [...cfg.days]; hmState.qtyOn = cfg.qtyOn; hmState.target = cfg.target; hmState.minutes = cfg.minutes || 0;
   document.getElementById("habitUnitInput").value = cfg.unit || "";
   renderHabitModalDays(); renderHabitModalQty();
   document.getElementById("habitDeleteBtn").style.display = isEdit ? "" : "none";
@@ -2299,12 +2348,20 @@ document.getElementById("habitQtyToggle").addEventListener("click", ()=>{
 document.querySelectorAll(".hm-stepper button").forEach(btn=>{
   btn.addEventListener("click", ()=>{
     const d = Number(btn.dataset.step);
-    if(btn.dataset.target === "target") hmState.target = Math.max(1, hmState.target + d);
-    else hmState.step = Math.max(1, hmState.step + d);
+    hmState.target = Math.max(1, hmState.target + d);
     playPopSound();
     renderHabitModalQty();
   });
 });
+document.getElementById("habitTargetVal").addEventListener("input", e=>{
+  const v = Math.max(1, parseInt(e.target.value, 10) || 1);
+  hmState.target = v;
+});
+document.getElementById("habitTargetVal").addEventListener("blur", renderHabitModalQty);
+document.getElementById("habitMinutesInput").addEventListener("input", e=>{
+  hmState.minutes = Math.max(0, parseInt(e.target.value, 10) || 0);
+});
+document.getElementById("habitUnitInput").addEventListener("input", renderHabitModalQty);
 document.getElementById("addHabitBtn").addEventListener("click", openHabitPicker);
 document.getElementById("habitModalClose").addEventListener("click", ()=>{ playPopSound(); closeHabitModal(); });
 document.getElementById("habitModalBackdrop").addEventListener("click", e=>{
@@ -2315,7 +2372,7 @@ document.getElementById("habitSaveBtn").addEventListener("click", ()=>{
   if(!name) return;
   playPopSound();
   const unit = document.getElementById("habitUnitInput").value.trim();
-  const newCfg = {days:[...hmState.days], qtyOn:hmState.qtyOn, target:hmState.target, unit, step:hmState.step};
+  const newCfg = {days:[...hmState.days], qtyOn:hmState.qtyOn, target:hmState.target, unit, minutes:hmState.minutes || 0};
   if(hmState.name && hmState.name !== name) delete habitConfig[hmState.name];
   habitConfig[name] = newCfg;
   if(hmState.mode === "checklist"){
@@ -2376,7 +2433,15 @@ document.getElementById("shareBtn").addEventListener("click", ()=>{
   ctx.textAlign="center"; ctx.font="italic 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   ctx.fillText("Маленькие шаги каждый день создают большие результаты", 320, 580);
   const out=document.getElementById("shareOut"); out.hidden=false;
-  out.innerHTML = `<img src="${c.toDataURL('image/png')}" alt="карточка дня"><p class="share-note">Сохранение/отправка в телеграм заработает на реальном сайте.</p>`;
+  out.innerHTML = `<img src="${c.toDataURL('image/png')}" alt="карточка дня">
+    <div class="share-links">
+      <a class="btn ghost" href="${TG_CHANNEL_URL}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.5 4.2 2.9 11.4c-.9.4-.9 1.6.1 1.9l4.6 1.5 1.8 5.4c.3.8 1.3 1 1.9.4l2.6-2.5 4.7 3.5c.7.5 1.7.1 1.9-.7L23 5.6c.2-1-.7-1.8-1.5-1.4Z"/></svg>
+        Канал «Начни Сегодня»</a>
+      <a class="btn ghost" href="${TG_CHAT_URL}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12c0-4.4 3.8-8 8.5-8s8.5 3.6 8.5 8-3.8 8-8.5 8c-1.1 0-2.2-.2-3.1-.6L4 20l1.1-4.3C4.4 14.6 4 13.3 4 12Z"/></svg>
+        Чат «Начни Сегодня»</a>
+    </div>`;
 });
 
 /* ---------- материалы ---------- */
@@ -3135,7 +3200,7 @@ function renderProgress(){
     <td>${p.telegram || "—"}</td>
     <td>${p.habit_count}</td>
     <td>${p.avg_pct}%</td>
-    <td>${p.perfect_days + p.mastermind_count*5}</td>
+    <td>${p.perfect_days + p.mastermind_count*3}</td>
     <td>${p.mastermind_count}/2</td>
     <td${isQuiet(p.last_active)?' style="color:#B3415A;font-weight:600"':''}>${fmtLastActive(p.last_active)}</td>
     <td><button class="crm-del" data-pdel="${p.id}" title="удалить участницу">✕</button></td>
