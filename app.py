@@ -768,6 +768,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
 /* материалы */
 .evt-next{background:linear-gradient(135deg,var(--lav),var(--sage) 130%);border-radius:14px;padding:13px 15px;color:#fff;margin:4px 0}
+a.evt-next, a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
+a.evt-next{display:block}
 .evt-next .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;opacity:.85;margin-bottom:3px}
 .evt-next .ttl{font-size:14.5px;font-weight:600;margin-bottom:2px}
 .evt-next .meta{font-size:11.5px;opacity:.9}
@@ -889,11 +891,14 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .info-meta .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--sage-ink);font-weight:600;margin-bottom:3px}
 .info-meta .val{font-size:12.5px;color:var(--ink);line-height:1.3}
 #infoOverlayBody .info-desc{font-size:13px;color:var(--ink-soft);line-height:1.55}
+#infoOverlayBody .info-rules{margin-top:10px}
+#infoOverlayBody .info-rule{font-size:13px;color:var(--ink);padding:10px 0;border-top:1px solid var(--line)}
+#infoOverlayBody .info-rule:first-child{border-top:none;padding-top:4px}
 .info-why{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .info-why-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--sage-ink);font-weight:600;margin-bottom:5px}
 .info-why-txt{font-size:12.5px;color:var(--ink-soft);line-height:1.55;font-style:italic}
 .sub{color:var(--ink-soft);font-size:13px;margin:2px 0 18px}
-.mat{display:flex;gap:12px;padding:13px 14px;background:var(--surface-2);border-radius:14px;margin:6px 0}
+.mat{display:flex;align-items:center;gap:12px;padding:13px 14px;background:var(--surface-2);border-radius:14px;margin:6px 0}
 .mat:first-of-type{border-top:none}
 .mat.is-locked{opacity:.55}
 .mat-icon{width:34px;height:34px;border-radius:10px;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center}
@@ -1177,6 +1182,14 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
         </div>
       </div>
 
+      <div class="profcard">
+        <div class="sectitle">привычки марафона</div>
+        <div class="checklist-head habits-row" style="margin-top:0">
+          <h3 id="profileHabitsCount">Выбрано 5 привычек</h3>
+          <button class="editlink" id="editHabitsBtn">Изменить привычки</button>
+        </div>
+      </div>
+
       <div class="heatcard" id="heatmapCard" style="position:relative">
         <h3>Карта 21 дня</h3>
         <button class="info-hint" id="heatmapInfoBtn" type="button" aria-label="что значит цвет" style="position:absolute;top:13px;right:13px">?</button>
@@ -1280,14 +1293,6 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
       <div class="profcard v3" id="v3tile">
         <div class="v3-txt">Ника Кузнецова<small>34 · Durham · редактировать</small></div>
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
-      </div>
-
-      <div class="profcard">
-        <div class="sectitle">привычки марафона</div>
-        <div class="checklist-head habits-row" style="margin-top:0">
-          <h3 id="profileHabitsCount">Выбрано 5 привычек</h3>
-          <button class="editlink" id="editHabitsBtn">Изменить привычки</button>
-        </div>
       </div>
 
       <div class="sectitle">мероприятия</div>
@@ -1596,7 +1601,12 @@ function showInfoSimple(title, html){
 }
 document.getElementById("diamondInfoBtn").addEventListener("click", ()=>{
   playPopSound();
-  showInfoSimple("Бриллианты 💎", "+1 бриллиант за каждый день, в который закрыты все твои привычки на 100%. Максимум – 21 (по одному за каждый день марафона). Плюс +3 за каждый мастермайнд, если ввести кодовое слово после эфира.<br><br><i>Будь честна с самой собой: цель марафона не в том, чтобы поучаствовать в розыгрыше, а в том, чтобы изменить свою жизнь.</i>");
+  showInfoSimple("Бриллианты 💎", `Набери <b>27 бриллиантов</b> – и участвуешь в розыгрыше подарков.
+    <div class="info-rules">
+      <div class="info-rule">+1 за день со 100% привычек · максимум 21</div>
+      <div class="info-rule">+3 за мастермайнд по кодовому слову · 2 эфира</div>
+    </div>
+    <p class="info-desc" style="font-style:italic;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">Будь честна с собой: цель марафона не в розыгрыше, а в том, чтобы изменить свою жизнь.</p>`);
 });
 document.getElementById("achInfoBtn").addEventListener("click", ()=>{
   playPopSound();
@@ -1798,6 +1808,22 @@ function doneForHabitOnDay(id, d){
   return !!hd[id];
 }
 function defaultHabitConfig(){ return {days:[0,1,2,3,4,5,6], qtyOn:false, target:8, unit:"", minutes:0}; }
+function parseDurToMinutes(dur){
+  if(!dur) return 5;
+  const s = dur.toLowerCase();
+  const nums = s.match(/\d+([.,]\d+)?/g);
+  if(!nums) return 5;
+  const vals = nums.map(n=>parseFloat(n.replace(",", ".")));
+  const avg = vals.reduce((a,b)=>a+b, 0) / vals.length;
+  const mins = s.includes("час") ? avg * 60 : avg;
+  return Math.max(1, Math.round(mins));
+}
+function defaultHabitConfigFor(name){
+  const cfg = defaultHabitConfig();
+  const meta = findHabitMeta(name);
+  cfg.minutes = meta ? parseDurToMinutes(meta.dur) : 5;
+  return cfg;
+}
 const MIN_UNITS = ["мин","мин.","минут","минута","минуты","минуту"];
 const HOUR_UNITS = ["час","часа","часов","ч","ч."];
 function unitMinuteMultiplier(u){
@@ -1812,7 +1838,9 @@ function habitMinutes(name){
   const cfg = habitConfig[name] || defaultHabitConfig();
   const mult = unitMinuteMultiplier(cfg.unit);
   if(cfg.qtyOn && mult > 0) return (Number(cfg.target) || 0) * mult;
-  return Number(cfg.minutes) || 0;
+  if(Number(cfg.minutes) > 0) return Number(cfg.minutes);
+  const meta = findHabitMeta(name);
+  return meta ? parseDurToMinutes(meta.dur) : 5;
 }
 function formatMinutesRu(mins){
   if(mins < 60) return `${mins} минут`;
@@ -2343,7 +2371,7 @@ function renderPicker(){
   document.getElementById("savePick").addEventListener("click", async ()=>{
     if(!pickSelection.length){ document.getElementById("pickWarn").hidden = false; return; }
     playPopSound();
-    const payload = pickSelection.map(name => ({name, config: habitConfig[name] || defaultHabitConfig()}));
+    const payload = pickSelection.map(name => ({name, config: habitConfig[name] || defaultHabitConfigFor(name)}));
     let data;
     try{
       const resp = await apiFetch("/api/cabinet/habits", {method:"PUT", body:{habits: payload}});
@@ -2430,8 +2458,9 @@ function openHabitModal(opts){
   hmState.name = name;
   document.getElementById("habitModalTitle").textContent = isEdit ? "редактировать привычку" : "новая привычка";
   document.getElementById("habitNameInput").value = name;
-  const cfg = (name && habitConfig[name]) ? habitConfig[name] : defaultHabitConfig();
-  hmState.days = [...cfg.days]; hmState.qtyOn = cfg.qtyOn; hmState.target = cfg.target; hmState.minutes = cfg.minutes || 0;
+  const cfg = (name && habitConfig[name]) ? habitConfig[name] : defaultHabitConfigFor(name);
+  hmState.days = [...cfg.days]; hmState.qtyOn = cfg.qtyOn; hmState.target = cfg.target;
+  hmState.minutes = cfg.minutes || (name ? habitMinutes(name) : 5);
   document.getElementById("habitUnitInput").value = cfg.unit || "";
   renderHabitModalDays(); renderHabitModalQty();
   document.getElementById("habitDeleteBtn").style.display = isEdit ? "" : "none";
@@ -2446,7 +2475,7 @@ function syncHabitsCount(){
   document.getElementById("profileHabitsCount").textContent = "Выбрано "+HABITS.length+(HABITS.length===1?" привычка":" привычек");
 }
 async function persistHabits(){
-  const payload = HABITS.map(name => ({name, config: habitConfig[name] || defaultHabitConfig()}));
+  const payload = HABITS.map(name => ({name, config: habitConfig[name] || defaultHabitConfigFor(name)}));
   try{
     const resp = await apiFetch("/api/cabinet/habits", {method:"PUT", body:{habits: payload}});
     const data = await resp.json();
@@ -2631,16 +2660,21 @@ function renderEvents(){
   const events = STATE.events || [];
   const next = events.find(e=>e.date >= TODAY_DATE_ISO);
   document.getElementById("nextEventBanner").innerHTML = next
-    ? `<div class="evt-next"><div class="lbl">Ближайший эфир</div><div class="ttl">${next.title}</div><div class="meta">${fmtIsoDateRu(next.date)}${next.time?(' · '+mskToEt(next.time)):''}${next.type?(' · '+next.type):''}</div></div>`
+    ? (next.link
+      ? `<a class="evt-next" href="${next.link}" target="_blank" rel="noopener"><div class="lbl">Ближайший эфир · нажми, чтобы зайти</div><div class="ttl">${next.title}</div><div class="meta">${fmtIsoDateRu(next.date)}${next.time?(' · '+mskToEt(next.time)):''}${next.type?(' · '+next.type):''}</div></a>`
+      : `<div class="evt-next"><div class="lbl">Ближайший эфир</div><div class="ttl">${next.title}</div><div class="meta">${fmtIsoDateRu(next.date)}${next.time?(' · '+mskToEt(next.time)):''}${next.type?(' · '+next.type):''}</div></div>`)
     : "";
   document.getElementById("eventsList").innerHTML = events.map(e=>{
     const isPast = e.date < TODAY_DATE_ISO;
     const dp = evtDateParts(e.date);
-    return `<div class="evt-row ${isPast?'past':''}">
+    const clickable = !isPast && e.link;
+    const tag = clickable ? "a" : "div";
+    const attrs = clickable ? ` href="${e.link}" target="_blank" rel="noopener"` : "";
+    return `<${tag} class="evt-row ${isPast?'past':''}"${attrs}>
       <div class="evt-date"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
-      <div class="evt-body"><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':mskToEt(e.time||'')}</div></div>
+      <div class="evt-body"><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':(mskToEt(e.time||'')+(clickable?' · войти →':''))}</div></div>
       ${isPast?'':(e.type?`<div class="evt-tag">${e.type}</div>`:'')}
-    </div>`;
+    </${tag}>`;
   }).join("");
 
   const todayEv = events.find(e=>e.date === TODAY_DATE_ISO);
