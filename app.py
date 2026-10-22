@@ -686,7 +686,6 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .hab-streak{font-size:11.5px;color:var(--sand-ink);font-weight:600;white-space:nowrap;flex-shrink:0}
 .checklist-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}
 .checklist-head h3{font-size:13.5px;font-family:var(--sys);font-weight:600;color:var(--ink-soft)}
-.today-mins{font-size:12px;font-weight:600;color:var(--sage-ink);margin:0 0 6px}
 .day-status{font-size:13.5px;color:var(--ink-soft);margin:0 0 12px;line-height:1.4}
 .day-status b{color:var(--ink);font-weight:700}
 .editlink{background:none;border:none;color:var(--lav-ink);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sys)}
@@ -1169,8 +1168,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
         <span class="evt-alert-txt" id="todayEventTxt"></span>
         <span class="evt-alert-tag">Zoom</span>
       </div>
-      <div class="checklist-head"><h3>Твои привычки</h3><button class="editlink" id="addHabitBtn" type="button">Изменить привычки</button></div>
-      <p class="today-mins" id="todayMinutesNote"></p>
+      <div class="checklist-head"><h3 id="habitsHeading">Твои привычки</h3><button class="editlink" id="addHabitBtn" type="button">Изменить привычки</button></div>
       <p class="day-status" id="dayStatus"></p>
       <div class="checklist" id="checklist"></div>
       <div class="evening-rem" id="eveningRem" hidden>
@@ -2104,7 +2102,7 @@ function renderChecklist(){
   const todayDow = (dayToDate(TODAY).getUTCDay()+6)%7;
   const todayHabits = HABITS.filter(h=>{ const cfg=habitConfig[h]; return !cfg || !cfg.days || cfg.days.includes(todayDow); });
   const todayMins = totalMinutes(todayHabits);
-  document.getElementById("todayMinutesNote").textContent = (todayHabits.length && todayMins>0) ? `сегодня это ~${todayMins} минут` : "";
+  document.getElementById("habitsHeading").textContent = (todayHabits.length && todayMins>0) ? `Твои привычки занимают ~${todayMins} минут` : "Твои привычки";
   const statusEl = document.getElementById("dayStatus");
   if(HABITS.length === 0){
     statusEl.innerHTML = `Пока не выбраны привычки — нажми «Изменить привычки».`;
