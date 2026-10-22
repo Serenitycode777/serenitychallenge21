@@ -1516,6 +1516,7 @@ function mmInlineHtml(mmId){
 function renderMmInline(mmId){
   openMmInlineId = mmId;
   const box = document.getElementById("mmInlineBox");
+  box.hidden = false;
   box.innerHTML = mmInlineHtml(mmId);
   box.classList.add("open");
   wireMmCodeBox(mmId, ()=>{ openMmInlineId = null; renderStars(); renderProgress(); });
@@ -1525,6 +1526,7 @@ function closeMmInline(){
   const box = document.getElementById("mmInlineBox");
   box.classList.remove("open");
   box.innerHTML = "";
+  box.hidden = true;
 }
 document.getElementById("starsRow").addEventListener("click", e=>{
   const btn = e.target.closest(".ach-mm-check");
