@@ -773,12 +773,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .evening-rem .txt{font-size:12.5px;color:var(--ink-soft);line-height:1.4}
 
 /* материалы */
-.evt-next{background:linear-gradient(135deg,var(--lav),var(--sage) 130%);border-radius:14px;padding:13px 15px;color:#fff;margin:4px 0}
-a.evt-next, a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
-a.evt-next{display:block}
-.evt-next .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;opacity:.85;margin-bottom:3px}
-.evt-next .ttl{font-size:14.5px;font-weight:600;margin-bottom:2px}
-.evt-next .meta{font-size:11.5px;opacity:.9}
+a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-row{display:flex;align-items:center;gap:11px;padding:11px 12px;background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;margin:7px 0}
 .evt-row:first-of-type{border-top:none}
 .evt-date{width:36px;flex-shrink:0;text-align:center}
@@ -787,7 +782,8 @@ a.evt-next{display:block}
 .evt-body{flex:1;min-width:0}
 .evt-ttl{font-size:13px;font-weight:500}
 .evt-meta{font-size:11px;color:var(--ink-soft);margin-top:1px}
-.evt-tag{font-size:9.5px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--sage-ink);white-space:nowrap}
+.evt-go{background:linear-gradient(135deg,var(--lav),var(--sage) 130%);color:#fff;font-size:12px;font-weight:600;
+  border-radius:999px;padding:8px 16px;flex-shrink:0;white-space:nowrap}
 .evt-row.past{opacity:.5}
 .evt-alert{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:12px;
   padding:9px 12px;margin:0 0 14px;box-shadow:var(--shadow)}
@@ -1313,7 +1309,6 @@ a.evt-next{display:block}
       <h1 class="page-title">Расписание</h1>
       <p class="sched-date" id="scheduleDate"></p>
       <div class="heatcard">
-        <div id="nextEventBanner"></div>
         <div id="eventsList"></div>
       </div>
     </section>
@@ -2723,12 +2718,6 @@ function mskToEt(raw){
 function renderEvents(){
   document.getElementById("scheduleDate").textContent = fmtIsoDateRu(TODAY_DATE_ISO);
   const events = STATE.events || [];
-  const next = events.find(e=>e.date >= TODAY_DATE_ISO);
-  document.getElementById("nextEventBanner").innerHTML = next
-    ? (next.link
-      ? `<a class="evt-next" href="${next.link}" target="_blank" rel="noopener"><div class="lbl">Ближайший эфир · нажми, чтобы зайти</div><div class="ttl">${next.title}</div><div class="meta">${fmtIsoDateRu(next.date)}${next.time?(' · '+mskToEt(next.time)):''}${next.type?(' · '+next.type):''}</div></a>`
-      : `<div class="evt-next"><div class="lbl">Ближайший эфир</div><div class="ttl">${next.title}</div><div class="meta">${fmtIsoDateRu(next.date)}${next.time?(' · '+mskToEt(next.time)):''}${next.type?(' · '+next.type):''}</div></div>`)
-    : "";
   document.getElementById("eventsList").innerHTML = events.map(e=>{
     const isPast = e.date < TODAY_DATE_ISO;
     const dp = evtDateParts(e.date);
@@ -2737,8 +2726,8 @@ function renderEvents(){
     const attrs = clickable ? ` href="${e.link}" target="_blank" rel="noopener"` : "";
     return `<${tag} class="evt-row ${isPast?'past':''}"${attrs}>
       <div class="evt-date"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
-      <div class="evt-body"><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':(mskToEt(e.time||'')+(clickable?' · войти →':''))}</div></div>
-      ${isPast?'':(e.type?`<div class="evt-tag">${e.type}</div>`:'')}
+      <div class="evt-body"><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':mskToEt(e.time||'')}</div></div>
+      ${clickable?'<span class="evt-go">зайти</span>':''}
     </${tag}>`;
   }).join("");
 
