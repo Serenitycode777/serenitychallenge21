@@ -658,6 +658,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mm-title{font-size:13px;font-weight:600;flex-shrink:0;width:104px}
 .mm-field{flex:1}
 .mm-input{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-family:var(--sys)}
+.mm-input:focus{outline:none;border-color:var(--lav);box-shadow:0 0 0 3px rgba(170,157,184,.18)}
 .mm-err{font-size:10.5px;color:#a8443a;margin:3px 0 0}
 .mm-btn{font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:10px;border:none;background:var(--lav);color:#fff;cursor:pointer;flex-shrink:0;font-family:var(--sys)}
 .mm-done{font-size:12.5px;color:var(--sage-ink);font-weight:600;flex:1}
@@ -696,9 +697,22 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .checklist-head h3{font-size:13.5px;font-family:var(--sys);font-weight:600;color:var(--ink-soft)}
 .day-status{font-size:13.5px;color:var(--ink-soft);margin:0 0 12px;line-height:1.4}
 .day-status b{color:var(--ink);font-weight:700}
+.habits-card{background:var(--surface);border-radius:16px;padding:14px 16px;margin:4px 0 14px}
+.habits-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.habits-card-top h3{margin:0;font-size:13.5px;font-family:var(--sys);font-weight:600;color:var(--ink-soft);line-height:1.35}
+.habits-card-status{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;
+  border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-soft);line-height:1.4}
+.hcs-pill{font-size:11px;font-weight:700;color:var(--sage-ink);background:rgba(106,153,147,.13);
+  border-radius:999px;padding:3px 10px;flex-shrink:0}
 .editlink{background:none;border:none;color:var(--lav-ink);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sys)}
 .checklist-head .editlink{background:var(--surface);border:1.5px solid var(--line);border-radius:999px;
   padding:7px 14px;box-shadow:0 2px 6px -2px rgba(0,0,0,.08)}
+#editHabitsBtn{background:linear-gradient(135deg,var(--sand),var(--lav));border:none;color:#fff;
+  box-shadow:0 4px 14px -6px rgba(170,157,184,.6)}
+@media (max-width:899px){
+  .habits-row{flex-direction:column;align-items:stretch;gap:10px}
+  #editHabitsBtn{width:100%;text-align:center}
+}
 .pickcat{margin-bottom:20px}
 .pickcat h4{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:9px}
 .chipgrid{display:flex;flex-wrap:wrap;gap:8px}
@@ -1194,8 +1208,13 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
         <span class="evt-alert-txt" id="todayEventTxt"></span>
         <span class="evt-alert-tag">Zoom</span>
       </div>
-      <div class="checklist-head"><h3 id="habitsHeading">Твои привычки</h3><button class="editlink" id="addHabitBtn" type="button">Изменить привычки</button></div>
-      <p class="day-status" id="dayStatus"></p>
+      <div class="habits-card">
+        <div class="habits-card-top">
+          <h3 id="habitsHeading">Твои привычки</h3>
+          <button class="editlink" id="addHabitBtn" type="button">Изменить привычки</button>
+        </div>
+        <div class="habits-card-status"><span class="hcs-pill" id="dayStatusPill" hidden></span><span id="dayStatus"></span></div>
+      </div>
       <div class="checklist" id="checklist"></div>
       <div class="evening-rem" id="eveningRem" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -1261,7 +1280,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
       <div class="profcard">
         <div class="sectitle">привычки марафона</div>
-        <div class="checklist-head" style="margin-top:0">
+        <div class="checklist-head habits-row" style="margin-top:0">
           <h3 id="profileHabitsCount">Выбрано 5 привычек</h3>
           <button class="editlink" id="editHabitsBtn">Изменить привычки</button>
         </div>
@@ -2183,14 +2202,19 @@ function renderChecklist(){
   const todayMins = totalMinutes(todayHabits);
   document.getElementById("habitsHeading").textContent = (todayHabits.length && todayMins>0) ? `Твои привычки занимают ~${formatMinutesRu(todayMins)}` : "Твои привычки";
   const statusEl = document.getElementById("dayStatus");
+  const pillEl = document.getElementById("dayStatusPill");
   if(HABITS.length === 0){
-    statusEl.innerHTML = `Пока не выбраны привычки — нажми «Изменить привычки».`;
+    pillEl.hidden = true;
+    statusEl.textContent = "Пока не выбраны привычки — нажми «Изменить привычки».";
   } else if(remaining === 0){
-    statusEl.innerHTML = "Все привычки на сегодня отмечены ✨";
+    pillEl.hidden = true;
+    statusEl.textContent = "Все привычки на сегодня отмечены ✨";
   } else if(doneCount === 0){
-    statusEl.innerHTML = `Начни с одной привычки — дальше будет легче. Осталось <b>${remaining}</b>.`;
+    pillEl.hidden = false; pillEl.textContent = remaining;
+    statusEl.textContent = "осталось сегодня — начни с одной, дальше будет легче";
   } else {
-    statusEl.innerHTML = `Хорошо идёшь: часть привычек уже отмечена 💗 Осталось <b>${remaining}</b>.`;
+    pillEl.hidden = false; pillEl.textContent = remaining;
+    statusEl.textContent = "осталось сегодня 💗";
   }
   const box = document.getElementById("checklist");
   box.innerHTML = HABITS.map((h,i)=>{
@@ -2686,7 +2710,7 @@ function openMaterialDetail(key, idx){
   openMaterialDetailFor(items[idx], (AUTHORS[key]||{}).name||"", "← к материалам "+((AUTHORS[key]||{}).name||""), ()=>openMaterial(key));
 }
 function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
-  openOverlay(m.title, eyebrow);
+  openOverlay(m.title);
   const backBtn = document.getElementById("overlayBackBtn");
   backBtn.hidden = false;
   document.querySelector(".panel-head2").classList.add("has-back");
@@ -2699,7 +2723,7 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
     : `<a id="matOpenBtn" href="${m.url}" target="_blank" rel="noopener" class="btn primary" style="margin:4px 0 10px;display:inline-block;text-decoration:none">Открыть материал →</a>`;
   document.getElementById("overlayBody").innerHTML =
     `<div class="mat" style="margin-bottom:10px"><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
-      <div class="mat-body"><div class="mat-title">${m.title}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div></div>
+      <div class="mat-body"><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div></div>
      ${openLink}
      <div class="mat-embed" id="matEmbed" hidden></div>
      ${codeBox}`;
