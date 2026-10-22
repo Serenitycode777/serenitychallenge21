@@ -508,7 +508,7 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 .topbar .name{font-family:var(--font-head);font-weight:600;font-size:16px;letter-spacing:.02em}
 .name small{display:block;font-weight:400;font-size:10px;color:var(--ink-soft);letter-spacing:.02em;margin-top:1px}
 .marathon-eyebrow{display:block;text-align:center;margin:0 0 14px}
-.marathon-eyebrow span{display:inline-block;background:var(--surface-2);border-radius:999px;padding:4px 14px;
+.marathon-eyebrow span{display:inline-block;background:rgba(106,153,147,.14);border-radius:999px;padding:4px 14px;
   font-family:var(--sys);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sage-ink)}
 .page-title{font-family:var(--font-head);font-weight:600;font-size:26px;text-align:center;color:var(--ink);
   margin:0 0 16px;text-wrap:balance}
@@ -847,10 +847,13 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   box-shadow:0 30px 70px -24px rgba(0,0,0,.45)}
 .overlay.open .panel{transform:scale(1)}
 .panel-head2{background:linear-gradient(135deg,var(--lav),var(--sage) 130%);padding:20px 50px 18px 22px;color:#fff;flex-shrink:0}
+.panel-head2.has-back{padding-left:50px}
 .panel-head2 .eyebrow2{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin:0 0 4px}
 .panel-head2 h2{font-size:19px;color:#fff}
 .close-x{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.22);border:none;width:28px;height:28px;
   border-radius:50%;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.back-arrow{position:absolute;top:14px;left:14px;background:rgba(255,255,255,.22);border:none;width:28px;height:28px;
+  border-radius:50%;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 #overlayBody{padding:18px 22px calc(22px + env(safe-area-inset-bottom,0px));overflow-y:auto}
 .info-panel{max-width:400px;max-height:min(480px,80vh)}
 .info-close{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-soft)}
@@ -1278,6 +1281,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
 <div class="overlay" id="overlay"><div class="panel">
   <div class="panel-head2">
+    <button class="back-arrow" id="overlayBackBtn" type="button" aria-label="назад" hidden>&#8592;</button>
     <button class="close-x" id="closePanel">&#10005;</button>
     <p class="eyebrow2" id="overlayEyebrow" hidden></p>
     <h2 id="overlayTitle"></h2>
@@ -1606,6 +1610,8 @@ function openOverlay(title, eyebrow){
   eb.hidden = !eyebrow;
   eb.textContent = eyebrow || "";
   document.getElementById("overlay").classList.add("open");
+  document.getElementById("overlayBackBtn").hidden = true;
+  document.querySelector(".panel-head2").classList.remove("has-back");
 }
 
 /* ---------- навигация: централизованный state + персистентность ---------- */
@@ -2633,6 +2639,10 @@ function openMaterialDetail(key, idx){
 }
 function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
   openOverlay(m.title, eyebrow);
+  const backBtn = document.getElementById("overlayBackBtn");
+  backBtn.hidden = false;
+  document.querySelector(".panel-head2").classList.add("has-back");
+  backBtn.onclick = ()=>{ playPopSound(); onBack(); };
   const codeBox = m.mmId ? mmCodeBoxHtml(m.mmId) : "";
   const hasLink = m.url && m.url !== "#";
   const needsSign = hasLink && m.url.indexOf("storage:") === 0;
@@ -2644,8 +2654,7 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
       <div class="mat-body"><div class="mat-title">${m.title}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div></div>
      ${openLink}
      <div class="mat-embed" id="matEmbed" hidden></div>
-     ${codeBox}
-     <button class="editlink" id="matBackBtn" type="button" style="margin-top:4px">${backLabel}</button>`;
+     ${codeBox}`;
   if(m.mmId) wireMmCodeBox(m.mmId);
   if(needsSign){
     document.getElementById("matOpenBtn").addEventListener("click", async ()=>{
@@ -2668,7 +2677,6 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
       }
     });
   }
-  document.getElementById("matBackBtn").addEventListener("click", onBack);
 }
 function renderMaterialEmbed(type, url){
   const box = document.getElementById("matEmbed");
