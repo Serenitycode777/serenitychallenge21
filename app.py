@@ -2758,7 +2758,7 @@ function renderMaterials(){
       const dotCss = COLOR_CSS[a.color] || "";
       const dotStyleAttr = (!photo && dotCss) ? ` style="background:${dotCss}"` : "";
       headerHtml = `<div class="folder-back" id="folderBackBtn">&#8592; все папки</div>
-      <div class="mcard ${activeFolder}" style="cursor:default;margin:0 0 10px">
+      <div class="mcard ${activeFolder}" style="cursor:default;margin:0 0 10px;background:none;border:none;box-shadow:none;padding:4px 2px">
         <div class="dot"${dotStyleAttr}>${dotInner}</div>
         <div class="body"><h3>${a.name}</h3><div class="topics">${a.topics||''}</div>
         <div class="foot"><span>${a.desc||''}</span></div></div>
