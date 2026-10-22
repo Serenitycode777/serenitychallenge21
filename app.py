@@ -624,21 +624,18 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   .statrow #achCard{order:3;grid-column:1/-1}
 }
 .statrow .heatcard{margin-bottom:0;padding:11px 10px}
-.statrow .diamond-icon{font-size:21px}
-.statrow .diamond-val{font-size:16px}
-.statrow .diamond-val .diamond-max{font-size:11px}
-.statrow .diamond-lbl{font-size:9px}
+.statrow .diamond-icon{font-size:23px}
+.statrow .diamond-val{font-size:19px}
+.statrow .diamond-val .diamond-max{font-size:13px}
 .statrow .starsrow{gap:2px;padding-right:16px}
 .statrow .star-icon{font-size:16px}
 .statrow .star-day{font-size:7.5px}
 .statrow h3{font-size:11px}
 
-.diamond-row{display:flex;flex-direction:column;align-items:flex-start;gap:6px;height:100%}
-.diamond-icon{font-size:26px;line-height:1}
-.diamond-text{flex:1}
-.diamond-val{font-family:var(--sys);font-size:19px;font-weight:700;color:var(--ink)}
-.diamond-val .diamond-max{font-size:12.5px;font-weight:500;color:var(--ink-soft);margin-left:2px}
-.diamond-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin-top:2px}
+.diamond-row{display:flex;align-items:center;gap:9px;height:100%}
+.diamond-icon{font-size:28px;line-height:1}
+.diamond-val{font-family:var(--sys);font-size:23px;font-weight:700;color:var(--ink)}
+.diamond-val .diamond-max{font-size:15px;font-weight:500;color:var(--ink-soft);margin-left:2px}
 #diamondCard .info-hint,#achCard .info-hint{position:absolute;top:13px;right:13px}
 #diamondCard,#achCard{position:relative}
 
@@ -1170,7 +1167,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
     <section class="screen" id="tab-home" hidden>
       <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Прогресс</h1>
-      <div class="hcard dayhero">
+      <div class="hcard dayhero heatcard">
         <div class="dh-top"><span class="dh-title">День <span id="bigDayTxt">8</span> из 21</span><span class="dh-pct" id="dayPct">38%</span></div>
         <div class="dh-pill"><i id="dayPillFill"></i></div>
         <div class="dh-sub" id="daySub"></div>
@@ -1179,16 +1176,12 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="heatcard" id="diamondCard">
           <div class="diamond-row">
             <div class="diamond-icon">💎</div>
-            <div class="diamond-text">
-              <div class="diamond-val"><span id="diamondVal">0</span><span class="diamond-max">/27</span></div>
-              <div class="diamond-lbl">бриллианты</div>
-            </div>
+            <div class="diamond-val"><span id="diamondVal">0</span><span class="diamond-max">/27</span></div>
             <button class="info-hint" id="diamondInfoBtn" type="button" aria-label="как начисляются бриллианты">?</button>
           </div>
         </div>
 
         <div class="heatcard" id="achCard">
-          <h3>Достижения</h3>
           <button class="info-hint" id="achInfoBtn" type="button" aria-label="как открываются звёзды и галочки за мастермайнд">?</button>
           <div class="starsrow" id="starsRow"></div>
           <div class="mm-inline" id="mmInlineBox" hidden></div>
@@ -1197,10 +1190,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="heatcard" id="countdownCard">
           <div class="diamond-row">
             <div class="diamond-icon">⏳</div>
-            <div class="diamond-text">
-              <div class="diamond-val"><span id="countdownVal">0</span></div>
-              <div class="diamond-lbl">дней до финала</div>
-            </div>
+            <div class="diamond-val"><span id="countdownVal">0</span></div>
           </div>
         </div>
       </div>
