@@ -512,7 +512,7 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
   font-family:var(--sys);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sage-ink)}
 .page-title{font-family:var(--font-head);font-weight:600;font-size:26px;color:var(--sage-ink);
   margin:0 auto 16px;text-wrap:balance;width:fit-content;background:var(--surface);
-  box-shadow:var(--shadow);border-radius:999px;padding:7px 24px}
+  box-shadow:var(--shadow);border-radius:999px;padding:7px 24px;text-transform:uppercase}
 .sched-date{text-align:center;font-size:13px;color:var(--ink-soft);margin:-10px 0 16px}
 
 main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)))}
@@ -821,7 +821,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mcard.mila .dot{background:var(--lav)} .mcard.maria .dot{background:var(--sage)}
 .mcard.anna .dot{background:var(--sand)} .mcard.extra .dot{background:linear-gradient(135deg,var(--lav),var(--sage) 55%,var(--sand))}
 .mcard .body{flex:1;min-width:0}
-.mcard h3{font-size:16.5px;font-weight:600}
+.mcard h3{font-size:16.5px;font-weight:600;text-transform:uppercase}
 .mcard .topics{font-size:12px;color:var(--ink-soft);margin-top:2px}
 .mcard .foot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-soft);margin-top:8px}
 .mcard .count{font-weight:600;color:var(--ink)}
