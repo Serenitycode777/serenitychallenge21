@@ -2549,7 +2549,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
     ctx.fillText(h, cx+r+15, y);
     y+=54;
   });
-  ctx.textAlign="center"; ctx.font="italic 500 17px \"Cormorant Garamond\", Georgia, serif";
+  ctx.textAlign="center"; ctx.font='italic 500 17px '+HEAD+', Georgia, serif';
   ctx.fillText("Маленькие шаги каждый день создают большие результаты", 320, 580);
   const out=document.getElementById("shareOut"); out.hidden=false;
   out.innerHTML = `<div class="share-divider">твой день</div>
@@ -3021,6 +3021,9 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .foldercard .fbody{flex:1;min-width:0}
 .foldercard .fbody h3{font-size:16px;font-weight:600;margin:0}
 .foldercard .fbody .topics{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.foldercard .fcount{font-size:11.5px;color:var(--ink-soft);flex-shrink:0;white-space:nowrap}
+.foldercard .fchev{width:16px;height:16px;flex-shrink:0;color:var(--ink-soft);transition:transform .15s}
+.foldercard .fchev.open{transform:rotate(90deg)}
 .foldercard .factions{display:flex;gap:2px;flex-shrink:0}
 .foldercard .factions .evbtn{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:4px 6px}
 .foldercard .mlist{margin-top:12px;display:flex;flex-direction:column;gap:6px}
@@ -3615,6 +3618,7 @@ function cancelEditFolder(){
 }
 
 let MATERIALS = []; // [{id,folder_id,title,format,tags,day,url,calendar_event_id}] — грузится с сервера
+let openFolderIds = new Set();
 function renderMaterialsList(){
   const wrap = document.getElementById("materialsList");
   if(!FOLDERS.length){ wrap.innerHTML = `<div class="hint" style="margin:0">пока нет папок — создай первую через «+ добавить»</div>`; return; }
@@ -3631,18 +3635,30 @@ function renderMaterialsList(){
         <button class="evbtn" data-matdel="${m.id}">✕</button>
       </div>`;
     }).join("") : `<div class="hint" style="margin:0">материалов нет</div>`;
+    const isOpen = openFolderIds.has(f.id);
+    const countLbl = mats.length ? mats.length+(mats.length===1?" материал":mats.length<5?" материала":" материалов") : "пусто";
     return `<div class="foldercard">
-      <div class="fhead">
+      <div class="fhead" data-foldertoggle="${f.id}" style="cursor:pointer">
         <div class="dot"${dotStyle}>${dotInner}</div>
         <div class="fbody"><h3>${f.name}</h3>${f.description?`<div class="topics">${f.description}</div>`:''}</div>
+        <div class="fcount">${countLbl}</div>
+        <svg class="fchev ${isOpen?'open':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
         <div class="factions">
           <button class="evbtn" data-folderedit="${f.id}" aria-label="редактировать папку">✎</button>
           <button class="evbtn" data-folderdel="${f.id}">✕</button>
         </div>
       </div>
-      <div class="mlist">${matsHtml}</div>
+      <div class="mlist" ${isOpen?'':'hidden'}>${matsHtml}</div>
     </div>`;
   }).join("");
+  wrap.querySelectorAll("[data-foldertoggle]").forEach(head=>{
+    head.addEventListener("click", e=>{
+      if(e.target.closest(".factions")) return;
+      const id = head.dataset.foldertoggle;
+      if(openFolderIds.has(id)) openFolderIds.delete(id); else openFolderIds.add(id);
+      renderMaterialsList();
+    });
+  });
   wrap.querySelectorAll("[data-matdel]").forEach(b=>{
     b.addEventListener("click", async ()=>{
       if(!confirm("Удалить материал?")) return;
