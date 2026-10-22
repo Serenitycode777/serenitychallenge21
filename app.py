@@ -2504,8 +2504,16 @@ document.getElementById("habitDeleteBtn").addEventListener("click", ()=>{
   closeHabitModal();
 });
 
-document.getElementById("shareBtn").addEventListener("click", ()=>{
+document.getElementById("shareBtn").addEventListener("click", async ()=>{
   playPopSound();
+  const HEAD='"Cormorant Garamond"', SYS='"Montserrat"';
+  try{
+    await Promise.all([
+      document.fonts.load('600 14px '+SYS), document.fonts.load('500 22px '+SYS),
+      document.fonts.load('italic 500 20px '+HEAD), document.fonts.load('italic 500 18px '+HEAD),
+      document.fonts.load('italic 500 17px '+HEAD), document.fonts.load('600 46px '+HEAD)
+    ]);
+  }catch(e){}
   const c=document.createElement("canvas"); c.width=640; c.height=640;
   const ctx=c.getContext("2d");
   const grad=ctx.createLinearGradient(0,0,640,640); grad.addColorStop(0,"#AA9DB8"); grad.addColorStop(1,"#6A9993");
@@ -2514,20 +2522,20 @@ document.getElementById("shareBtn").addEventListener("click", ()=>{
   ctx.font="32px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText("🌙", 320, 58);
   const dateText=fmtDateRu(dayToDate(TODAY)).toUpperCase();
   const marathonText="Марафон «Начни сегодня!» · день "+TODAY;
-  ctx.font="700 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  ctx.font="600 14px "+SYS+", sans-serif";
   const dateW=ctx.measureText(dateText).width;
-  ctx.font="italic 20px Georgia, 'Times New Roman', serif";
+  ctx.font="italic 500 20px "+HEAD+", Georgia, serif";
   const marathonW=ctx.measureText(marathonText).width;
   const boxW=Math.max(dateW,marathonW)+56, boxH=64, boxX=320-boxW/2, boxY=70;
   ctx.strokeStyle="rgba(255,255,255,.4)"; ctx.lineWidth=1;
   ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 14); ctx.stroke();
   ctx.fillStyle="#fff";
-  ctx.font="700 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText(dateText, 320, boxY+26);
-  ctx.font="italic 20px Georgia, 'Times New Roman', serif"; ctx.fillText(marathonText, 320, boxY+50);
+  ctx.font="600 14px "+SYS+", sans-serif"; ctx.fillText(dateText, 320, boxY+26);
+  ctx.font="italic 500 20px "+HEAD+", Georgia, serif"; ctx.fillText(marathonText, 320, boxY+50);
   const done=liveChecked.filter(Boolean).length;
-  ctx.font="600 58px Georgia, 'Times New Roman', serif"; ctx.fillText(done+" из "+HABITS.length, 320, boxY+boxH+70);
-  ctx.font="italic 22px Georgia, 'Times New Roman', serif"; ctx.fillText("привычек сегодня", 320, boxY+boxH+100);
-  let y=290; ctx.font="500 22px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.textAlign="left";
+  ctx.font="600 46px "+HEAD+", Georgia, serif"; ctx.fillText(done+" из "+HABITS.length, 320, boxY+boxH+64);
+  ctx.font="italic 500 18px "+HEAD+", Georgia, serif"; ctx.fillText("привычек сегодня", 320, boxY+boxH+92);
+  let y=282; ctx.font="500 22px "+SYS+", sans-serif"; ctx.textAlign="left";
   HABITS.forEach((h,i)=>{
     const cy = y-7, cx = 92, r = 9;
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
@@ -2539,7 +2547,7 @@ document.getElementById("shareBtn").addEventListener("click", ()=>{
     ctx.fillText(h, cx+r+15, y);
     y+=54;
   });
-  ctx.textAlign="center"; ctx.font="italic 18px Georgia, 'Times New Roman', serif";
+  ctx.textAlign="center"; ctx.font="italic 500 17px \"Cormorant Garamond\", Georgia, serif";
   ctx.fillText("Маленькие шаги каждый день создают большие результаты", 320, 580);
   const out=document.getElementById("shareOut"); out.hidden=false;
   out.innerHTML = `<div class="share-divider">твой день</div>
