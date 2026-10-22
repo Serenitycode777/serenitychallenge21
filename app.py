@@ -525,7 +525,7 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
   box-shadow:0 -8px 24px -16px rgba(51,46,61,.25);
 }
 .bottomnav .inner{
-  width:100%; max-width:460px; display:flex;
+  width:100%; max-width:460px; display:flex; padding-top:6px;
 }
 .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
   padding:11px 4px 9px;min-height:48px;background:transparent;border:none;border-radius:12px;
