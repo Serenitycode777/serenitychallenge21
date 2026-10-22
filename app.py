@@ -1411,29 +1411,25 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
     </div>
 
     <div class="hm-qty">
-      <div class="hm-qty-head">
+      <div class="hm-qty-line" id="habitMinutesLine">
+        <span class="lbl">сколько минут занимает</span>
+        <input class="hm-unit-input" id="habitMinutesInput" type="number" inputmode="numeric" min="0" placeholder="мин.">
+      </div>
+      <div class="hm-qty-head" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
         <div>
           <div class="hm-qty-title">учитывать количество</div>
-          <div class="hm-qty-sub">число за день – стаканы, км, минуты...</div>
+          <div class="hm-qty-sub">число за день – стаканы, км, шаги...</div>
         </div>
         <button class="hm-switch" id="habitQtyToggle" type="button"></button>
       </div>
       <div class="hm-qty-expand collapsed" id="habitQtyExpand">
         <div class="hm-qty-line">
-          <span class="lbl">цель</span>
+          <span class="lbl">количество</span>
           <span class="hm-stepper">
             <button type="button" data-step="-1" data-target="target">–</button>
             <input class="hm-stepper-input" id="habitTargetVal" type="number" inputmode="numeric" min="1" value="8">
             <button type="button" data-step="1" data-target="target">+</button>
           </span>
-        </div>
-        <div class="hm-qty-line">
-          <span class="lbl">единица</span>
-          <input class="hm-unit-input" id="habitUnitInput" type="text" placeholder="стак.">
-        </div>
-        <div class="hm-qty-line" id="habitMinutesLine">
-          <span class="lbl">сколько минут</span>
-          <input class="hm-unit-input" id="habitMinutesInput" type="number" inputmode="numeric" min="0" placeholder="мин.">
         </div>
       </div>
     </div>
@@ -2511,8 +2507,6 @@ function renderHabitModalQty(){
   document.getElementById("habitQtyExpand").classList.toggle("collapsed", !hmState.qtyOn);
   document.getElementById("habitTargetVal").value = hmState.target;
   document.getElementById("habitMinutesInput").value = hmState.minutes || "";
-  const unit = document.getElementById("habitUnitInput").value;
-  document.getElementById("habitMinutesLine").hidden = hmState.qtyOn && isTimeUnit(unit);
 }
 function openHabitModal(opts){
   hmState = opts || {mode:"checklist"};
@@ -2526,7 +2520,7 @@ function openHabitModal(opts){
   const cfg = (name && habitConfig[name]) ? habitConfig[name] : defaultHabitConfigFor(name);
   hmState.days = [...cfg.days]; hmState.qtyOn = cfg.qtyOn; hmState.target = cfg.target;
   hmState.minutes = cfg.minutes || (name ? habitMinutes(name) : 5);
-  document.getElementById("habitUnitInput").value = cfg.unit || "";
+  hmState.unit = cfg.unit || "";
   renderHabitModalDays(); renderHabitModalQty();
   document.getElementById("habitDeleteBtn").style.display = isEdit ? "" : "none";
   document.getElementById("habitModalWarn").hidden = true;
@@ -2573,7 +2567,6 @@ document.getElementById("habitTargetVal").addEventListener("blur", renderHabitMo
 document.getElementById("habitMinutesInput").addEventListener("input", e=>{
   hmState.minutes = Math.max(0, parseInt(e.target.value, 10) || 0);
 });
-document.getElementById("habitUnitInput").addEventListener("input", renderHabitModalQty);
 document.getElementById("addHabitBtn").addEventListener("click", openHabitPicker);
 document.getElementById("habitModalClose").addEventListener("click", ()=>{ playPopSound(); closeHabitModal(); });
 document.getElementById("habitModalBackdrop").addEventListener("click", e=>{
@@ -2583,7 +2576,7 @@ document.getElementById("habitSaveBtn").addEventListener("click", ()=>{
   const name = document.getElementById("habitNameInput").value.trim();
   if(!name) return;
   playPopSound();
-  const unit = document.getElementById("habitUnitInput").value.trim();
+  const unit = hmState.unit || "";
   const newCfg = {days:[...hmState.days], qtyOn:hmState.qtyOn, target:hmState.target, unit, minutes:hmState.minutes || 0};
   if(hmState.name && hmState.name !== name) delete habitConfig[hmState.name];
   habitConfig[name] = newCfg;
