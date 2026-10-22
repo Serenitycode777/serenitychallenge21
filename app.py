@@ -2194,7 +2194,7 @@ function renderHeat(){
     const cell = document.createElement("div");
     cell.className = "hday "+cls+(d===TODAY?" istoday":"");
     const dt = dayToDate(d);
-    cell.innerHTML = `<span class="hday-corner">${d}</span><span class="hday-main"><span class="hday-dd">${dt.getUTCDate()}</span><span class="hday-mm">${RU_MONTHS_SHORT[dt.getUTCMonth()]}</span></span>`;
+    cell.innerHTML = `<span class="hday-main"><span class="hday-dd">${dt.getUTCDate()}</span><span class="hday-mm">${RU_MONTHS_SHORT[dt.getUTCMonth()]}</span></span>`;
     cell.title = "День "+d+" · "+fmtDateRu(dt)+(d===TODAY?" · сегодня":"");
     cell.addEventListener("click", ()=>openDay(d));
     const gridId = "heatgrid"+(Math.ceil(d/7));
