@@ -507,8 +507,9 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 .topbar .mark{width:30px;height:30px;object-fit:contain}
 .topbar .name{font-family:var(--font-head);font-weight:600;font-size:16px;letter-spacing:.02em}
 .name small{display:block;font-weight:400;font-size:10px;color:var(--ink-soft);letter-spacing:.02em;margin-top:1px}
-.marathon-eyebrow{font-family:var(--sys);font-size:13px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.07em;color:var(--sage-ink);text-align:center;margin:0 0 12px}
+.marathon-eyebrow{display:block;text-align:center;margin:0 0 14px}
+.marathon-eyebrow span{display:inline-block;background:var(--surface-2);border-radius:999px;padding:4px 14px;
+  font-family:var(--sys);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sage-ink)}
 .page-title{font-family:var(--font-head);font-weight:600;font-size:26px;text-align:center;color:var(--ink);
   margin:0 0 16px;text-wrap:balance}
 
@@ -644,6 +645,12 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .star-icon{font-size:22px;filter:grayscale(1);opacity:.35;line-height:1}
 .star-icon.unlocked{filter:none;opacity:1}
 .star-day{font-size:9px;color:var(--ink-soft)}
+.ach-mm-check{width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1.5px solid var(--line);
+  display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:11px;cursor:pointer;flex-shrink:0}
+.ach-mm-check.active{background:var(--sage);border-color:var(--sage);color:#fff;cursor:default}
+.mm-inline{margin-top:0;padding-top:0;border-top:none;max-height:0;opacity:0;overflow:hidden;transition:max-height .2s ease,opacity .2s ease,margin-top .2s ease,padding-top .2s ease}
+.mm-inline.open{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);max-height:140px;opacity:1}
+.mm-inline-hint{font-size:11px;color:var(--ink-soft);margin:0 0 8px}
 
 .mm-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
 .mm-row:first-child{border-top:none}
@@ -866,6 +873,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mat-body{flex:1;min-width:0}
 .mat-title{font-size:14px;font-weight:500;line-height:1.35}
 .mat-tags{font-size:11.5px;color:var(--ink-soft);margin-top:3px}
+.mat-embed{margin:4px 0 10px}
+.mat-embed-fallback{display:block;text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:8px}
 .mat-status{font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;align-self:flex-start;display:inline-flex;align-items:center;gap:4px}
 .mat-status svg{width:11px;height:11px;flex-shrink:0}
 .mat-status.open{background:var(--surface-2);color:var(--sage-ink)}
@@ -1098,7 +1107,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
   <main><div class="maininner">
     <section class="screen" id="tab-home" hidden>
-      <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Прогресс</h1>
       <div class="hcard dayhero">
         <div class="dh-top"><span class="dh-title">День <span id="bigDayTxt">8</span> из 21</span><span class="dh-pct" id="dayPct">38%</span></div>
@@ -1121,6 +1130,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
           <h3>Достижения</h3>
           <button class="info-hint" id="achInfoBtn" type="button" aria-label="как открываются звёзды">?</button>
           <div class="starsrow" id="starsRow"></div>
+          <div class="mm-inline" id="mmInlineBox" hidden></div>
         </div>
 
         <div class="heatcard" id="countdownCard">
@@ -1157,7 +1167,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
     </section>
 
     <section class="screen" id="tab-today">
-      <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Сегодня</h1>
       <div class="affirm-row">
         <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
@@ -1189,7 +1199,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
     </section>
 
     <section class="screen" id="tab-materials" hidden>
-      <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Материалы</h1>
       <div class="mat-layout">
         <div class="mat-main">
@@ -1208,7 +1218,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
     </section>
 
     <section class="screen" id="tab-schedule" hidden>
-      <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Расписание</h1>
       <div class="heatcard">
         <div id="nextEventBanner"></div>
@@ -1217,7 +1227,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
     </section>
 
     <section class="screen" id="tab-profile" hidden>
-      <div class="marathon-eyebrow">Марафон «Начни сегодня!»</div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Профиль</h1>
       <input type="file" id="avatarFileInput" accept="image/*" hidden>
       <div class="avatar-row">
@@ -1411,7 +1421,6 @@ const CATALOG = {
     {name:"Время с семьёй/детьми",when:"Регулярно",dur:"Сколько хотите",desc:"Это важно! Качественное время с близкими — один из главных приоритетов.",why:"Качественное присутствие рядом с близкими — один из самых стабильных источников ощущения благополучия."}
   ],
   "Дом и порядок": [
-    {name:"Заправить кровать",when:"Утро",dur:"1-2 мин.",desc:"Простое действие, с которого начинается ощущение порядка на весь день.",why:"Маленькое законченное действие с утра создаёт ощущение контроля, которое переносится на весь день."},
     {name:"Уборка",when:"Регулярно",dur:"10-15 мин.",desc:"Немного порядка вокруг — немного порядка внутри. Не обязательно генеральная уборка, достаточно малого.",why:"Порядок вокруг снижает визуальный шум — меньше отвлекающих раздражителей для внимания."},
     {name:"Полить растения",when:"Регулярно",dur:"2-5 мин.",desc:"Забота о чём-то живом рядом с тобой — маленький, но приятный ритуал.",why:"Забота о чём-то живом — простой способ почувствовать себя нужной и внимательной, без лишних усилий."},
     {name:"Разобрать вещи",when:"Регулярно",dur:"10-15 мин.",desc:"Убери то, что давно не нужно. Меньше лишнего — больше свободного пространства и внимания.",why:"Лишние вещи вокруг незаметно забирают немного внимания каждый раз, когда попадаются на глаза."},
@@ -1462,11 +1471,52 @@ function todayCount(){ return 9 + (hashStr("day"+TODAY) % 17); }
 
 const STAR_DAYS = [7, 14, 21];
 function renderStars(){
-  document.getElementById("starsRow").innerHTML = STAR_DAYS.map(d=>{
+  const starsHtml = STAR_DAYS.map(d=>{
     const unlocked = TODAY >= d;
     return `<div class="star-item"><div class="star-icon ${unlocked?'unlocked':''}">⭐</div><div class="star-day">${d} день</div></div>`;
   }).join("");
+  const mmHtml = MASTERMIND_MATERIALS.map(m=>{
+    const done = !!(STATE.mastermind && STATE.mastermind[m.mmId]);
+    return `<div class="star-item"><button class="ach-mm-check ${done?'active':''}" type="button" data-mmid="${m.mmId}">✓</button><div class="star-day">ММ ${m.mmId}</div></div>`;
+  }).join("");
+  document.getElementById("starsRow").innerHTML = starsHtml + mmHtml;
+  if(openMmInlineId && (!STATE.mastermind || !STATE.mastermind[openMmInlineId])){
+    renderMmInline(openMmInlineId);
+  } else {
+    closeMmInline();
+  }
 }
+let openMmInlineId = null;
+function mmInlineHtml(mmId){
+  const title = (MASTERMIND_MATERIALS.find(m=>m.mmId===String(mmId))||{}).title || ("Мастермайнд "+mmId);
+  return `<p class="mm-inline-hint">${title} · введи кодовое слово из эфира</p>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="mm-field"><input class="mm-input" type="text" placeholder="кодовое слово" id="mmInput${mmId}">
+      <p class="mm-err" id="mmErr${mmId}" hidden>неверное слово</p></div>
+      <button class="mm-btn" type="button" data-mmid="${mmId}">Получить 💎</button>
+    </div>`;
+}
+function renderMmInline(mmId){
+  openMmInlineId = mmId;
+  const box = document.getElementById("mmInlineBox");
+  box.innerHTML = mmInlineHtml(mmId);
+  box.classList.add("open");
+  wireMmCodeBox(mmId, ()=>{ openMmInlineId = null; renderStars(); renderProgress(); });
+}
+function closeMmInline(){
+  openMmInlineId = null;
+  const box = document.getElementById("mmInlineBox");
+  box.classList.remove("open");
+  box.innerHTML = "";
+}
+document.getElementById("starsRow").addEventListener("click", e=>{
+  const btn = e.target.closest(".ach-mm-check");
+  if(!btn || btn.classList.contains("active")) return;
+  playPopSound();
+  const mmId = btn.dataset.mmid;
+  if(openMmInlineId === mmId) closeMmInline();
+  else renderMmInline(mmId);
+});
 function mastermindBonus(){ return Object.keys(STATE.mastermind||{}).filter(k=>STATE.mastermind[k]).length * 3; }
 function mmCodeBoxHtml(mmId){
   if(STATE.mastermind && STATE.mastermind[String(mmId)]) return `<div class="mm-row"><span class="mm-done">✓ бриллиант получен (+3 💎)</span></div>`;
@@ -1475,7 +1525,7 @@ function mmCodeBoxHtml(mmId){
     <p class="mm-err" id="mmErr${mmId}" hidden>неверное слово</p></div>
     <button class="mm-btn" type="button" data-mmid="${mmId}">Получить 💎</button></div>`;
 }
-function wireMmCodeBox(mmId){
+function wireMmCodeBox(mmId, onSuccess){
   const btn = document.querySelector('.mm-btn[data-mmid="'+mmId+'"]');
   if(!btn) return;
   btn.addEventListener("click", async ()=>{
@@ -1488,7 +1538,7 @@ function wireMmCodeBox(mmId){
       if(resp.ok && data.ok){
         STATE.mastermind = data.mastermind;
         playPopSound();
-        openMaterialDetail("mastermind", mmId-1);
+        if(onSuccess) onSuccess(); else openMaterialDetail("mastermind", mmId-1);
         renderProgress();
       } else {
         document.getElementById("mmErr"+mmId).hidden = false;
@@ -1717,6 +1767,12 @@ function habitMinutes(name){
   const mult = unitMinuteMultiplier(cfg.unit);
   if(cfg.qtyOn && mult > 0) return (Number(cfg.target) || 0) * mult;
   return Number(cfg.minutes) || 0;
+}
+function formatMinutesRu(mins){
+  if(mins < 60) return `${mins} минут`;
+  const h = Math.floor(mins/60), m = mins % 60;
+  const hLabel = h===1 ? "час" : (h>=2 && h<=4) ? "часа" : "часов";
+  return m===0 ? `${h} ${hLabel}` : `${h} ${hLabel} ${m} минут`;
 }
 function totalMinutes(names){
   return names.reduce((sum,n)=>sum+habitMinutes(n), 0);
@@ -2102,7 +2158,7 @@ function renderChecklist(){
   const todayDow = (dayToDate(TODAY).getUTCDay()+6)%7;
   const todayHabits = HABITS.filter(h=>{ const cfg=habitConfig[h]; return !cfg || !cfg.days || cfg.days.includes(todayDow); });
   const todayMins = totalMinutes(todayHabits);
-  document.getElementById("habitsHeading").textContent = (todayHabits.length && todayMins>0) ? `Твои привычки занимают ~${todayMins} минут` : "Твои привычки";
+  document.getElementById("habitsHeading").textContent = (todayHabits.length && todayMins>0) ? `Твои привычки занимают ~${formatMinutesRu(todayMins)}` : "Твои привычки";
   const statusEl = document.getElementById("dayStatus");
   if(HABITS.length === 0){
     statusEl.innerHTML = `Пока не выбраны привычки — нажми «Изменить привычки».`;
@@ -2143,7 +2199,7 @@ document.getElementById("closeDayBtn").addEventListener("click", ()=>{
   document.getElementById("fdDay").textContent = TODAY;
   document.getElementById("fdDone").textContent = done;
   document.getElementById("fdTotal").textContent = HABITS.length;
-  document.getElementById("fdPraise").textContent = done===HABITS.length?"Ты держишь ритм ✨":done===0?"Завтра новый день":"Ты в процессе, и этого достаточно";
+  document.getElementById("fdPraise").textContent = done===HABITS.length?"Ты держишь ритм ✨":done===0?"Ура! Ты справилась! 💗":"Ты в процессе, и этого достаточно";
   document.getElementById("fdCloseText").textContent = done===HABITS.length?"Ура! 🎉 Ты это сделала!":done===0?"Хорошо, до встречи":"Отлично, увидимся завтра";
   document.getElementById("fdOverlay").classList.add("open");
   saveTodayLog(true);
@@ -2196,7 +2252,7 @@ function renderPickTotal(){
   if(!el) return;
   if(!pickSelection.length){ el.textContent = ""; return; }
   const mins = totalMinutes(pickSelection);
-  el.textContent = mins > 0 ? `выбрано ${pickSelection.length} · ~${mins} минут в день` : `выбрано ${pickSelection.length}`;
+  el.textContent = mins > 0 ? `выбрано ${pickSelection.length} · ~${formatMinutesRu(mins)} в день` : `выбрано ${pickSelection.length}`;
 }
 function renderPicker(){
   let html = `<div class="pickintro">
@@ -2587,26 +2643,45 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
     `<div class="mat" style="margin-bottom:10px"><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
       <div class="mat-body"><div class="mat-title">${m.title}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div></div>
      ${openLink}
+     <div class="mat-embed" id="matEmbed" hidden></div>
      ${codeBox}
      <button class="editlink" id="matBackBtn" type="button" style="margin-top:4px">${backLabel}</button>`;
   if(m.mmId) wireMmCodeBox(m.mmId);
   if(needsSign){
     document.getElementById("matOpenBtn").addEventListener("click", async ()=>{
       playPopSound();
+      const btn = document.getElementById("matOpenBtn");
+      btn.textContent = "Загружаю…"; btn.disabled = true;
       try{
         const resp = await apiFetch("/api/cabinet/materials/"+m.id+"/link");
         const data = await resp.json();
         if(resp.ok && data.ok && /^https?:\/\//.test(data.url)){
-          window.location.href = data.url;
+          renderMaterialEmbed(m.type, data.url);
+          btn.hidden = true;
         } else {
           alert("Не получилось открыть файл. Попробуй ещё раз через минуту — если не поможет, напиши нам.");
+          btn.textContent = "Открыть материал →"; btn.disabled = false;
         }
       }catch(e){
         alert("Не получилось открыть файл. Попробуй ещё раз через минуту — если не поможет, напиши нам.");
+        btn.textContent = "Открыть материал →"; btn.disabled = false;
       }
     });
   }
   document.getElementById("matBackBtn").addEventListener("click", onBack);
+}
+function renderMaterialEmbed(type, url){
+  const box = document.getElementById("matEmbed");
+  let inner;
+  if(type === "video"){
+    inner = `<video controls playsinline style="width:100%;border-radius:12px;display:block" src="${url}"></video>`;
+  } else if(type === "audio"){
+    inner = `<audio controls style="width:100%;display:block" src="${url}"></audio>`;
+  } else {
+    inner = `<iframe src="${url}" title="материал" style="width:100%;height:68vh;border:1px solid var(--line);border-radius:12px;display:block"></iframe>`;
+  }
+  box.innerHTML = inner + `<a href="${url}" target="_blank" rel="noopener" class="mat-embed-fallback">открыть в отдельной вкладке</a>`;
+  box.hidden = false;
 }
 document.getElementById("themeChips").addEventListener("click",e=>{
   const b=e.target.closest(".chip"); if(!b) return;
