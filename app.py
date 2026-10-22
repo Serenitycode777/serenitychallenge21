@@ -879,7 +879,7 @@ a.evt-next{display:block}
   max-height:min(640px,86vh);display:flex;flex-direction:column;transform:scale(.95);transition:.2s;
   box-shadow:0 30px 70px -24px rgba(0,0,0,.45)}
 .overlay.open .panel{transform:scale(1)}
-.panel-head2{background:linear-gradient(135deg,var(--lav),var(--sage) 130%);padding:20px 50px 18px 22px;color:#fff;flex-shrink:0}
+.panel-head2{position:relative;background:linear-gradient(135deg,var(--lav),var(--sage) 130%);padding:20px 50px 18px 22px;color:#fff;flex-shrink:0}
 .panel-head2.has-back{padding-left:50px}
 .panel-head2 .eyebrow2{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin:0 0 4px}
 .panel-head2 h2{font-size:19px;color:#fff}
@@ -889,7 +889,7 @@ a.evt-next{display:block}
   border-radius:50%;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 #overlayBody{padding:18px 22px calc(22px + env(safe-area-inset-bottom,0px));overflow-y:auto}
 .info-panel{max-width:400px;max-height:min(480px,80vh)}
-.info-close{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-soft)}
+.info-close{top:14px;transform:none;background:var(--surface-2);border:1px solid var(--line);color:var(--ink-soft)}
 #infoOverlayBody{padding:46px 22px calc(20px + env(safe-area-inset-bottom,0px));overflow-y:auto}
 #infoOverlayBody .info-title{font-size:18px;font-weight:600;color:var(--ink);margin:0 0 12px}
 .info-meta{display:flex;gap:8px;margin-bottom:12px}
@@ -2711,8 +2711,21 @@ function renderMaterials(){
       (activeFolder==="all"||m.author===activeFolder) &&
       matchesQuery(m)
     );
-    flat.innerHTML = items.length ? items.map(matRowHtml).join("") :
-      `<p class="note" style="margin:12px 0">Ничего не нашлось</p>`;
+    let headerHtml = "";
+    if(activeFolder !== "all" && AUTHORS[activeFolder]){
+      const a = AUTHORS[activeFolder];
+      const photo = a.photo || PHOTOS[activeFolder] || "";
+      const dotInner = photo ? `<img src="${photo}" alt="${a.name}">` : "";
+      const dotCss = COLOR_CSS[a.color] || "";
+      const dotStyleAttr = (!photo && dotCss) ? ` style="background:${dotCss}"` : "";
+      headerHtml = `<div class="mcard ${activeFolder}" style="cursor:default;margin-bottom:10px">
+        <div class="dot"${dotStyleAttr}>${dotInner}</div>
+        <div class="body"><h3>${a.name}</h3><div class="topics">${a.topics||''}</div>
+        <div class="foot"><span>${a.desc||''}</span></div></div>
+      </div>`;
+    }
+    flat.innerHTML = headerHtml + (items.length ? items.map(matRowHtml).join("") :
+      `<p class="note" style="margin:12px 0">Ничего не нашлось</p>`);
     flat.querySelectorAll(".mat[data-i]").forEach(row=>{
       const m = items[Number(row.dataset.i)];
       row.addEventListener("click", ()=>openMaterialDetailFor(m, (AUTHORS[m.author]||{}).name||"", "← назад", ()=>{
