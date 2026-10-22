@@ -678,13 +678,13 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none;background:var(--surface-2)}
 .hab.done{background:rgba(106,153,147,.14)}
 .habits-card .checklist{background:none;border:none;box-shadow:none;padding:12px 0 0;margin-bottom:0}
-.markvisual{width:24px;height:24px;border-radius:50%;border:2px solid var(--ink-soft);background:var(--surface);
+.markvisual{width:24px;height:24px;border-radius:50%;border:1.3px solid var(--ink-soft);background:var(--surface);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;overflow:hidden}
 .markvisual svg{width:13px;height:13px;opacity:0;transition:.15s;flex-shrink:0}
 .markwrap{position:relative;width:40px;height:40px;margin-left:-8px;flex-shrink:0}
 .markwrap input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
 .markwrap .markvisual{position:absolute;top:50%;left:50%;margin:-12px 0 0 -12px}
-.markwrap input:checked + .markvisual, .markvisual.on{background:linear-gradient(135deg,var(--lav),var(--sage));border-color:transparent;
+.markwrap input:checked + .markvisual, .markvisual.on{background:var(--lav);border-color:transparent;
   animation:markpop .32s ease}
 .markwrap input:checked + .markvisual svg, .markvisual.on svg{opacity:1}
 @keyframes markpop{0%{transform:scale(.7)}55%{transform:scale(1.18)}100%{transform:scale(1)}}
