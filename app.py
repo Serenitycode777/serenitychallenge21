@@ -640,12 +640,13 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 #diamondCard .info-hint,#achCard .info-hint{position:absolute;top:13px;right:13px}
 #diamondCard,#achCard{position:relative}
 
-.starsrow{display:flex;justify-content:space-between;gap:4px;padding:2px 24px 0 0}
+.starsrow{display:flex;justify-content:space-between;gap:3px;padding:2px 32px 0 0}
 .star-item{display:flex;flex-direction:column;align-items:center;gap:4px}
-.star-icon{font-size:22px;filter:grayscale(1);opacity:.35;line-height:1}
+.star-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:19px;
+  filter:grayscale(1);opacity:.35;line-height:1;flex-shrink:0}
 .star-icon.unlocked{filter:none;opacity:1}
-.star-day{font-size:9px;color:var(--ink-soft)}
-.ach-mm-check{width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1.5px solid var(--line);
+.star-day{font-size:8.5px;color:var(--ink-soft);white-space:nowrap}
+.ach-mm-check{width:24px;height:24px;border-radius:50%;background:var(--surface-2);border:1.5px solid var(--line);
   display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:11px;cursor:pointer;flex-shrink:0}
 .ach-mm-check.active{background:var(--sage);border-color:var(--sage);color:#fff;cursor:default}
 .mm-inline{margin-top:0;padding-top:0;border-top:none;max-height:0;opacity:0;overflow:hidden;transition:max-height .2s ease,opacity .2s ease,margin-top .2s ease,padding-top .2s ease}
@@ -733,6 +734,9 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
 .share-out{margin-top:14px}
 .share-out img{width:100%;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow)}
+@media (min-width:900px){
+  .share-out img{width:260px;display:block;margin:0 auto}
+}
 .share-note{font-size:11px;color:var(--ink-soft);margin-top:8px;line-height:1.5;text-align:center}
 .share-links{display:flex;gap:10px;margin-top:12px}
 .share-links .btn{font-size:12.5px;padding:12px 10px}
@@ -877,7 +881,12 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mat-title{font-size:14px;font-weight:500;line-height:1.35}
 .mat-tags{font-size:11.5px;color:var(--ink-soft);margin-top:3px}
 .mat-embed{margin:4px 0 10px}
-.mat-embed-fallback{display:block;text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:8px}
+.mat-embed-fallback{display:block;text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:8px;flex-shrink:0}
+.panel.force-tall{height:min(640px,86vh)}
+#overlayBody.no-scroll{overflow:hidden;display:flex;flex-direction:column;flex:1;min-height:0}
+#overlayBody.no-scroll > *{flex-shrink:0}
+#overlayBody.no-scroll .mat-embed.is-frame{flex:1;min-height:0;display:flex;flex-direction:column;margin-bottom:0}
+.mat-embed.is-frame iframe{flex:1;width:100%;min-height:0;border:1px solid var(--line);border-radius:12px;display:block}
 .mat-status{font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;align-self:flex-start;display:inline-flex;align-items:center;gap:4px}
 .mat-status svg{width:11px;height:11px;flex-shrink:0}
 .mat-status.open{background:var(--surface-2);color:var(--sage-ink)}
@@ -1131,7 +1140,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
         <div class="heatcard" id="achCard">
           <h3>Достижения</h3>
-          <button class="info-hint" id="achInfoBtn" type="button" aria-label="как открываются звёзды">?</button>
+          <button class="info-hint" id="achInfoBtn" type="button" aria-label="как открываются звёзды и галочки за мастермайнд">?</button>
           <div class="starsrow" id="starsRow"></div>
           <div class="mm-inline" id="mmInlineBox" hidden></div>
         </div>
@@ -1562,7 +1571,7 @@ document.getElementById("diamondInfoBtn").addEventListener("click", ()=>{
 });
 document.getElementById("achInfoBtn").addEventListener("click", ()=>{
   playPopSound();
-  showInfoSimple("Звёзды ⭐", "Три звезды открываются по неделям марафона — на 7-й, 14-й и 21-й день. Просто дойди до этого дня, и звезда станет твоей.");
+  showInfoSimple("Достижения", "Три звезды открываются по неделям марафона — на 7-й, 14-й и 21-й день. Просто дойди до этого дня, и звезда станет твоей.<br><br>Две галочки «ММ» — за мастермайнды. Нажми на галочку и впиши кодовое слово, которое Мила назовёт на эфире — получишь +3 бриллианта.");
 });
 document.getElementById("heatmapInfoBtn").addEventListener("click", ()=>{
   playPopSound();
@@ -1612,6 +1621,8 @@ function openOverlay(title, eyebrow){
   document.getElementById("overlay").classList.add("open");
   document.getElementById("overlayBackBtn").hidden = true;
   document.querySelector(".panel-head2").classList.remove("has-back");
+  document.getElementById("overlayBody").classList.remove("no-scroll");
+  document.querySelector(".panel").classList.remove("force-tall");
 }
 
 /* ---------- навигация: централизованный state + персистентность ---------- */
@@ -2496,14 +2507,25 @@ document.getElementById("shareBtn").addEventListener("click", ()=>{
   const grad=ctx.createLinearGradient(0,0,640,640); grad.addColorStop(0,"#AA9DB8"); grad.addColorStop(1,"#6A9993");
   ctx.fillStyle=grad; ctx.fillRect(0,0,640,640);
   ctx.fillStyle="#fff"; ctx.textAlign="center";
-  ctx.font="600 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText(fmtDateRu(dayToDate(TODAY)), 320, 56);
-  ctx.font="italic 22px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText("МАРАФОН «НАЧНИ СЕГОДНЯ!» · день "+TODAY+" из 21", 320, 92);
-  ctx.font="700 40px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  ctx.font="32px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText("🌙", 320, 58);
+  ctx.font="700 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText(fmtDateRu(dayToDate(TODAY)).toUpperCase(), 320, 88);
+  ctx.font="italic 20px Georgia, 'Times New Roman', serif"; ctx.fillText("Марафон «Начни сегодня!» · день "+TODAY, 320, 114);
   const done=liveChecked.filter(Boolean).length;
-  ctx.fillText(done+" из "+HABITS.length+" привычек сегодня", 320, 160);
-  let y=230; ctx.font="500 24px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.textAlign="left";
-  HABITS.forEach((h,i)=>{ ctx.fillText((liveChecked[i]?"✓":"○")+"  "+h, 90, y); y+=54; });
-  ctx.textAlign="center"; ctx.font="italic 18px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  ctx.font="600 58px Georgia, 'Times New Roman', serif"; ctx.fillText(done+" из "+HABITS.length, 320, 198);
+  ctx.font="italic 22px Georgia, 'Times New Roman', serif"; ctx.fillText("привычек сегодня", 320, 228);
+  let y=290; ctx.font="500 22px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.textAlign="left";
+  HABITS.forEach((h,i)=>{
+    const cy = y-7, cx = 92, r = 9;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.lineWidth=2; ctx.strokeStyle="rgba(255,255,255,.75)"; ctx.stroke();
+    if(liveChecked[i]){
+      ctx.beginPath(); ctx.moveTo(cx-4, cy); ctx.lineTo(cx-1, cy+4); ctx.lineTo(cx+5, cy-5);
+      ctx.lineWidth=2; ctx.strokeStyle="#fff"; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.stroke();
+    }
+    ctx.fillText(h, cx+r+15, y);
+    y+=54;
+  });
+  ctx.textAlign="center"; ctx.font="italic 18px Georgia, 'Times New Roman', serif";
   ctx.fillText("Маленькие шаги каждый день создают большие результаты", 320, 580);
   const out=document.getElementById("shareOut"); out.hidden=false;
   out.innerHTML = `<img src="${c.toDataURL('image/png')}" alt="карточка дня">
@@ -2680,16 +2702,21 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
 }
 function renderMaterialEmbed(type, url){
   const box = document.getElementById("matEmbed");
-  let inner;
+  const body = document.getElementById("overlayBody");
+  let inner, isFrame = false;
   if(type === "video"){
     inner = `<video controls playsinline style="width:100%;border-radius:12px;display:block" src="${url}"></video>`;
   } else if(type === "audio"){
     inner = `<audio controls style="width:100%;display:block" src="${url}"></audio>`;
   } else {
-    inner = `<iframe src="${url}" title="материал" style="width:100%;height:68vh;border:1px solid var(--line);border-radius:12px;display:block"></iframe>`;
+    isFrame = true;
+    inner = `<iframe src="${url}" title="материал"></iframe>`;
   }
   box.innerHTML = inner + `<a href="${url}" target="_blank" rel="noopener" class="mat-embed-fallback">открыть в отдельной вкладке</a>`;
   box.hidden = false;
+  box.classList.toggle("is-frame", isFrame);
+  body.classList.toggle("no-scroll", isFrame);
+  document.querySelector(".panel").classList.toggle("force-tall", isFrame);
 }
 document.getElementById("themeChips").addEventListener("click",e=>{
   const b=e.target.closest(".chip"); if(!b) return;
@@ -3154,7 +3181,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       </div>
       <div class="field">
         <label>Время</label>
-        <input type="text" id="eTime" placeholder="19:00 мск">
+        <input type="text" id="eTime" placeholder="19:00 (Нью-Йорк)">
       </div>
       <div class="field">
         <label>Ссылка на Zoom</label>
@@ -3885,7 +3912,7 @@ document.getElementById("saveEvent").addEventListener("click", async ()=>{
   if(!title){ document.getElementById("eTitle").focus(); return; }
   const body = JSON.stringify({
     date: eventDate, title, type: selectedType,
-    time: document.getElementById("eTime").value.trim() || "19:00 мск",
+    time: document.getElementById("eTime").value.trim() || "19:00 (Нью-Йорк)",
     link: document.getElementById("eLink").value.trim(),
   });
   try{
