@@ -802,7 +802,8 @@ a.evt-next{display:block}
   .mat-main{flex:1;min-width:0}
   .mat-side{width:280px;flex-shrink:0;margin-top:0;position:sticky;top:40px}
 }
-.search-wrap{position:relative;margin:10px 0 16px}
+.search-filter-row{display:flex;gap:8px;align-items:flex-start;position:relative;margin:10px 0 16px}
+.search-wrap{position:relative;flex:1;margin:0}
 .search-box{width:100%;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);
   border-radius:14px;padding:13px 16px 13px 42px;box-shadow:var(--shadow);font-family:var(--sys)}
 .search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-soft)}
@@ -812,10 +813,26 @@ a.evt-next{display:block}
 .sr-item{display:flex;gap:10px;padding:11px 14px;cursor:pointer;font-size:13px;border-top:1px solid var(--line)}
 .sr-item:first-child{border-top:none}
 .sr-item:hover{background:var(--surface-2)}
-.filters{display:flex;flex-direction:column;gap:14px;margin-bottom:18px}
-.filter-row{display:flex;flex-direction:column;gap:8px}
-.filter-row .chipset{display:flex;flex-wrap:wrap;gap:10px 7px}
-.flabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);width:100%}
+.filter-btn{display:flex;align-items:center;gap:6px;flex-shrink:0;background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:0 15px;height:46px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;
+  font-family:var(--sys);box-shadow:var(--shadow)}
+.filter-btn svg{width:15px;height:15px;color:var(--ink-soft)}
+.filter-btn.active{border-color:var(--sage);color:var(--sage-ink)}
+.filter-btn.active svg{color:var(--sage-ink)}
+.filter-badge{background:var(--lav);color:#fff;font-size:10px;font-weight:700;border-radius:999px;
+  min-width:16px;height:16px;padding:0 4px;display:flex;align-items:center;justify-content:center}
+.filter-dd{position:absolute;right:0;top:54px;width:200px;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;box-shadow:0 16px 40px -12px rgba(0,0,0,.25);padding:8px;z-index:30}
+.filter-dd[hidden]{display:none}
+.filter-dd .fopt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;
+  font-size:13px;color:var(--ink);cursor:pointer}
+.filter-dd .fopt:hover{background:var(--surface-2)}
+.filter-dd .fopt.active{color:var(--sage-ink);font-weight:600}
+.filter-dd .fopt .ck{width:16px;height:16px;border-radius:50%;background:var(--sage);flex-shrink:0;position:relative}
+.filter-dd .fopt .ck::after{content:"";position:absolute;left:5px;top:3px;width:4px;height:8px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.folder-back{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;color:var(--ink-soft);
+  cursor:pointer;margin:2px 0 8px}
 .chip{font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--sys)}
 .chip.active{background:var(--lav);border-color:var(--lav);color:#fff}
@@ -881,6 +898,7 @@ a.evt-next{display:block}
 .overlay.open .panel{transform:scale(1)}
 .panel-head2{position:relative;background:linear-gradient(135deg,var(--lav),var(--sage) 130%);padding:20px 50px 18px 22px;color:#fff;flex-shrink:0}
 .panel-head2.has-back{padding-left:50px}
+.panel-head2.has-back .close-x{display:none}
 .panel-head2 .eyebrow2{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin:0 0 4px}
 .panel-head2 h2{font-size:19px;color:#fff}
 .close-x{position:absolute;top:50%;right:14px;transform:translateY(-50%);background:rgba(255,255,255,.22);border:none;width:28px;height:28px;
@@ -1268,14 +1286,17 @@ a.evt-next{display:block}
       <h1 class="page-title">Материалы</h1>
       <div class="mat-layout">
         <div class="mat-main">
-          <div class="search-wrap">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-            <input class="search-box" id="searchBox" type="text" placeholder="Поиск: массаж лица, питание…" autocomplete="off">
-            <div class="search-drop" id="searchDrop" hidden></div>
-          </div>
-          <div class="filters">
-            <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
-            <div class="filter-row"><span class="flabel">по теме</span><div class="chipset" id="themeChips"></div></div>
+          <div class="search-filter-row">
+            <div class="search-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input class="search-box" id="searchBox" type="text" placeholder="Поиск: массаж лица, питание…" autocomplete="off">
+              <div class="search-drop" id="searchDrop" hidden></div>
+            </div>
+            <button class="filter-btn" id="themeFilterBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+              фильтр<span class="filter-badge" id="themeFilterBadge" hidden></span>
+            </button>
+            <div class="filter-dd" id="themeFilterDd" hidden></div>
           </div>
           <div class="mgrid" id="mgrid"></div>
           <div class="checklist" id="mflat" style="padding:4px 18px" hidden></div>
@@ -1891,14 +1912,32 @@ function buildMaterialsState(){
   AUTHORS = Object.assign({}, STATE.authors||{});
   MATERIALS = (STATE.materials||[]).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
   THEMES = [...new Set(MATERIALS.flatMap(m=>m.tags||[]))];
-  document.getElementById("themeChips").innerHTML =
-    `<button class="chip theme active" data-t="all">все темы</button>` +
-    THEMES.map(t=>`<button class="chip theme" data-t="${t}">${t}</button>`).join("");
-  document.getElementById("folderChips").innerHTML =
-    `<button class="chip folder active" data-f="all">все папки</button>` +
-    Object.entries(AUTHORS).filter(([key])=>MATERIALS.some(m=>m.author===key))
-      .map(([key,a])=>`<button class="chip folder" data-f="${key}">${a.name}</button>`).join("");
   activeTheme = "all"; activeFolder = "all"; query = "";
+  renderThemeFilterOptions();
+  updateThemeFilterBtn();
+}
+function renderThemeFilterOptions(){
+  const dd = document.getElementById("themeFilterDd");
+  const opts = [{v:"all",label:"все темы"}, ...THEMES.map(t=>({v:t,label:t}))];
+  dd.innerHTML = opts.map(o=>
+    `<div class="fopt ${activeTheme===o.v?'active':''}" data-t="${o.v}">${o.label}${activeTheme===o.v?'<span class="ck"></span>':''}</div>`
+  ).join("");
+  dd.querySelectorAll(".fopt").forEach(el=>{
+    el.addEventListener("click", ()=>{
+      activeTheme = el.dataset.t;
+      document.getElementById("themeFilterDd").hidden = true;
+      renderThemeFilterOptions();
+      updateThemeFilterBtn();
+      renderMaterials();
+    });
+  });
+}
+function updateThemeFilterBtn(){
+  const active = activeTheme !== "all";
+  document.getElementById("themeFilterBtn").classList.toggle("active", active);
+  const badge = document.getElementById("themeFilterBadge");
+  badge.hidden = !active;
+  if(active) badge.textContent = "1";
 }
 
 function renderMilaEvents(){
@@ -2718,7 +2757,8 @@ function renderMaterials(){
       const dotInner = photo ? `<img src="${photo}" alt="${a.name}">` : "";
       const dotCss = COLOR_CSS[a.color] || "";
       const dotStyleAttr = (!photo && dotCss) ? ` style="background:${dotCss}"` : "";
-      headerHtml = `<div class="mcard ${activeFolder}" style="cursor:default;margin:10px 0">
+      headerHtml = `<div class="folder-back" id="folderBackBtn">&#8592; все папки</div>
+      <div class="mcard ${activeFolder}" style="cursor:default;margin:0 0 10px">
         <div class="dot"${dotStyleAttr}>${dotInner}</div>
         <div class="body"><h3>${a.name}</h3><div class="topics">${a.topics||''}</div>
         <div class="foot"><span>${a.desc||''}</span></div></div>
@@ -2726,6 +2766,8 @@ function renderMaterials(){
     }
     flat.innerHTML = headerHtml + (items.length ? items.map(matRowHtml).join("") :
       `<p class="note" style="margin:12px 0">Ничего не нашлось</p>`);
+    const backBtn = flat.querySelector("#folderBackBtn");
+    if(backBtn) backBtn.addEventListener("click", ()=>{ activeFolder = "all"; renderMaterials(); });
     flat.querySelectorAll(".mat[data-i]").forEach(row=>{
       const m = items[Number(row.dataset.i)];
       row.addEventListener("click", ()=>openMaterialDetailFor(m, (AUTHORS[m.author]||{}).name||"", "← назад", ()=>{
@@ -2748,7 +2790,7 @@ function renderMaterials(){
     const hasNew = items.some(m=>m.day===TODAY);
     card.innerHTML = `<div class="dot"${dotStyleAttr}>${dotInner}</div><div class="body"><h3>${a.name}${hasNew?'<span class="mat-new">Новое</span>':''}</h3><div class="topics">${a.topics||''}</div>
       <div class="foot"><span>${a.desc||''}</span></div></div>`;
-    card.addEventListener("click", ()=>openMaterial(key));
+    card.addEventListener("click", ()=>{ activeFolder = key; renderMaterials(); });
     grid.appendChild(card);
   });
 }
@@ -2835,15 +2877,15 @@ function renderMaterialEmbed(type, url){
   body.classList.toggle("no-scroll", isFrame);
   document.querySelector(".panel").classList.toggle("force-tall", isFrame);
 }
-document.getElementById("themeChips").addEventListener("click",e=>{
-  const b=e.target.closest(".chip"); if(!b) return;
-  document.querySelectorAll("#themeChips .chip").forEach(c=>c.classList.remove("active"));
-  b.classList.add("active"); activeTheme=b.dataset.t; renderMaterials();
+document.getElementById("themeFilterBtn").addEventListener("click", (e)=>{
+  e.stopPropagation();
+  const dd = document.getElementById("themeFilterDd");
+  dd.hidden = !dd.hidden;
 });
-document.getElementById("folderChips").addEventListener("click",e=>{
-  const b=e.target.closest(".chip"); if(!b) return;
-  document.querySelectorAll("#folderChips .chip").forEach(c=>c.classList.remove("active"));
-  b.classList.add("active"); activeFolder=b.dataset.f; renderMaterials();
+document.addEventListener("click", (e)=>{
+  const dd = document.getElementById("themeFilterDd");
+  const btn = document.getElementById("themeFilterBtn");
+  if(!dd.hidden && !dd.contains(e.target) && !btn.contains(e.target)) dd.hidden = true;
 });
 const searchBox=document.getElementById("searchBox"), searchDrop=document.getElementById("searchDrop");
 searchBox.addEventListener("input",()=>{
