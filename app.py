@@ -532,10 +532,10 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .navbtn svg{width:21px;height:21px;color:currentColor}
 .navbtn:active{transform:scale(.98)}
-.navbtn.active{background:rgba(0,0,0,.055);border:1px solid var(--line);color:var(--sage-ink);font-weight:600}
+.navbtn.active{background:rgba(106,153,147,.13);border:1px solid rgba(106,153,147,.45);color:var(--sage-ink);font-weight:600}
 @media (hover:hover){
   .navbtn:hover{background:rgba(0,0,0,.04);color:var(--ink)}
-  .navbtn.active:hover{background:rgba(0,0,0,.08)}
+  .navbtn.active:hover{background:rgba(106,153,147,.2)}
 }
 .bottomnav .navbtn{min-height:48px}
 .bottomnav .navbtn.active{font-weight:500}
@@ -2736,7 +2736,8 @@ function renderMaterialEmbed(type, url){
     inner = `<audio controls style="width:100%;display:block" src="${url}"></audio>`;
   } else {
     isFrame = true;
-    inner = `<iframe src="${url}" title="материал"></iframe>`;
+    const frameUrl = type === "pdf" ? url + (url.includes("#") ? "" : "#view=FitH") : url;
+    inner = `<iframe src="${frameUrl}" title="материал"></iframe>`;
   }
   box.innerHTML = inner + `<a href="${url}" target="_blank" rel="noopener" class="mat-embed-fallback">открыть в отдельной вкладке</a>`;
   box.hidden = false;
@@ -3028,7 +3029,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .foldercard .factions .evbtn{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:4px 6px}
 .foldercard .mlist{margin-top:12px;display:flex;flex-direction:column;gap:6px}
 
-.mstep{border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden;background:var(--surface)}
+.mstep{border:1px solid var(--line);border-radius:14px;margin-bottom:10px;background:var(--surface)}
 .mstep-head{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer}
 .mstep.open .mstep-head{background:var(--surface-2)}
 .mstep-num{width:22px;height:22px;border-radius:50%;background:var(--sage);color:#fff;font-size:11px;font-weight:700;
