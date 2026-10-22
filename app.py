@@ -2718,7 +2718,7 @@ function renderMaterials(){
       const dotInner = photo ? `<img src="${photo}" alt="${a.name}">` : "";
       const dotCss = COLOR_CSS[a.color] || "";
       const dotStyleAttr = (!photo && dotCss) ? ` style="background:${dotCss}"` : "";
-      headerHtml = `<div class="mcard ${activeFolder}" style="cursor:default;margin-bottom:10px">
+      headerHtml = `<div class="mcard ${activeFolder}" style="cursor:default;margin:10px 0">
         <div class="dot"${dotStyleAttr}>${dotInner}</div>
         <div class="body"><h3>${a.name}</h3><div class="topics">${a.topics||''}</div>
         <div class="foot"><span>${a.desc||''}</span></div></div>
