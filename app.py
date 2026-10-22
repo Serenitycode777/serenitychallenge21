@@ -627,6 +627,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .statrow .diamond-icon{font-size:23px}
 .statrow .diamond-val{font-size:19px}
 .statrow .diamond-val .diamond-max{font-size:13px}
+.statrow .diamond-lbl{font-size:9px}
 .statrow .starsrow{gap:2px;padding-right:16px}
 .statrow .star-icon{font-size:16px}
 .statrow .star-day{font-size:7.5px}
@@ -634,9 +635,12 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
 .diamond-row{display:flex;align-items:center;gap:9px;height:100%}
 .diamond-icon{font-size:28px;line-height:1}
+.diamond-text{flex:1}
 .diamond-val{font-family:var(--sys);font-size:23px;font-weight:700;color:var(--ink)}
+.diamond-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin-top:2px}
 .diamond-val .diamond-max{font-size:15px;font-weight:500;color:var(--ink-soft);margin-left:2px}
 #diamondCard .info-hint,#achCard .info-hint{position:absolute;top:13px;right:13px}
+#achCard .starsrow{padding-top:28px}
 #diamondCard,#achCard{position:relative}
 
 .starsrow{display:flex;justify-content:space-between;gap:3px;padding:2px 32px 0 0}
@@ -1189,8 +1193,10 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
         <div class="heatcard" id="countdownCard">
           <div class="diamond-row">
-            <div class="diamond-icon">⏳</div>
-            <div class="diamond-val"><span id="countdownVal">0</span></div>
+            <div class="diamond-text">
+              <div class="diamond-val"><span id="countdownVal">0</span></div>
+              <div class="diamond-lbl">дней до финала</div>
+            </div>
           </div>
         </div>
       </div>
