@@ -130,6 +130,8 @@ async def init_db(app):
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS topics TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS photo_url TEXT")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS dot_color TEXT DEFAULT ''")
+    # описание мероприятия Милы — добавлено позже исходной таблицы mila_events
+    await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''")
 
     await seed_materials_once()
 
@@ -513,7 +515,26 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 .page-title{font-family:var(--font-head);font-weight:600;font-size:26px;color:var(--sage-ink);
   margin:0 auto 16px;text-wrap:balance;width:fit-content;background:var(--surface);
   box-shadow:var(--shadow);border-radius:999px;padding:7px 24px;text-transform:uppercase}
-.sched-date{text-align:center;font-size:13px;color:var(--ink-soft);margin:-10px 0 16px}
+.cal-card{padding:16px 14px 14px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-head h3{font-family:var(--font-head);font-weight:600;font-size:19px;color:var(--ink);margin:0}
+.cal-nav{display:flex;gap:8px}
+.cal-nav button{width:30px;height:30px;border-radius:50%;border:none;background:var(--surface-2);color:var(--ink-soft);
+  font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--sys)}
+.cal-nav button:active{transform:scale(.92)}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px}
+.cal-weekdays span{text-align:center;font-size:10.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:6px}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.cal-day span{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink)}
+.cal-day.ev span{color:#fff;font-weight:600}
+.cal-day.ev.c-sage span{background:var(--sage)}
+.cal-day.ev.c-lav span{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
+.cal-legend{display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--ink-soft)}
+.cal-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.cal-dot.c-sage{background:var(--sage)}
+.cal-dot.c-lav{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
 
 main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)))}
 .screen[hidden]{display:none}
@@ -775,16 +796,20 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 
 /* материалы */
 a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
-.evt-row{display:flex;align-items:center;gap:11px;padding:11px 12px;background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;margin:7px 0}
+.evt-row{display:flex;align-items:center;gap:10px;padding:13px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0}
 .evt-row:first-of-type{border-top:none}
-.evt-date{width:36px;flex-shrink:0;text-align:center}
-.evt-date .d{font-size:15px;font-weight:700;line-height:1;color:var(--ink)}
-.evt-date .l{font-size:8px;text-transform:uppercase;color:var(--ink-soft);margin-top:1px}
+.evt-date{width:42px;flex-shrink:0;text-align:center}
+.evt-date .d{font-family:var(--font-head);font-size:23px;font-weight:600;line-height:1;color:var(--ink)}
+.evt-date .l{font-size:9px;text-transform:lowercase;color:var(--ink-soft);margin-top:2px}
+.evt-icon{width:32px;height:32px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.evt-icon svg{width:15px;height:15px;color:var(--ink-soft)}
 .evt-body{flex:1;min-width:0}
-.evt-ttl{font-size:13px;font-weight:500}
+.evt-tag{display:block;font-size:10.5px;color:var(--ink-soft);margin-bottom:1px}
+.evt-ttl{font-size:13.5px;font-weight:600}
 .evt-meta{font-size:11px;color:var(--ink-soft);margin-top:1px}
-.evt-go{background:linear-gradient(135deg,var(--lav),var(--sage) 130%);color:#fff;font-size:12px;font-weight:600;
-  border-radius:999px;padding:8px 16px;flex-shrink:0;white-space:nowrap}
+.evt-go{color:#fff;font-size:12px;font-weight:600;border-radius:999px;padding:9px 15px;flex-shrink:0;white-space:nowrap}
+.evt-go.c-sage{background:var(--sage)}
+.evt-go.c-lav{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
 .evt-row.past{opacity:.5}
 .evt-alert{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:12px;
   padding:9px 12px;margin:0 0 14px;box-shadow:var(--shadow)}
@@ -882,10 +907,14 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .editform .savebtn{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:12px;
   font-weight:600;font-size:13.5px;cursor:pointer;margin-top:4px}
 .evcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:12px}
-.evcard .ph{height:92px;background:linear-gradient(135deg,var(--sage),var(--lav))}
+.evcard .ph{min-height:92px;background:linear-gradient(135deg,var(--sage),var(--lav));position:relative;
+  padding:14px 16px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff}
+.evcard .ph h4{font-family:var(--sys);font-size:15.5px;font-weight:600;color:#fff}
+.evcard .ph .dt{font-size:12px;color:rgba(255,255,255,.9);margin:3px 0 0}
 .evcard .b{padding:14px 16px}
-.evcard h4{font-family:var(--sys);font-size:15.5px;font-weight:600}
-.evcard .dt{font-size:12px;color:var(--ink-soft);margin:3px 0 10px}
+.evcard .b h4{font-family:var(--sys);font-size:15.5px;font-weight:600}
+.evcard .b .dt{font-size:12px;color:var(--ink-soft);margin:3px 0 10px}
+.evcard .desc{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 10px}
 .evcard a{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--lav-ink);text-decoration:none}
 
 /* overlays – центрированное модальное окно с цветной шапкой */
@@ -1303,10 +1332,19 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
     <section class="screen" id="tab-schedule" hidden>
       <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Расписание</h1>
-      <p class="sched-date" id="scheduleDate"></p>
-      <div class="heatcard">
-        <div id="eventsList"></div>
+      <div class="heatcard cal-card">
+        <div class="cal-head">
+          <h3 id="calMonthLabel"></h3>
+          <div class="cal-nav">
+            <button type="button" id="calPrevBtn" aria-label="предыдущий месяц">&#8249;</button>
+            <button type="button" id="calNextBtn" aria-label="следующий месяц">&#8250;</button>
+          </div>
+        </div>
+        <div class="cal-weekdays"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend" id="calLegend"></div>
       </div>
+      <div id="eventsList"></div>
     </section>
 
     <section class="screen" id="tab-profile" hidden>
@@ -1785,6 +1823,8 @@ let STATE = {marathon_start:"2026-11-09", logsByDate:{}, mastermind:{}, authors:
 let MARATHON_START_ISO = "2026-11-09";
 let TODAY_DATE_ISO = "2026-11-09";
 let RU_MONTHS_SHORT = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+let RU_MONTHS_FULL = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+let calViewYear = null, calViewMonth = null;
 const TG_CHANNEL_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
 const TG_CHAT_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
 document.getElementById("chanLinkBtn").href = TG_CHANNEL_URL;
@@ -1946,9 +1986,10 @@ function renderMilaEvents(){
   wrap.innerHTML = events.length ? events.map(e=>{
     const bg = COLOR_CSS[e.color] || COLOR_CSS.lav;
     const link = e.link ? `<a href="${e.link}" target="_blank" rel="noopener">Узнать больше →</a>` : "";
+    const desc = e.description ? `<p class="desc">${e.description}</p>` : "";
     return `<div class="evcard">
-      <div class="ph" style="background:${bg}"></div>
-      <div class="b"><h4>${e.title}</h4><div class="dt">${e.date_place}</div>${link}</div>
+      <div class="ph" style="background:${bg}"><h4>${e.title}</h4><div class="dt">${e.date_place}</div></div>
+      <div class="b">${desc}${link}</div>
     </div>`;
   }).join("") : `<p class="note" style="margin:8px 0 16px">пока нет мероприятий</p>`;
 }
@@ -2704,19 +2745,56 @@ function mskToEt(raw){
   if(m[3]!==undefined) out += "–"+shift(Number(m[3]), Number(m[4]));
   return out;
 }
-function renderEvents(){
-  document.getElementById("scheduleDate").textContent = fmtIsoDateRu(TODAY_DATE_ISO);
+function evtColor(i){ return i%2===0 ? "sage" : "lav"; }
+function renderCalendar(){
   const events = STATE.events || [];
-  document.getElementById("eventsList").innerHTML = events.map(e=>{
+  if(calViewYear===null){
+    const base = events.length ? events[0].date : TODAY_DATE_ISO;
+    const [y,m] = base.split("-").map(Number);
+    calViewYear = y; calViewMonth = m-1;
+  }
+  document.getElementById("calMonthLabel").textContent = RU_MONTHS_FULL[calViewMonth] + " " + calViewYear;
+  const evByDate = {};
+  events.forEach((e,i)=>{ evByDate[e.date] = evtColor(i); });
+  const first = new Date(Date.UTC(calViewYear, calViewMonth, 1));
+  const daysInMonth = new Date(Date.UTC(calViewYear, calViewMonth+1, 0)).getUTCDate();
+  const leading = (first.getUTCDay()+6)%7;
+  let html = "";
+  for(let i=0;i<leading;i++) html += `<div class="cal-day"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const iso = calViewYear+"-"+String(calViewMonth+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    const col = evByDate[iso];
+    html += `<div class="cal-day${col?' ev c-'+col:''}"><span>${d}</span></div>`;
+  }
+  document.getElementById("calGrid").innerHTML = html;
+  const usedColors = [...new Set(events.map((e,i)=>evtColor(i)))];
+  document.getElementById("calLegend").innerHTML = usedColors.length
+    ? usedColors.map(c=>`<span class="cal-dot c-${c}"></span>`).join("")+" Дни встреч"
+    : "";
+}
+document.getElementById("calPrevBtn").addEventListener("click", ()=>{
+  calViewMonth--; if(calViewMonth<0){ calViewMonth=11; calViewYear--; }
+  renderCalendar();
+});
+document.getElementById("calNextBtn").addEventListener("click", ()=>{
+  calViewMonth++; if(calViewMonth>11){ calViewMonth=0; calViewYear++; }
+  renderCalendar();
+});
+function renderEvents(){
+  const events = STATE.events || [];
+  renderCalendar();
+  document.getElementById("eventsList").innerHTML = events.map((e,i)=>{
     const isPast = e.date < TODAY_DATE_ISO;
     const dp = evtDateParts(e.date);
     const clickable = !isPast && e.link;
     const tag = clickable ? "a" : "div";
     const attrs = clickable ? ` href="${e.link}" target="_blank" rel="noopener"` : "";
+    const col = evtColor(i);
     return `<${tag} class="evt-row ${isPast?'past':''}"${attrs}>
       <div class="evt-date"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
-      <div class="evt-body"><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':mskToEt(e.time||'')}</div></div>
-      ${clickable?'<span class="evt-go">зайти</span>':''}
+      <div class="evt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg></div>
+      <div class="evt-body"><span class="evt-tag">Zoom-встреча</span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':mskToEt(e.time||'')}</div></div>
+      ${clickable?`<span class="evt-go c-${col}">Открыть Zoom &rsaquo;</span>`:''}
     </${tag}>`;
   }).join("");
 
@@ -3419,6 +3497,10 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       <div class="field">
         <label>Дата и место <span class="req">*</span></label>
         <input type="text" id="mevDate" placeholder="14-15 ноября · Durham, NC (или «онлайн»)">
+      </div>
+      <div class="field">
+        <label>Описание</label>
+        <textarea id="mevDesc" rows="3" placeholder="Коротко, о чём мероприятие"></textarea>
       </div>
       <div class="field">
         <label>Ссылка «узнать больше»</label>
@@ -4257,6 +4339,7 @@ function startEditMev(ev){
   editingMevId = ev.id;
   document.getElementById("mevTitle").value = ev.title || "";
   document.getElementById("mevDate").value = ev.date_place || "";
+  document.getElementById("mevDesc").value = ev.description || "";
   document.getElementById("mevLink").value = (ev.link && ev.link!=="#") ? ev.link : "";
   selectedMevColor = ev.color || MEV_COLORS[0].v;
   renderMevColorPicker();
@@ -4268,6 +4351,7 @@ function cancelEditMev(){
   editingMevId = null;
   document.getElementById("mevTitle").value = "";
   document.getElementById("mevDate").value = "";
+  document.getElementById("mevDesc").value = "";
   document.getElementById("mevLink").value = "";
   selectedMevColor = MEV_COLORS[0].v;
   renderMevColorPicker();
@@ -4285,7 +4369,7 @@ document.getElementById("saveEventMila").addEventListener("click", async ()=>{
   if(!title){ document.getElementById("mevTitle").focus(); return; }
   if(!datePlace){ document.getElementById("mevDate").focus(); return; }
   const body = JSON.stringify({
-    title, date_place: datePlace,
+    title, date_place: datePlace, description: document.getElementById("mevDesc").value.trim(),
     link: document.getElementById("mevLink").value.trim() || "#", color: selectedMevColor,
   });
   try{
@@ -4298,6 +4382,7 @@ document.getElementById("saveEventMila").addEventListener("click", async ()=>{
       showToast("Мероприятие «"+title+"» добавлено ✓");
       document.getElementById("mevTitle").value = "";
       document.getElementById("mevDate").value = "";
+      document.getElementById("mevDesc").value = "";
       document.getElementById("mevLink").value = "";
     }
     await loadMilaEvents();
@@ -5227,7 +5312,7 @@ def _calendar_json(r) -> dict:
 
 def _mila_event_json(r) -> dict:
     return {"id": r["id"], "title": r["title"], "date_place": r["date_place"],
-            "link": r["link"], "color": r["color"]}
+            "link": r["link"], "color": r["color"], "description": r["description"] or ""}
 
 
 async def api_folders_list(request):
@@ -5559,8 +5644,9 @@ async def api_mila_events_add(request):
     if not title or not date_place:
         return web.json_response({"error": "title and date_place required"}, status=400)
     row_id = await DB_POOL.fetchval(
-        "INSERT INTO mila_events (title, date_place, link, color, created) VALUES ($1,$2,$3,$4,$5) RETURNING id",
-        title, date_place, str(data.get("link", "")).strip(), str(data.get("color", "lav")).strip(), time.time(),
+        "INSERT INTO mila_events (title, date_place, link, color, description, created) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id",
+        title, date_place, str(data.get("link", "")).strip(), str(data.get("color", "lav")).strip(),
+        str(data.get("description", "")).strip(), time.time(),
     )
     row = await DB_POOL.fetchrow("SELECT * FROM mila_events WHERE id=$1", row_id)
     return web.json_response(_mila_event_json(row), status=201)
@@ -5576,8 +5662,9 @@ async def api_mila_events_update(request):
     if not title or not date_place:
         return web.json_response({"error": "title and date_place required"}, status=400)
     await DB_POOL.execute(
-        "UPDATE mila_events SET title=$2, date_place=$3, link=$4, color=$5 WHERE id=$1",
+        "UPDATE mila_events SET title=$2, date_place=$3, link=$4, color=$5, description=$6 WHERE id=$1",
         ev_id, title, date_place, str(data.get("link", "")).strip(), str(data.get("color", "lav")).strip(),
+        str(data.get("description", "")).strip(),
     )
     row = await DB_POOL.fetchrow("SELECT * FROM mila_events WHERE id=$1", ev_id)
     if row is None:
