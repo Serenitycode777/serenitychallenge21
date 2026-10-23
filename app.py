@@ -490,7 +490,7 @@ CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><m
   --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#F4F5F6; --line:#E6E8E9;
   --shadow:0 10px 30px -14px rgba(51,46,61,.22); color-scheme:light;
   --h0:#ECEFEC; --h0-text:#6B6475; --h30:#B6CFC6; --h30-text:#3F6660;
-  --h60:#7FA89C; --h60-text:#FFFFFF; --h100:#4C7D73; --h100-text:#FFFFFF; --h-future:#F4F5F6;
+  --h60:#7FA89C; --h60-text:#FFFFFF; --h100:#6A9993; --h100-text:#FFFFFF; --h-future:#F4F5F6;
   --sys: "Montserrat",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
   --font-head: "Cormorant Garamond",Georgia,"Times New Roman",serif;
 }
@@ -664,8 +664,10 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .ach-mm-check.active{background:var(--sage);border-color:var(--sage);color:#fff;cursor:default}
 
 .mm-cardrow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
-.mm-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
-.mm-card-icon{width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:16px}
+.mm-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.mm-card-top{display:flex;align-items:center;gap:10px}
+.mm-card-icon{width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--lav)}
+.mm-card-icon svg{width:17px;height:17px}
 .mm-card-title{font-family:var(--font-head);font-weight:600;font-size:14.5px;color:var(--ink)}
 .mm-card-status{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:4px 10px}
 .mm-card-status svg{width:11px;height:11px;flex-shrink:0}
@@ -694,6 +696,20 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mm-err{font-size:10.5px;color:#a8443a;margin:3px 0 0}
 .mm-btn{font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:10px;border:none;background:var(--lav);color:#fff;cursor:pointer;flex-shrink:0;font-family:var(--sys)}
 .mm-done{font-size:12.5px;color:var(--sage-ink);font-weight:600;flex:1}
+
+.mm-code-habits-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:4px 0 14px}
+.mm-code-habits-row.single{grid-template-columns:1fr}
+.mm-half{display:flex;flex-direction:column;gap:8px}
+.mm-half-title{font-family:var(--sys);font-weight:700;font-size:11.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin:0}
+.mm-half .mm-row{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:0;border-top:none}
+.mm-half .mm-field{width:100%}
+.mm-half .mm-btn{width:100%;padding:9px 12px;text-align:center}
+.mm-half .mm-done{font-size:12px}
+.hc-row-compact{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;
+  box-shadow:var(--shadow);cursor:pointer;font-family:var(--sys);text-align:left;width:100%}
+.hc-row-compact .hc-row-icon{margin-bottom:4px}
+.hc-row-compact .hc-row-chev{position:absolute;top:14px;right:14px}
 
 /* сегодня */
 .chanchat-row{display:flex;gap:8px;justify-content:center;margin:0 0 14px}
@@ -823,9 +839,11 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-row{display:flex;align-items:center;gap:10px;padding:13px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0}
 .evt-row:first-of-type{border-top:none}
-.evt-date{width:42px;flex-shrink:0;text-align:center}
-.evt-date .d{font-family:var(--font-head);font-size:23px;font-weight:600;line-height:1;color:var(--ink)}
-.evt-date .l{font-size:9px;text-transform:lowercase;color:var(--ink-soft);margin-top:2px}
+.evt-date{width:48px;flex-shrink:0;text-align:center;border-radius:12px;padding:8px 4px;color:#fff}
+.evt-date .d{font-family:var(--font-head);font-size:23px;font-weight:600;line-height:1;color:#fff}
+.evt-date .l{font-size:9px;text-transform:lowercase;color:#fff;opacity:.85;margin-top:2px}
+.evt-date.c-sage{background:var(--sage)}
+.evt-date.c-lav{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
 .evt-icon{width:32px;height:32px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .evt-icon svg{width:15px;height:15px;color:var(--ink-soft)}
 .evt-body{flex:1;min-width:0}
@@ -1283,16 +1301,19 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
       <div class="mm-cardrow" id="mmCardRow"></div>
 
-      <div class="heatcard" id="mmCodeCard" hidden>
-        <h3 id="mmCodeTitle">Ввести кодовое слово из эфира</h3>
-        <div id="mmCodeBody"></div>
-      </div>
+      <div class="mm-code-habits-row" id="mmCodeHabitsRow">
+        <div class="heatcard mm-half" id="mmCodeCard" hidden>
+          <h4 class="mm-half-title" id="mmCodeTitle">Кодовое слово</h4>
+          <div id="mmCodeBody"></div>
+        </div>
 
-      <button class="hc-row" id="editHabitsBtn" type="button">
-        <div class="hc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M8 10h8M8 14h5"/></svg></div>
-        <div class="hc-row-body"><div class="hc-row-title">Мои привычки</div><div class="hc-row-sub" id="profileHabitsCount">Выбрано 5 привычек</div></div>
-        <svg class="hc-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
-      </button>
+        <button class="heatcard mm-half hc-row-compact" id="editHabitsBtn" type="button">
+          <div class="hc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M8 10h8M8 14h5"/></svg></div>
+          <div class="hc-row-title">Мои привычки</div>
+          <div class="hc-row-sub" id="profileHabitsCount">Выбрано 5 привычек</div>
+          <svg class="hc-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+      </div>
 
       <button class="btn primary grad" id="progressContinueBtn" type="button" style="width:100%;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
         Продолжить
@@ -1681,8 +1702,10 @@ function renderMmCards(){
   document.getElementById("mmCardRow").innerHTML = MASTERMIND_MATERIALS.map(m=>{
     const s = mmStatus(m);
     return `<div class="heatcard mm-card">
-      <div class="mm-card-icon">👥</div>
-      <div class="mm-card-title">Мастермайнд ${m.mmId}</div>
+      <div class="mm-card-top">
+        <div class="mm-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="16.5" cy="8.5" r="2.6" opacity=".65"/><path d="M14.8 19c.3-2.2 1.9-4 3.9-4.6" opacity=".65"/></svg></div>
+        <div class="mm-card-title">Мастермайнд ${m.mmId}</div>
+      </div>
       <span class="mm-card-status ${s.cls}">${s.icon}${s.text}</span>
     </div>`;
   }).join("");
@@ -1690,7 +1713,9 @@ function renderMmCards(){
 function renderMmCodeCard(){
   const pending = MASTERMIND_MATERIALS.find(m => !(STATE.mastermind && STATE.mastermind[m.mmId]));
   const card = document.getElementById("mmCodeCard");
+  const row = document.getElementById("mmCodeHabitsRow");
   card.hidden = !pending;
+  if(row) row.classList.toggle("single", !pending);
   if(!pending) return;
   document.getElementById("mmCodeBody").innerHTML = mmCodeBoxHtml(pending.mmId);
   wireMmCodeBox(pending.mmId, ()=>{ renderStars(); renderProgress(); });
@@ -2915,7 +2940,7 @@ function renderEvents(){
     const attrs = clickable ? ` href="${e.link}" target="_blank" rel="noopener"` : "";
     const col = evtColor(i);
     return `<${tag} class="evt-row ${isPast?'past':''}"${attrs}>
-      <div class="evt-date"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
+      <div class="evt-date c-${col}"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
       <div class="evt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg></div>
       <div class="evt-body"><span class="evt-tag">Zoom-встреча</span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':mskToEt(e.time||'')}</div></div>
       ${clickable?`<span class="evt-go c-${col}">Открыть Zoom &rsaquo;</span>`:''}
