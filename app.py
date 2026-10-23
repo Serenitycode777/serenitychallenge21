@@ -907,6 +907,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--sys)}
 .chip.active{background:var(--lav);border-color:var(--lav);color:#fff}
 .chip.active.theme{background:var(--sage);border-color:var(--sage)}
+.chip.folder[data-f="__fav__"]{display:inline-flex;align-items:center;gap:5px}
+.chip.folder[data-f="__fav__"] svg{width:12px;height:12px}
 .mgrid{display:flex;flex-direction:column;gap:10px;background:var(--surface);border-radius:18px;padding:12px;box-shadow:var(--shadow)}
 .mcard{background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;padding:16px;cursor:pointer;
   display:flex;gap:14px;align-items:flex-start}
@@ -1027,8 +1029,11 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mlist-title span{font-family:var(--font-head);font-weight:600;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
 .mat-more-btn{display:block;width:100%;margin:6px 0 4px;padding:11px;border:1.5px solid var(--line);border-radius:999px;
   background:var(--surface);color:var(--lav-ink);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sys)}
-.mitem{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0;cursor:pointer}
+.mitem{position:relative;display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0;cursor:pointer}
 .mitem.is-locked{opacity:.55;cursor:default}
+.mitem-fav{position:absolute;top:8px;right:8px;width:30px;height:30px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);cursor:pointer;z-index:1}
+.mitem-fav svg{width:18px;height:18px}
+.mitem-fav.on{color:var(--lav-ink)}
 .mitem-thumb{width:58px;height:58px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
 .mitem-play{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center}
 .mitem-play svg{width:12px;height:12px;color:var(--ink);margin-left:1px}
@@ -1429,8 +1434,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
             <button class="type-chip" data-type="audio" type="button">Аудио</button>
             <button class="type-chip" data-type="pdf" type="button">PDF</button>
           </div>
-          <div id="mflat"></div>
           <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
+          <div id="mflat"></div>
         </div>
       </div>
     </section>
@@ -2061,12 +2066,14 @@ function buildMaterialsState(){
   AUTHORS = Object.assign({}, STATE.authors||{});
   MATERIALS = (STATE.materials||[]).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
   THEMES = [...new Set(MATERIALS.flatMap(m=>m.tags||[]))];
+  loadFavorites();
   activeTheme = "all"; activeFolder = "all"; activeType = "all"; query = "";
   renderThemeFilterOptions();
   updateThemeFilterBtn();
   document.querySelectorAll("#typeChips .type-chip").forEach(c=>c.classList.toggle("active", c.dataset.type==="all"));
   document.getElementById("folderChips").innerHTML =
     `<button class="chip folder active" data-f="all">все папки</button>` +
+    `<button class="chip folder" data-f="__fav__">${BOOKMARK_SVG_FILLED} Избранное</button>` +
     Object.entries(AUTHORS).filter(([key])=>MATERIALS.some(m=>m.author===key))
       .map(([key,a])=>`<button class="chip folder" data-f="${key}">${a.name}</button>`).join("");
 }
@@ -2878,6 +2885,14 @@ function matThumbHtml(m){
     : `<span class="mitem-doc">${ICONS[m.type]||ICONS.pdf}</span>`;
   return `<div class="mitem-thumb" style="background:${grad}">${inner}</div>`;
 }
+const FAV_KEY = "serenityFavMaterials";
+let FAVORITES = {};
+function loadFavorites(){ try{ FAVORITES = JSON.parse(localStorage.getItem(FAV_KEY)||"{}"); }catch(e){ FAVORITES = {}; } }
+function saveFavorites(){ try{ localStorage.setItem(FAV_KEY, JSON.stringify(FAVORITES)); }catch(e){} }
+function isFavorite(id){ return !!FAVORITES[String(id)]; }
+function toggleFavorite(id){ id=String(id); if(FAVORITES[id]) delete FAVORITES[id]; else FAVORITES[id]=true; saveFavorites(); }
+const BOOKMARK_SVG_OUTLINE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4.5a1.5 1.5 0 0 1 1.5-1.5h9A1.5 1.5 0 0 1 18 4.5V20l-6-4-6 4Z"/></svg>`;
+const BOOKMARK_SVG_FILLED = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 4.5a1.5 1.5 0 0 1 1.5-1.5h9A1.5 1.5 0 0 1 18 4.5V20l-6-4-6 4Z"/></svg>`;
 function mItemHtml(m,i){
   const unlocked = m.day===null||m.day<=TODAY;
   const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
@@ -2885,7 +2900,10 @@ function mItemHtml(m,i){
   const metaHtml = unlocked
     ? `${ICONS[m.type]||ICONS.pdf}<span>${typeLbl}${m.type==="pdf"?" · скачать":""}</span>`
     : `${ICONS.lock}<span>с ${fmtDateRu(dayToDate(m.day))}</span>`;
+  const fav = isFavorite(m.id);
+  const favBtn = unlocked ? `<button class="mitem-fav${fav?' on':''}" data-favid="${m.id}" type="button" aria-label="в избранное">${fav?BOOKMARK_SVG_FILLED:BOOKMARK_SVG_OUTLINE}</button>` : "";
   return `<div class="mitem ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}>
+    ${favBtn}
     ${matThumbHtml(m)}
     <div class="mitem-body">
       <div class="mitem-title">${m.title}${newBadge}</div>
@@ -2976,12 +2994,16 @@ function renderMaterials(){
 
   const items = MATERIALS.filter(m=>
     (activeTheme==="all"||(m.tags||[]).includes(activeTheme)) &&
-    (activeFolder==="all"||m.author===activeFolder) &&
+    (activeFolder==="all"||activeFolder==="__fav__"||m.author===activeFolder) &&
+    (activeFolder!=="__fav__"||isFavorite(m.id)) &&
     (activeType==="all"||m.type===activeType) &&
     matchesQuery(m)
   );
   let headerHtml = "";
-  if(activeFolder !== "all" && AUTHORS[activeFolder]){
+  if(activeFolder === "__fav__"){
+    headerHtml = `<div class="folder-back" id="folderBackBtn">&#8592; все папки</div>
+    <div class="mlist-title"><span>Избранное</span></div>`;
+  } else if(activeFolder !== "all" && AUTHORS[activeFolder]){
     const a = AUTHORS[activeFolder];
     const photo = a.photo || PHOTOS[activeFolder] || "";
     const dotInner = photo ? `<img src="${photo}" alt="${a.name}">` : "";
@@ -3011,6 +3033,14 @@ function renderMaterials(){
     row.addEventListener("click", ()=>openMaterialDetailFor(m, (AUTHORS[m.author]||{}).name||"", "← назад", ()=>{
       document.getElementById("overlay").classList.remove("open");
     }));
+  });
+  flat.querySelectorAll(".mitem-fav").forEach(btn=>{
+    btn.addEventListener("click", e=>{
+      e.stopPropagation();
+      playPopSound();
+      toggleFavorite(btn.dataset.favid);
+      renderMaterials();
+    });
   });
 }
 function openMaterial(key){
