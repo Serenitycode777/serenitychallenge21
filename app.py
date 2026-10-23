@@ -1241,7 +1241,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   <main><div class="maininner">
     <section class="screen" id="tab-home" hidden>
       <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
-      <h1 class="page-title">Прогресс</h1>
+      <h1 class="page-title">Мой прогресс</h1>
       <div class="hcard dayhero heatcard">
         <div class="dh-top"><span class="dh-title">День <span id="bigDayTxt">8</span> из 21</span><span class="dh-pct" id="dayPct">38%</span></div>
         <div class="dh-pill"><i id="dayPillFill"></i></div>
@@ -3019,7 +3019,9 @@ function renderMaterialEmbed(type, url){
     inner = `<audio controls style="width:100%;display:block" src="${url}"></audio>`;
   } else {
     isFrame = true;
-    const frameUrl = type === "pdf" ? url + (url.includes("#") ? "" : "#view=FitH") : url;
+    const frameUrl = type === "pdf"
+      ? "https://docs.google.com/viewer?embedded=true&url=" + encodeURIComponent(url)
+      : url;
     inner = `<iframe src="${frameUrl}" title="материал"></iframe>`;
   }
   box.innerHTML = inner + `<a href="${url}" target="_blank" rel="noopener" class="mat-embed-fallback">открыть в отдельной вкладке</a>`;
