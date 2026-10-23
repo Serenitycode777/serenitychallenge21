@@ -639,10 +639,9 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
   align-items:center;justify-content:center;line-height:1;padding:0;font-family:var(--sys)}
 h3 .info-hint{margin-left:6px;vertical-align:middle}
 
-.statrow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
-.stat-card{position:relative;border-radius:16px;padding:16px;color:#fff;box-shadow:var(--shadow);min-height:92px}
-.stat-card.sage-grad{background:linear-gradient(135deg,var(--sage),#8FC2B6)}
-.stat-card.lav-grad{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
+.statrow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px;
+  background:linear-gradient(90deg,var(--sage),var(--lav));border-radius:16px;box-shadow:var(--shadow)}
+.stat-card{position:relative;border-radius:16px;padding:16px;color:#fff;min-height:92px;background:transparent}
 .stat-icon{font-size:26px;line-height:1;margin-bottom:10px}
 .stat-icon svg{width:24px;height:24px}
 .stat-val{font-family:var(--sys);font-size:25px;font-weight:700;line-height:1}
@@ -1249,14 +1248,14 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="dh-sub" id="daySub"></div>
       </div>
       <div class="statrow">
-        <div class="stat-card sage-grad" id="diamondCard">
+        <div class="stat-card" id="diamondCard">
           <button class="info-hint light" id="diamondInfoBtn" type="button" aria-label="как начисляются бриллианты">?</button>
           <div class="stat-icon">💎</div>
           <div class="stat-val"><span id="diamondVal">0</span><span class="stat-max">/27</span></div>
           <div class="stat-lbl">Кристаллы</div>
         </div>
 
-        <div class="stat-card lav-grad" id="countdownCard">
+        <div class="stat-card" id="countdownCard">
           <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></div>
           <div class="stat-val"><span id="countdownVal">0</span></div>
           <div class="stat-lbl">Дней до финала</div>
