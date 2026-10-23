@@ -855,7 +855,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
 .folder-back{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;color:var(--ink-soft);
   cursor:pointer;margin:2px 0 8px}
-.filter-row{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.filter-row{display:flex;flex-direction:column;gap:8px;margin:18px 0}
 .filter-row .chipset{display:flex;flex-wrap:wrap;gap:10px 7px}
 .flabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);width:100%}
 .chip{font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);
@@ -973,6 +973,24 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mat-new{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:#fff;background:var(--lav);
   border-radius:999px;padding:2px 7px;vertical-align:middle}
 .note{font-size:12.5px;color:var(--ink-soft);background:var(--surface-2);border-radius:10px;padding:10px 14px;margin-top:4px;line-height:1.5}
+.type-chips{display:flex;gap:8px;margin:0 0 14px;overflow-x:auto}
+.type-chip{flex-shrink:0;font-family:var(--sys);font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line);border-radius:999px;padding:9px 18px;cursor:pointer;white-space:nowrap}
+.type-chip.active{background:var(--lav);border-color:var(--lav);color:#fff}
+.mlist-title{display:flex;align-items:center;gap:10px;margin:4px 0 10px}
+.mlist-title::before,.mlist-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.mlist-title span{font-family:var(--font-head);font-weight:600;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
+.mitem{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0;cursor:pointer}
+.mitem.is-locked{opacity:.55;cursor:default}
+.mitem-thumb{width:58px;height:58px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
+.mitem-play{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center}
+.mitem-play svg{width:12px;height:12px;color:var(--ink);margin-left:1px}
+.mitem-doc svg{width:20px;height:20px;color:#fff}
+.mitem-body{flex:1;min-width:0}
+.mitem-title{font-size:14px;font-weight:600;line-height:1.3}
+.mitem-author{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.mitem-meta{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-soft);margin-top:4px}
+.mitem-meta svg{width:12px;height:12px;flex-shrink:0}
 
 /* finish-day modal */
 .fd-overlay{position:fixed;inset:0;background:rgba(26,21,33,.5);display:flex;align-items:center;justify-content:center;
@@ -1322,9 +1340,14 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
             </button>
             <div class="filter-dd" id="themeFilterDd" hidden></div>
           </div>
+          <div class="type-chips" id="typeChips">
+            <button class="type-chip active" data-type="all" type="button">Все</button>
+            <button class="type-chip" data-type="video" type="button">Видео</button>
+            <button class="type-chip" data-type="audio" type="button">Аудио</button>
+            <button class="type-chip" data-type="pdf" type="button">PDF</button>
+          </div>
+          <div id="mflat"></div>
           <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
-          <div class="mgrid" id="mgrid"></div>
-          <div class="checklist" id="mflat" style="padding:4px 18px" hidden></div>
         </div>
       </div>
     </section>
@@ -1687,6 +1710,7 @@ const ICONS = {
   lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>'
 };
 ICONS.link = ICONS.pdf;
+ICONS.play = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7-11-7Z"/></svg>';
 const MASTERMIND_AUTHOR = {mastermind:{name:"Мастермайнды",topics:"записи эфиров с Милой",desc:"Запись мастермайнда – введи кодовое слово, которое Мила называла вживую, и получи бриллиант"}};
 const MASTERMIND_MATERIALS = [
   {author:"mastermind",title:"Мастермайнд 1",type:"video",tags:["мастермайнд"],day:3,mmId:"1",url:"#"},
@@ -1943,9 +1967,10 @@ function buildMaterialsState(){
   AUTHORS = Object.assign({}, STATE.authors||{});
   MATERIALS = (STATE.materials||[]).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
   THEMES = [...new Set(MATERIALS.flatMap(m=>m.tags||[]))];
-  activeTheme = "all"; activeFolder = "all"; query = "";
+  activeTheme = "all"; activeFolder = "all"; activeType = "all"; query = "";
   renderThemeFilterOptions();
   updateThemeFilterBtn();
+  document.querySelectorAll("#typeChips .type-chip").forEach(c=>c.classList.toggle("active", c.dataset.type==="all"));
   document.getElementById("folderChips").innerHTML =
     `<button class="chip folder active" data-f="all">все папки</button>` +
     Object.entries(AUTHORS).filter(([key])=>MATERIALS.some(m=>m.author===key))
@@ -2713,7 +2738,8 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
 });
 
 /* ---------- материалы ---------- */
-let activeTheme="all", activeFolder="all", query="";
+let activeTheme="all", activeFolder="all", activeType="all", query="";
+const TYPE_LABEL = {video:"Видео", audio:"Аудио", pdf:"PDF", link:"Материал"};
 const PHOTOS = {
   mila: "https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/mila.jpg",
   maria: "https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/maria.jpg",
@@ -2722,13 +2748,30 @@ const PHOTOS = {
 
 function matchesQuery(m){ if(!query) return true; return (m.title+" "+(m.tags||[]).join(" ")).toLowerCase().includes(query); }
 
-function matRowHtml(m,i){
+function matThumbHtml(m){
+  const grad = m.type==="video" ? "linear-gradient(135deg,var(--sage),#9FC9BE)"
+    : m.type==="audio" ? "linear-gradient(135deg,var(--lav),#CBB3DE)"
+    : "linear-gradient(135deg,var(--sand),#E3D2BC)";
+  const inner = (m.type==="video"||m.type==="audio")
+    ? `<span class="mitem-play">${ICONS.play}</span>`
+    : `<span class="mitem-doc">${ICONS[m.type]||ICONS.pdf}</span>`;
+  return `<div class="mitem-thumb" style="background:${grad}">${inner}</div>`;
+}
+function mItemHtml(m,i){
   const unlocked = m.day===null||m.day<=TODAY;
-  const status = m.day===null ? `<span class="mat-status open">Открыто</span>`
-    : unlocked ? `<span class="mat-status open">Открыто ${fmtDateRu(dayToDate(m.day))}</span>` : `<span class="mat-status locked">${ICONS.lock} с ${fmtDateRu(dayToDate(m.day))}</span>`;
   const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
-  return `<div class="mat ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
-    <div class="mat-body"><div class="mat-title">${m.title}${newBadge}</div><div class="mat-tags">${(AUTHORS[m.author]||{}).name||''} · #${(m.tags||[]).join(' #')}</div></div>${status}</div>`;
+  const typeLbl = TYPE_LABEL[m.type]||TYPE_LABEL.link;
+  const metaHtml = unlocked
+    ? `${ICONS[m.type]||ICONS.pdf}<span>${typeLbl}${m.type==="pdf"?" · скачать":""}</span>`
+    : `${ICONS.lock}<span>с ${fmtDateRu(dayToDate(m.day))}</span>`;
+  return `<div class="mitem ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}>
+    ${matThumbHtml(m)}
+    <div class="mitem-body">
+      <div class="mitem-title">${m.title}${newBadge}</div>
+      <div class="mitem-author">${(AUTHORS[m.author]||{}).name||''}</div>
+      <div class="mitem-meta">${metaHtml}</div>
+    </div>
+  </div>`;
 }
 
 function evtDateParts(iso){
@@ -2807,61 +2850,40 @@ function renderEvents(){
 }
 
 function renderMaterials(){
-  const grid = document.getElementById("mgrid");
   const flat = document.getElementById("mflat");
-  const flatMode = activeTheme !== "all" || activeFolder !== "all" || !!query;
-  grid.hidden = flatMode;
-  flat.hidden = !flatMode;
   document.querySelectorAll("#folderChips .chip").forEach(c=>c.classList.toggle("active", c.dataset.f===activeFolder));
 
-  if(flatMode){
-    const items = MATERIALS.filter(m=>
-      (activeTheme==="all"||(m.tags||[]).includes(activeTheme)) &&
-      (activeFolder==="all"||m.author===activeFolder) &&
-      matchesQuery(m)
-    );
-    let headerHtml = "";
-    if(activeFolder !== "all" && AUTHORS[activeFolder]){
-      const a = AUTHORS[activeFolder];
-      const photo = a.photo || PHOTOS[activeFolder] || "";
-      const dotInner = photo ? `<img src="${photo}" alt="${a.name}">` : "";
-      const dotCss = COLOR_CSS[a.color] || "";
-      const dotStyleAttr = (!photo && dotCss) ? ` style="background:${dotCss}"` : "";
-      headerHtml = `<div class="folder-back" id="folderBackBtn">&#8592; все папки</div>
-      <div class="mcard ${activeFolder}" style="cursor:default;margin:0 0 10px;background:none;border:none;box-shadow:none;padding:4px 2px">
-        <div class="dot"${dotStyleAttr}>${dotInner}</div>
-        <div class="body"><h3>${a.name}</h3><div class="topics">${a.topics||''}</div>
-        <div class="foot"><span>${a.desc||''}</span></div></div>
-      </div>`;
-    }
-    flat.innerHTML = headerHtml + (items.length ? items.map(matRowHtml).join("") :
-      `<p class="note" style="margin:12px 0">Ничего не нашлось</p>`);
-    const backBtn = flat.querySelector("#folderBackBtn");
-    if(backBtn) backBtn.addEventListener("click", ()=>setActiveFolder("all"));
-    flat.querySelectorAll(".mat[data-i]").forEach(row=>{
-      const m = items[Number(row.dataset.i)];
-      row.addEventListener("click", ()=>openMaterialDetailFor(m, (AUTHORS[m.author]||{}).name||"", "← назад", ()=>{
-        document.getElementById("overlay").classList.remove("open");
-      }));
-    });
-    return;
-  }
-
-  grid.innerHTML = "";
-  Object.entries(AUTHORS).forEach(([key,a])=>{
-    const items = MATERIALS.filter(m=>m.author===key);
-    if(!items.length && key!=="mastermind") return;
-    const card = document.createElement("div");
-    card.className = "mcard "+key;
-    const photo = a.photo || PHOTOS[key] || "";
+  const items = MATERIALS.filter(m=>
+    (activeTheme==="all"||(m.tags||[]).includes(activeTheme)) &&
+    (activeFolder==="all"||m.author===activeFolder) &&
+    (activeType==="all"||m.type===activeType) &&
+    matchesQuery(m)
+  );
+  let headerHtml = "";
+  if(activeFolder !== "all" && AUTHORS[activeFolder]){
+    const a = AUTHORS[activeFolder];
+    const photo = a.photo || PHOTOS[activeFolder] || "";
     const dotInner = photo ? `<img src="${photo}" alt="${a.name}">` : "";
     const dotCss = COLOR_CSS[a.color] || "";
     const dotStyleAttr = (!photo && dotCss) ? ` style="background:${dotCss}"` : "";
-    const hasNew = items.some(m=>m.day===TODAY);
-    card.innerHTML = `<div class="dot"${dotStyleAttr}>${dotInner}</div><div class="body"><h3>${a.name}${hasNew?'<span class="mat-new">Новое</span>':''}</h3><div class="topics">${a.topics||''}</div>
-      <div class="foot"><span>${a.desc||''}</span></div></div>`;
-    card.addEventListener("click", ()=>setActiveFolder(key));
-    grid.appendChild(card);
+    headerHtml = `<div class="folder-back" id="folderBackBtn">&#8592; все папки</div>
+    <div class="mcard ${activeFolder}" style="cursor:default;margin:0 0 10px;background:none;border:none;box-shadow:none;padding:4px 2px">
+      <div class="dot"${dotStyleAttr}>${dotInner}</div>
+      <div class="body"><h3>${a.name}</h3><div class="topics">${a.topics||''}</div>
+      <div class="foot"><span>${a.desc||''}</span></div></div>
+    </div>`;
+  } else {
+    headerHtml = `<div class="mlist-title"><span>Практики и материалы</span></div>`;
+  }
+  flat.innerHTML = headerHtml + (items.length ? items.map(mItemHtml).join("") :
+    `<p class="note" style="margin:12px 0">Ничего не нашлось</p>`);
+  const backBtn = flat.querySelector("#folderBackBtn");
+  if(backBtn) backBtn.addEventListener("click", ()=>setActiveFolder("all"));
+  flat.querySelectorAll(".mitem[data-i]").forEach(row=>{
+    const m = items[Number(row.dataset.i)];
+    row.addEventListener("click", ()=>openMaterialDetailFor(m, (AUTHORS[m.author]||{}).name||"", "← назад", ()=>{
+      document.getElementById("overlay").classList.remove("open");
+    }));
   });
 }
 function openMaterial(key){
@@ -2960,6 +2982,12 @@ document.addEventListener("click", (e)=>{
 document.getElementById("folderChips").addEventListener("click", e=>{
   const b = e.target.closest(".chip"); if(!b) return;
   setActiveFolder(b.dataset.f);
+});
+document.getElementById("typeChips").addEventListener("click", e=>{
+  const b = e.target.closest(".type-chip"); if(!b) return;
+  activeType = b.dataset.type;
+  document.querySelectorAll("#typeChips .type-chip").forEach(c=>c.classList.toggle("active", c===b));
+  renderMaterials();
 });
 const searchBox=document.getElementById("searchBox"), searchDrop=document.getElementById("searchDrop");
 searchBox.addEventListener("input",()=>{
