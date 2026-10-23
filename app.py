@@ -1398,7 +1398,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           Поделиться
         </button>
       </div>
-      <div class="share-out" id="shareOut" hidden></div>
     </section>
 
     <section class="screen" id="tab-materials" hidden>
@@ -1503,6 +1502,11 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 <div class="overlay" id="infoOverlay"><div class="panel info-panel">
   <button class="close-x info-close" id="closeInfoPanel">&#10005;</button>
   <div id="infoOverlayBody"></div>
+</div></div>
+
+<div class="overlay" id="shareOverlay"><div class="panel info-panel">
+  <button class="close-x info-close" id="closeShareOverlay">&#10005;</button>
+  <div id="shareOverlayBody"></div>
 </div></div>
 
 <div class="fd-overlay" id="fdOverlay"><div class="fd-card">
@@ -2836,10 +2840,15 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   });
   ctx.textAlign="center"; ctx.font='italic 500 17px '+HEAD+', Georgia, serif';
   ctx.fillText("Маленькие шаги каждый день создают большие результаты", 320, 580);
-  const out=document.getElementById("shareOut"); out.hidden=false;
-  out.innerHTML = `<div class="share-divider">твой день</div>
-    <img src="${c.toDataURL('image/png')}" alt="карточка дня">`;
+  const body=document.getElementById("shareOverlayBody");
+  body.innerHTML = `<div class="share-out">
+      <img src="${c.toDataURL('image/png')}" alt="карточка дня">
+      <p class="share-note">сохрани картинку или сделай скриншот, чтобы поделиться днём</p>
+    </div>`;
+  document.getElementById("shareOverlay").classList.add("open");
 });
+document.getElementById("closeShareOverlay").addEventListener("click", ()=>{ playPopSound(); document.getElementById("shareOverlay").classList.remove("open"); });
+document.getElementById("shareOverlay").addEventListener("click",e=>{if(e.target.id==="shareOverlay")e.currentTarget.classList.remove("open");});
 
 /* ---------- материалы ---------- */
 let activeTheme="all", activeFolder="all", activeType="all", query="";
