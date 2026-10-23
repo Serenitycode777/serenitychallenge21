@@ -515,7 +515,7 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 .page-title{font-family:var(--font-head);font-weight:600;font-size:26px;color:var(--sage-ink);
   margin:0 auto 16px;text-wrap:balance;width:fit-content;background:var(--surface);
   box-shadow:var(--shadow);border-radius:999px;padding:7px 24px;text-transform:uppercase}
-.cal-card{padding:16px 14px 14px}
+.cal-card{padding:16px 14px 14px;max-width:380px;margin:0 auto 10px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .cal-head h3{font-family:var(--font-head);font-weight:600;font-size:19px;color:var(--ink);margin:0}
 .cal-nav{display:flex;gap:8px}
@@ -525,7 +525,7 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px}
 .cal-weekdays span{text-align:center;font-size:10.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:6px}
-.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.cal-day{height:34px;display:flex;align-items:center;justify-content:center}
 .cal-day span{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink)}
 .cal-day.ev span{color:#fff;font-weight:600}
 .cal-day.ev.c-sage span{background:var(--sage)}
