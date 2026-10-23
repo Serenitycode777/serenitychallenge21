@@ -1029,6 +1029,17 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mlist-title span{font-family:var(--font-head);font-weight:600;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
 .mat-more-btn{display:block;width:100%;margin:6px 0 4px;padding:11px;border:1.5px solid var(--line);border-radius:999px;
   background:var(--surface);color:var(--lav-ink);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sys)}
+.mat-feature{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;background:var(--surface);
+  border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:12px 0;cursor:pointer;font-family:var(--sys)}
+.mat-feature-icon{width:48px;height:48px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;color:var(--sage-ink)}
+.mat-feature-icon svg{width:22px;height:22px}
+.mat-feature-body{flex:1;min-width:0}
+.mat-feature-title{font-family:var(--font-head);font-weight:600;font-size:15px;color:var(--ink);text-transform:uppercase}
+.mat-feature-desc{font-size:12px;color:var(--ink-soft);margin-top:3px;line-height:1.4}
+.mat-feature-arrow{width:36px;height:36px;border-radius:50%;background:rgba(170,157,184,.16);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;color:var(--lav-ink)}
+.mat-feature-arrow svg{width:16px;height:16px}
 .mitem{position:relative;display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0;cursor:pointer}
 .mitem.is-locked{opacity:.55;cursor:default}
 .mitem-fav{position:absolute;top:8px;right:8px;width:30px;height:30px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);cursor:pointer;z-index:1}
@@ -1434,6 +1445,14 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
             <button class="type-chip" data-type="audio" type="button">Аудио</button>
             <button class="type-chip" data-type="pdf" type="button">PDF</button>
           </div>
+          <button class="mat-feature" id="matFeatureBtn" type="button">
+            <div class="mat-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21V11"/><path d="M12 11c0-3.2 2.2-5.5 5.5-5.5 0 3.2-2.3 5.5-5.5 5.5Z"/><path d="M12 14c0-3-2-5-5-5 0 3 2 5 5 5Z"/></svg></div>
+            <div class="mat-feature-body">
+              <div class="mat-feature-title">Перед началом марафона</div>
+              <div class="mat-feature-desc">Важная информация, как получить максимальную пользу от материалов</div>
+            </div>
+            <div class="mat-feature-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+          </button>
           <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
           <div id="mflat"></div>
         </div>
@@ -3141,6 +3160,11 @@ document.addEventListener("click", (e)=>{
 document.getElementById("folderChips").addEventListener("click", e=>{
   const b = e.target.closest(".chip"); if(!b) return;
   setActiveFolder(b.dataset.f);
+});
+document.getElementById("matFeatureBtn").addEventListener("click", ()=>{
+  playPopSound();
+  openOverlay("Перед началом марафона");
+  document.getElementById("overlayBody").innerHTML = `<p class="note" style="margin:0">Текст скоро добавим.</p>`;
 });
 document.getElementById("typeChips").addEventListener("click", e=>{
   const b = e.target.closest(".type-chip"); if(!b) return;
