@@ -728,11 +728,29 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .checklist-head h3{font-size:13.5px;font-family:var(--sys);font-weight:600;color:var(--ink-soft)}
 .day-status{font-size:13.5px;color:var(--ink-soft);margin:0 0 12px;line-height:1.4}
 .day-status b{color:var(--ink);font-weight:700}
-.habits-card{background:var(--surface);border-radius:16px;padding:14px 16px;margin:4px 0 14px}
-.habits-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.habits-card-top h3{margin:0;font-size:14.5px;font-family:var(--sys);font-weight:600;color:var(--ink-soft);line-height:1.35}
+.habits-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:4px 0 14px;box-shadow:var(--shadow)}
+.habits-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.habits-card-top h3{margin:0;font-family:var(--font-head);font-weight:600;font-size:20px;color:var(--ink);line-height:1.25}
+.hc-edit{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:none;border-radius:999px;
+  padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--lav-ink);cursor:pointer;font-family:var(--sys);flex-shrink:0}
+.hc-edit svg{width:13px;height:13px;flex-shrink:0}
+.hc-progress-row{font-size:13px;color:var(--ink-soft);margin-bottom:8px}
+.hc-progress-row b{color:var(--sage-ink);font-weight:700}
+.hc-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.hc-bar{flex:1;height:9px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.hc-bar i{display:block;height:100%;border-radius:999px;background:var(--sage);transition:width .4s}
+.hc-bar-pct{font-size:12.5px;font-weight:700;color:var(--ink-soft);flex-shrink:0}
+.hc-time-row{display:flex;align-items:center;gap:12px;padding-top:12px;margin-top:8px;border-top:1px solid var(--line)}
+.hc-time-icon{width:38px;height:38px;border-radius:50%;background:rgba(106,153,147,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hc-time-icon svg{width:17px;height:17px;color:var(--sage-ink)}
+.hc-time-val{font-family:var(--font-head);font-weight:600;font-size:16px;color:var(--ink)}
+.hc-time-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
 .habits-card-status{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding-top:10px;
   border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-soft);line-height:1.4}
+.hab-badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--sage-ink);
+  background:rgba(106,153,147,.14);border-radius:999px;padding:5px 10px;flex-shrink:0;white-space:nowrap}
+.hab-badge svg{width:11px;height:11px;flex-shrink:0}
+.hab-badge.sleep{color:var(--lav-ink);background:rgba(170,157,184,.16)}
 .hcs-pill{font-size:12px;font-weight:700;color:var(--sage-ink);background:rgba(106,153,147,.13);
   border-radius:999px;padding:3px 10px;flex-shrink:0;margin-top:1px}
 .editlink{background:none;border:none;color:var(--lav-ink);font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--sys)}
@@ -1300,8 +1318,18 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
       </div>
       <div class="habits-card">
         <div class="habits-card-top">
-          <h3 id="habitsHeading">Твои привычки</h3>
-          <button class="editlink" id="addHabitBtn" type="button">Изменить привычки</button>
+          <h3 id="habitsHeading">Мои привычки</h3>
+          <button class="hc-edit" id="addHabitBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16.5 4.5 19.5 7.5 8 19H5V16Z"/></svg>
+            Изменить</button>
+        </div>
+        <div id="hcSummary" hidden>
+          <div class="hc-progress-row"><b id="hcDoneNum">0</b> из <b id="hcTotalNum">0</b> выполнено</div>
+          <div class="hc-bar-row"><div class="hc-bar"><i id="hcBarFill" style="width:0%"></i></div><span class="hc-bar-pct" id="hcBarPct">0%</span></div>
+          <div class="hc-time-row" id="hcTimeRow" hidden>
+            <div class="hc-time-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
+            <div><div class="hc-time-val" id="hcTimeVal"></div><div class="hc-time-sub">Без учёта сна</div></div>
+          </div>
         </div>
         <div class="habits-card-status"><span class="hcs-pill" id="dayStatusPill" hidden></span><span id="dayStatus"></span></div>
         <div class="checklist" id="checklist"></div>
@@ -1940,6 +1968,20 @@ function formatMinutesRu(mins){
   const hLabel = h===1 ? "час" : (h>=2 && h<=4) ? "часа" : "часов";
   return m===0 ? `${h} ${hLabel}` : `${h} ${hLabel} ${m} минут`;
 }
+function formatMinutesShort(mins){
+  if(mins < 60) return `${mins} мин`;
+  const h = Math.floor(mins/60), m = mins % 60;
+  return m===0 ? `${h} ч` : `${h} ч ${m} мин`;
+}
+const ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+const ICON_MOON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>';
+function habitBadgeHtml(name){
+  const mins = habitMinutes(name);
+  if(mins > 0) return `<span class="hab-badge">${ICON_CLOCK}${formatMinutesShort(mins)}</span>`;
+  const meta = findHabitMeta(name);
+  if(meta && meta.noTime) return `<span class="hab-badge sleep">${ICON_MOON}${meta.when||"вечером"}</span>`;
+  return "";
+}
 function totalMinutes(names){
   return names.reduce((sum,n)=>sum+habitMinutes(n), 0);
 }
@@ -2357,12 +2399,23 @@ function renderChecklist(){
   const todayDow = (dayToDate(TODAY).getUTCDay()+6)%7;
   const todayHabits = HABITS.filter(h=>{ const cfg=habitConfig[h]; return !cfg || !cfg.days || cfg.days.includes(todayDow); });
   const todayMins = totalMinutes(todayHabits);
-  document.getElementById("habitsHeading").textContent = (todayHabits.length && todayMins>0) ? `Твои привычки занимают ~${formatMinutesRu(todayMins)}` : "Твои привычки";
+  const hcSummary = document.getElementById("hcSummary");
+  hcSummary.hidden = HABITS.length === 0;
+  if(HABITS.length > 0){
+    const pct = Math.round(doneCount / HABITS.length * 100);
+    document.getElementById("hcDoneNum").textContent = doneCount;
+    document.getElementById("hcTotalNum").textContent = HABITS.length;
+    document.getElementById("hcBarFill").style.width = pct + "%";
+    document.getElementById("hcBarPct").textContent = pct + "%";
+    const timeRow = document.getElementById("hcTimeRow");
+    timeRow.hidden = !(todayHabits.length && todayMins > 0);
+    if(!timeRow.hidden) document.getElementById("hcTimeVal").textContent = `${formatMinutesRu(todayMins)} заботы о себе`;
+  }
   const statusEl = document.getElementById("dayStatus");
   const pillEl = document.getElementById("dayStatusPill");
   if(HABITS.length === 0){
     pillEl.hidden = true;
-    statusEl.textContent = "Пока не выбраны привычки – нажми «Изменить привычки».";
+    statusEl.textContent = "Пока не выбраны привычки – нажми «Изменить».";
   } else if(remaining === 0){
     pillEl.hidden = true;
     statusEl.textContent = "Все привычки на сегодня отмечены ✨";
@@ -2375,12 +2428,11 @@ function renderChecklist(){
   }
   const box = document.getElementById("checklist");
   box.innerHTML = HABITS.map((h,i)=>{
-    const mins = habitMinutes(h);
-    const minsTag = mins > 0 ? ` <span class="hab-mins">(${formatMinutesRu(mins)})</span>` : "";
     return `<label class="hab ${liveChecked[i]?'done':''}" for="hb${i}">
     <span class="markwrap"><input type="checkbox" id="hb${i}" ${liveChecked[i]?'checked':''} ${dayClosed?'disabled':''}>
     <span class="markvisual">${ICONS_CHECK}</span></span>
-    <span class="hab-text">${h}${minsTag}</span>
+    <span class="hab-text">${h}</span>
+    ${habitBadgeHtml(h)}
     </label>`;
   }).join("");
   HABITS.forEach((_,i)=>document.getElementById("hb"+i).addEventListener("change",e=>{
