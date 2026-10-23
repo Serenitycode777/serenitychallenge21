@@ -701,16 +701,17 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   color:var(--lav-ink);background:rgba(170,157,184,.12);border-radius:999px;padding:8px 16px;
   text-decoration:none;flex:1;max-width:160px;justify-content:center}
 .chanchat-btn svg{width:14px;height:14px;flex-shrink:0}
-.affirm-row{display:flex;gap:9px;align-items:stretch;margin:10px 0 18px}
-.affirm-date{flex:0 0 78px;background:linear-gradient(135deg,var(--lav),var(--sage) 130%);border-radius:18px;
-  color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-  padding:10px 6px;box-shadow:var(--shadow)}
-.affirm-date .num{font-family:var(--font-head);font-size:28px;font-weight:600;line-height:1}
+.affirm-card{position:relative;display:flex;align-items:center;gap:16px;overflow:hidden;
+  background:linear-gradient(90deg,var(--sage),var(--lav));border-radius:18px;padding:20px 22px;
+  box-shadow:var(--shadow);color:#fff;margin:10px 0 18px}
+.affirm-date{flex:0 0 auto;text-align:center;line-height:1;position:relative;z-index:1}
+.affirm-date .num{font-family:var(--font-head);font-size:30px;font-weight:600;line-height:1}
 .affirm-date .mon{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;opacity:.85;margin-top:3px}
-.affirm{background:linear-gradient(135deg,var(--lav),var(--sage) 130%);border-radius:18px;padding:22px 20px;
-  color:#fff;text-align:center;box-shadow:var(--shadow);flex:1;min-width:0}
-.affirm .elbl{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin-bottom:8px}
-.affirm .txt{font-family:var(--sys);font-size:18px;font-weight:600;line-height:1.3}
+.affirm-divider{flex:0 0 auto;width:1px;align-self:stretch;background:rgba(255,255,255,.4)}
+.affirm-body{flex:1;min-width:0;position:relative;z-index:1;text-align:center}
+.affirm-body .elbl{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin-bottom:6px}
+.affirm-body .txt{font-family:var(--font-head);font-style:italic;font-size:19px;font-weight:600;line-height:1.3}
+.affirm-leaf{position:absolute;right:-6px;bottom:-14px;width:92px;height:126px;opacity:.22;pointer-events:none}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
 .hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none;background:var(--surface-2)}
 .hab.done{background:rgba(170,157,184,.14)}
@@ -1312,9 +1313,19 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
     <section class="screen" id="tab-today">
       <h1 class="page-title">Сегодня</h1>
       <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
-      <div class="affirm-row">
+      <div class="affirm-card">
         <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
-        <div class="affirm"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
+        <div class="affirm-divider"></div>
+        <div class="affirm-body"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
+        <svg class="affirm-leaf" viewBox="0 0 100 140" fill="none" stroke="#fff" stroke-width="1.3" aria-hidden="true">
+          <path d="M50 135V40"/>
+          <path d="M50 110c0-14 12-22 24-22"/>
+          <path d="M50 85c0-14 14-24 28-22"/>
+          <path d="M50 60c0-14 12-24 26-24"/>
+          <path d="M50 100c0-13-11-20-22-20"/>
+          <path d="M50 70c0-13 10-22 22-22"/>
+          <circle cx="50" cy="38" r="4"/>
+        </svg>
       </div>
       <div class="chanchat-row">
         <a class="chanchat-btn" id="chanLinkBtn" target="_blank" rel="noopener">
