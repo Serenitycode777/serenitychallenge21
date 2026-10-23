@@ -1445,6 +1445,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
             <button class="type-chip" data-type="audio" type="button">Аудио</button>
             <button class="type-chip" data-type="pdf" type="button">PDF</button>
           </div>
+          <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
           <button class="mat-feature" id="matFeatureBtn" type="button">
             <div class="mat-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21V11"/><path d="M12 11c0-3.2 2.2-5.5 5.5-5.5 0 3.2-2.3 5.5-5.5 5.5Z"/><path d="M12 14c0-3-2-5-5-5 0 3 2 5 5 5Z"/></svg></div>
             <div class="mat-feature-body">
@@ -1453,7 +1454,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
             </div>
             <div class="mat-feature-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
           </button>
-          <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
           <div id="mflat"></div>
         </div>
       </div>
