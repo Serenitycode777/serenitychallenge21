@@ -490,7 +490,7 @@ CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><m
   --bg:#FAF6F1; --surface:#FFFFFF; --surface-2:#F4F5F6; --line:#E6E8E9;
   --shadow:0 10px 30px -14px rgba(51,46,61,.22); color-scheme:light;
   --h0:#ECEFEC; --h0-text:#6B6475; --h30:#B6CFC6; --h30-text:#3F6660;
-  --h60:#7FA89C; --h60-text:#FFFFFF; --h100:#4C7D73; --h100-text:#FFFFFF; --h-future:#FFFFFF;
+  --h60:#7FA89C; --h60-text:#FFFFFF; --h100:#4C7D73; --h100-text:#FFFFFF; --h-future:#F4F5F6;
   --sys: "Montserrat",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,"Helvetica Neue",Arial,sans-serif;
   --font-head: "Cormorant Garamond",Georgia,"Times New Roman",serif;
 }
@@ -1352,7 +1352,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           <div class="hc-bar-row"><div class="hc-bar"><i id="hcBarFill" style="width:0%"></i></div><span class="hc-bar-pct" id="hcBarPct">0%</span></div>
           <div class="hc-time-row" id="hcTimeRow" hidden>
             <div class="hc-time-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
-            <div><div class="hc-time-val" id="hcTimeVal"></div><div class="hc-time-sub">Без учёта сна</div></div>
+            <div><div class="hc-time-val" id="hcTimeVal"></div><div class="hc-time-sub" id="hcTimeSub" hidden>Без учёта сна</div></div>
           </div>
         </div>
         <div class="habits-card-status"><span class="hcs-pill" id="dayStatusPill" hidden></span><span id="dayStatus"></span></div>
@@ -2426,7 +2426,11 @@ function renderChecklist(){
     document.getElementById("hcBarPct").textContent = pct + "%";
     const timeRow = document.getElementById("hcTimeRow");
     timeRow.hidden = !(todayHabits.length && todayMins > 0);
-    if(!timeRow.hidden) document.getElementById("hcTimeVal").textContent = `${formatMinutesRu(todayMins)} заботы о себе`;
+    if(!timeRow.hidden){
+      document.getElementById("hcTimeVal").textContent = `${formatMinutesRu(todayMins)} заботы о себе`;
+      const hasSleepHabit = todayHabits.some(h=>{ const meta = findHabitMeta(h); return meta && meta.noTime; });
+      document.getElementById("hcTimeSub").hidden = !hasSleepHabit;
+    }
   }
   const statusEl = document.getElementById("dayStatus");
   const pillEl = document.getElementById("dayStatusPill");
