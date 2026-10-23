@@ -498,6 +498,7 @@ CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><m
 .btn:active,.editlink:active,.close-x:active,.chip:active,.habchip:active,.hab-edit:active,
 .evt-row:active,.hday:active,.mcard:active,.evcard a:active{transform:scale(.96)}
 .btn,.editlink,.close-x,.chip,.habchip{transition:transform .1s}
+button,a,.btn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
 html,body{height:100%;touch-action:pan-x pan-y}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sys)}
 h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
@@ -644,8 +645,9 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   background-image:linear-gradient(90deg,var(--sage),var(--lav));background-size:210% 100%}
 .stat-card.sage-grad{background-position:left center}
 .stat-card.lav-grad{background-position:right center}
-.stat-icon{font-size:26px;line-height:1;margin-bottom:10px}
-.stat-icon svg{width:24px;height:24px}
+.stat-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.stat-icon{font-size:22px;line-height:1}
+.stat-icon svg{width:20px;height:20px}
 .stat-val{font-family:var(--sys);font-size:25px;font-weight:700;line-height:1}
 .stat-val .stat-max{font-size:15px;font-weight:500;opacity:.85;margin-left:2px}
 .stat-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;opacity:.9;margin-top:5px}
@@ -973,9 +975,9 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .panel-head2.has-back .close-x{display:none}
 .panel-head2 .eyebrow2{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin:0 0 4px}
 .panel-head2 h2{font-size:19px;color:#fff}
-.close-x{position:absolute;top:50%;right:14px;transform:translateY(-50%);background:rgba(255,255,255,.22);border:none;width:28px;height:28px;
+.close-x{position:absolute;top:50%;right:10px;transform:translateY(-50%);background:rgba(255,255,255,.22);border:none;width:40px;height:40px;
   border-radius:50%;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.back-arrow{position:absolute;top:50%;left:14px;transform:translateY(-50%);background:rgba(255,255,255,.22);border:none;width:28px;height:28px;
+.back-arrow{position:absolute;top:50%;left:10px;transform:translateY(-50%);background:rgba(255,255,255,.22);border:none;width:40px;height:40px;
   border-radius:50%;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 #overlayBody{padding:18px 22px calc(22px + env(safe-area-inset-bottom,0px));overflow-y:auto}
 .info-panel{max-width:400px;max-height:min(480px,80vh)}
@@ -1271,14 +1273,18 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
       <div class="statrow">
         <div class="stat-card sage-grad" id="diamondCard">
           <button class="info-hint light" id="diamondInfoBtn" type="button" aria-label="как начисляются бриллианты">?</button>
-          <div class="stat-icon">💎</div>
-          <div class="stat-val"><span id="diamondVal">0</span><span class="stat-max">/27</span></div>
+          <div class="stat-top">
+            <div class="stat-icon">💎</div>
+            <div class="stat-val"><span id="diamondVal">0</span><span class="stat-max">/27</span></div>
+          </div>
           <div class="stat-lbl">Кристаллы</div>
         </div>
 
         <div class="stat-card lav-grad" id="countdownCard">
-          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></div>
-          <div class="stat-val"><span id="countdownVal">0</span></div>
+          <div class="stat-top">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></div>
+            <div class="stat-val"><span id="countdownVal">0</span></div>
+          </div>
           <div class="stat-lbl">Дней до финала</div>
         </div>
       </div>
