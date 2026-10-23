@@ -509,12 +509,12 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 .topbar .mark{width:30px;height:30px;object-fit:contain}
 .topbar .name{font-family:var(--font-head);font-weight:600;font-size:16px;letter-spacing:.02em}
 .name small{display:block;font-weight:400;font-size:10px;color:var(--ink-soft);letter-spacing:.02em;margin-top:1px}
-.marathon-eyebrow{display:block;text-align:center;margin:0 0 14px}
-.marathon-eyebrow span{display:inline-block;padding:4px 14px;
-  font-family:var(--sys);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sage-ink)}
-.page-title{font-family:var(--font-head);font-weight:600;font-size:26px;color:var(--sage-ink);
-  margin:0 auto 16px;text-wrap:balance;width:fit-content;background:var(--surface);
-  box-shadow:var(--shadow);border-radius:999px;padding:7px 24px;text-transform:uppercase}
+.marathon-eyebrow{display:block;text-align:center;margin:0 0 20px}
+.marathon-eyebrow span{display:inline-block;padding:7px 18px;border-radius:999px;
+  background:linear-gradient(90deg,var(--lav),var(--sage));box-shadow:var(--shadow);
+  font-family:var(--sys);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff}
+.page-title{font-family:var(--font-head);font-weight:600;font-size:34px;color:var(--sage-ink);
+  margin:0 auto 6px;text-wrap:balance;text-align:center;text-transform:uppercase}
 .cal-card{padding:16px 14px 14px;max-width:380px;margin:0 auto 10px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .cal-head h3{font-family:var(--font-head);font-weight:600;font-size:19px;color:var(--ink);margin:0}
@@ -1241,8 +1241,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
   <main><div class="maininner">
     <section class="screen" id="tab-home" hidden>
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Мой прогресс</h1>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <div class="hcard dayhero heatcard">
         <div class="dh-top"><span class="dh-title">День <span id="bigDayTxt">8</span> из 21</span><span class="dh-pct" id="dayPct">38%</span></div>
         <div class="dh-pill"><i id="dayPillFill"></i></div>
@@ -1309,8 +1309,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
     </section>
 
     <section class="screen" id="tab-today">
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Сегодня</h1>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <div class="affirm-row">
         <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
         <div class="affirm"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
@@ -1364,8 +1364,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
     </section>
 
     <section class="screen" id="tab-materials" hidden>
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Материалы</h1>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <div class="mat-layout">
         <div class="mat-main">
           <div class="search-filter-row">
@@ -1393,8 +1393,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
     </section>
 
     <section class="screen" id="tab-schedule" hidden>
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Расписание</h1>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <div class="heatcard cal-card">
         <div class="cal-head">
           <h3 id="calMonthLabel"></h3>
@@ -1411,8 +1411,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
     </section>
 
     <section class="screen" id="tab-profile" hidden>
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <h1 class="page-title">Профиль</h1>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <input type="file" id="avatarFileInput" accept="image/*" hidden>
       <div class="avatar-row">
         <div class="avatar" id="mainAvatar">
