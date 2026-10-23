@@ -637,22 +637,12 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
   align-items:center;justify-content:center;line-height:1;padding:0;font-family:var(--sys)}
 h3 .info-hint{margin-left:6px;vertical-align:middle}
 
-.statrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px}
-@media (max-width:899px){
-  .statrow{grid-template-columns:1fr 1fr}
-  .statrow #diamondCard{order:1}
-  .statrow #countdownCard{order:2}
-  .statrow #achCard{order:3;grid-column:1/-1}
-}
+.statrow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
 .statrow .heatcard{margin-bottom:0;padding:11px 10px}
 .statrow .diamond-icon{font-size:23px}
 .statrow .diamond-val{font-size:19px}
 .statrow .diamond-val .diamond-max{font-size:13px}
 .statrow .diamond-lbl{font-size:9px}
-.statrow .starsrow{gap:2px;padding-right:16px}
-.statrow .star-icon{font-size:16px}
-.statrow .star-day{font-size:7.5px}
-.statrow h3{font-size:11px}
 
 .diamond-row{display:flex;align-items:center;gap:9px;height:100%}
 .diamond-icon{font-size:28px;line-height:1}
@@ -660,12 +650,12 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .diamond-val{font-family:var(--sys);font-size:23px;font-weight:700;color:var(--ink)}
 .diamond-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin-top:2px}
 .diamond-val .diamond-max{font-size:15px;font-weight:500;color:var(--ink-soft);margin-left:2px}
-#diamondCard .info-hint,#achCard .info-hint{position:absolute;top:13px;right:13px}
-#achCard .starsrow{padding-top:28px}
-#diamondCard,#achCard{position:relative}
+#diamondCard .info-hint{position:absolute;top:13px;right:13px}
+#diamondCard{position:relative}
 
-.starsrow{display:flex;justify-content:space-between;gap:3px;padding:2px 32px 0 0}
-.star-item{display:flex;flex-direction:column;align-items:center;gap:4px}
+.starsrow{display:flex;align-items:flex-start;gap:0;padding:4px 0 0}
+.star-item{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.star-connector{flex:1;height:0;min-width:8px;border-top:1.5px dashed var(--line);margin-top:12px}
 .star-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:19px;
   filter:grayscale(1);opacity:.35;line-height:1;flex-shrink:0}
 .star-icon.unlocked{filter:none;opacity:1}
@@ -673,6 +663,25 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .ach-mm-check{width:24px;height:24px;border-radius:50%;background:var(--surface-2);border:1.5px solid var(--line);
   display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:11px;cursor:pointer;flex-shrink:0}
 .ach-mm-check.active{background:var(--sage);border-color:var(--sage);color:#fff;cursor:default}
+
+.mm-cardrow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.mm-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.mm-card-icon{width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:16px}
+.mm-card-title{font-family:var(--font-head);font-weight:600;font-size:14.5px;color:var(--ink)}
+.mm-card-status{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:4px 10px}
+.mm-card-status svg{width:11px;height:11px;flex-shrink:0}
+.mm-card-status.locked{color:var(--ink-soft);background:var(--surface-2)}
+.mm-card-status.open{color:var(--lav-ink);background:rgba(170,157,184,.16)}
+.mm-card-status.done{color:var(--sage-ink);background:rgba(106,153,147,.14)}
+
+.hc-row{display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;padding:14px 16px;margin:4px 0 14px;box-shadow:var(--shadow);cursor:pointer;font-family:var(--sys);text-align:left}
+.hc-row-icon{width:38px;height:38px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-soft)}
+.hc-row-icon svg{width:17px;height:17px}
+.hc-row-body{flex:1;min-width:0}
+.hc-row-title{font-family:var(--font-head);font-weight:600;font-size:15.5px;color:var(--ink)}
+.hc-row-sub{font-size:12px;color:var(--ink-soft);margin-top:1px}
+.hc-row-chev{width:16px;height:16px;color:var(--ink-soft);flex-shrink:0}
 .mm-inline{margin-top:0;padding-top:0;border-top:none;max-height:0;opacity:0;overflow:hidden;transition:max-height .2s ease,opacity .2s ease,margin-top .2s ease,padding-top .2s ease}
 .mm-inline.open{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);max-height:140px;opacity:1}
 .mm-inline-hint{font-size:11px;color:var(--ink-soft);margin:0 0 8px}
@@ -756,11 +765,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .editlink{background:none;border:none;color:var(--lav-ink);font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--sys)}
 .checklist-head .editlink{background:var(--surface);border:1.5px solid var(--line);border-radius:999px;
   padding:7px 14px;box-shadow:0 2px 6px -2px rgba(0,0,0,.08)}
-#editHabitsBtn{background:linear-gradient(135deg,var(--sand),var(--lav));border:none;color:#fff;
-  box-shadow:0 4px 14px -6px rgba(170,157,184,.6)}
 @media (max-width:899px){
   .habits-row{flex-direction:column;align-items:stretch;gap:10px}
-  #editHabitsBtn{width:100%;text-align:center}
 }
 .pickcat{margin-bottom:20px}
 .pickcat h4{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:9px}
@@ -1250,12 +1256,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           </div>
         </div>
 
-        <div class="heatcard" id="achCard">
-          <button class="info-hint" id="achInfoBtn" type="button" aria-label="как открываются звёзды и галочки за мастермайнд">?</button>
-          <div class="starsrow" id="starsRow"></div>
-          <div class="mm-inline" id="mmInlineBox" hidden></div>
-        </div>
-
         <div class="heatcard" id="countdownCard">
           <div class="diamond-row">
             <div class="diamond-text">
@@ -1263,14 +1263,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
               <div class="diamond-lbl">дней до финала</div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div class="profcard">
-        <div class="sectitle">привычки марафона</div>
-        <div class="checklist-head habits-row" style="margin-top:0">
-          <h3 id="profileHabitsCount">Выбрано 5 привычек</h3>
-          <button class="editlink" id="editHabitsBtn">Изменить привычки</button>
         </div>
       </div>
 
@@ -1284,6 +1276,29 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="weeklbl" id="weeklbl3">неделя 3</div>
         <div class="heatgrid" id="heatgrid3"></div>
       </div>
+
+      <div class="heatcard" id="achCard">
+        <h3>Ближайшие достижения<button class="info-hint" id="achInfoBtn" type="button" aria-label="как открываются звёзды и галочки за мастермайнд">?</button></h3>
+        <div class="starsrow" id="starsRow"></div>
+      </div>
+
+      <div class="mm-cardrow" id="mmCardRow"></div>
+
+      <div class="heatcard" id="mmCodeCard" hidden>
+        <h3 id="mmCodeTitle">Ввести кодовое слово из эфира</h3>
+        <div id="mmCodeBody"></div>
+      </div>
+
+      <button class="hc-row" id="editHabitsBtn" type="button">
+        <div class="hc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M8 10h8M8 14h5"/></svg></div>
+        <div class="hc-row-body"><div class="hc-row-title">Мои привычки</div><div class="hc-row-sub" id="profileHabitsCount">Выбрано 5 привычек</div></div>
+        <svg class="hc-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+
+      <button class="btn primary" id="progressContinueBtn" type="button" style="width:100%;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+        Продолжить
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
 
       <div class="heatcard" id="byHabitCard">
         <h3>По привычкам</h3>
@@ -1630,54 +1645,45 @@ function todayCount(){ return 9 + (hashStr("day"+TODAY) % 17); }
 
 const STAR_DAYS = [7, 14, 21];
 function renderStars(){
-  const starsHtml = STAR_DAYS.map(d=>{
+  const starNodes = STAR_DAYS.map(d=>{
     const unlocked = TODAY >= d;
-    return `<div class="star-item"><div class="star-icon ${unlocked?'unlocked':''}">⭐</div><div class="star-day">${d} день</div></div>`;
-  }).join("");
-  const mmHtml = MASTERMIND_MATERIALS.map(m=>{
+    return `<div class="star-item"><div class="star-icon ${unlocked?'unlocked':''}">⭐</div><div class="star-day">${d} дней</div></div>`;
+  });
+  const mmNodes = MASTERMIND_MATERIALS.map(m=>{
     const done = !!(STATE.mastermind && STATE.mastermind[m.mmId]);
-    return `<div class="star-item"><button class="ach-mm-check ${done?'active':''}" type="button" data-mmid="${m.mmId}">✓</button><div class="star-day">ММ ${m.mmId}</div></div>`;
-  }).join("");
-  document.getElementById("starsRow").innerHTML = starsHtml + mmHtml;
-  if(openMmInlineId && (!STATE.mastermind || !STATE.mastermind[openMmInlineId])){
-    renderMmInline(openMmInlineId);
-  } else {
-    closeMmInline();
-  }
+    return `<div class="star-item"><span class="ach-mm-check ${done?'active':''}">✓</span><div class="star-day">ММ ${m.mmId}</div></div>`;
+  });
+  document.getElementById("starsRow").innerHTML = [...starNodes, ...mmNodes].join('<div class="star-connector"></div>');
+  renderMmCards();
+  renderMmCodeCard();
 }
-let openMmInlineId = null;
-function mmInlineHtml(mmId){
-  const title = (MASTERMIND_MATERIALS.find(m=>m.mmId===String(mmId))||{}).title || ("Мастермайнд "+mmId);
-  return `<p class="mm-inline-hint">${title} · введи кодовое слово из эфира</p>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div class="mm-field"><input class="mm-input" type="text" placeholder="кодовое слово" id="mmInput${mmId}">
-      <p class="mm-err" id="mmErr${mmId}" hidden>неверное слово</p></div>
-      <button class="mm-btn" type="button" data-mmid="${mmId}">Получить 💎</button>
+const MM_ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>';
+const MM_ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5 9.5 17 19 7"/></svg>';
+const MM_ICON_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V9a4 4 0 0 1 7.5-1.9"/></svg>';
+function mmStatus(m){
+  const done = !!(STATE.mastermind && STATE.mastermind[m.mmId]);
+  if(done) return {cls:"done", icon:MM_ICON_CHECK, text:"Получено"};
+  if(m.day > TODAY) return {cls:"locked", icon:MM_ICON_LOCK, text:"Впереди"};
+  return {cls:"open", icon:MM_ICON_OPEN, text:"Доступно"};
+}
+function renderMmCards(){
+  document.getElementById("mmCardRow").innerHTML = MASTERMIND_MATERIALS.map(m=>{
+    const s = mmStatus(m);
+    return `<div class="heatcard mm-card">
+      <div class="mm-card-icon">👥</div>
+      <div class="mm-card-title">Мастермайнд ${m.mmId}</div>
+      <span class="mm-card-status ${s.cls}">${s.icon}${s.text}</span>
     </div>`;
+  }).join("");
 }
-function renderMmInline(mmId){
-  openMmInlineId = mmId;
-  const box = document.getElementById("mmInlineBox");
-  box.hidden = false;
-  box.innerHTML = mmInlineHtml(mmId);
-  box.classList.add("open");
-  wireMmCodeBox(mmId, ()=>{ openMmInlineId = null; renderStars(); renderProgress(); });
+function renderMmCodeCard(){
+  const pending = MASTERMIND_MATERIALS.find(m => m.day <= TODAY && !(STATE.mastermind && STATE.mastermind[m.mmId]));
+  const card = document.getElementById("mmCodeCard");
+  card.hidden = !pending;
+  if(!pending) return;
+  document.getElementById("mmCodeBody").innerHTML = mmCodeBoxHtml(pending.mmId);
+  wireMmCodeBox(pending.mmId, ()=>{ renderStars(); renderProgress(); });
 }
-function closeMmInline(){
-  openMmInlineId = null;
-  const box = document.getElementById("mmInlineBox");
-  box.classList.remove("open");
-  box.innerHTML = "";
-  box.hidden = true;
-}
-document.getElementById("starsRow").addEventListener("click", e=>{
-  const btn = e.target.closest(".ach-mm-check");
-  if(!btn || btn.classList.contains("active")) return;
-  playPopSound();
-  const mmId = btn.dataset.mmid;
-  if(openMmInlineId === mmId) closeMmInline();
-  else renderMmInline(mmId);
-});
 function mastermindBonus(){ return Object.keys(STATE.mastermind||{}).filter(k=>STATE.mastermind[k]).length * 3; }
 function mmCodeBoxHtml(mmId){
   if(STATE.mastermind && STATE.mastermind[String(mmId)]) return `<div class="mm-row"><span class="mm-done">✓ бриллиант получен (+3 💎)</span></div>`;
@@ -2572,6 +2578,7 @@ function renderPicker(){
   });
 }
 document.getElementById("editHabitsBtn").addEventListener("click", openHabitPicker);
+document.getElementById("progressContinueBtn").addEventListener("click", ()=>{ playPopSound(); setActiveTab("today"); });
 
 /* ---------- прогресс: статистика + "раньше тоже делала" ---------- */
 let pastHabits = [];
