@@ -628,8 +628,10 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
 .hday.d30{background:var(--h30);color:var(--h30-text)}
 .hday.d60{background:var(--h60);color:var(--h60-text)}
 .hday.d100{background:var(--h100);color:var(--h100-text)}
-.hday.future{background:var(--h-future);border:1.5px dashed var(--line);color:var(--ink-soft);font-weight:400;opacity:.65}
+.hday.future{background:var(--h-future);border:1px solid var(--line);color:var(--ink-soft);font-weight:400}
 .hday.istoday{border-color:#D4A94C;border-width:2.5px;box-shadow:0 0 0 4px rgba(212,169,76,.4),0 0 14px rgba(212,169,76,.5)}
+.hday-check{display:flex;align-items:center;justify-content:center}
+.hday-check svg{width:17px;height:17px;flex-shrink:0}
 .hint{font-size:12.5px;color:var(--ink-soft);text-align:center;line-height:1.5}
 
 .info-hint{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--lav);background:var(--surface);
@@ -638,20 +640,16 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
 h3 .info-hint{margin-left:6px;vertical-align:middle}
 
 .statrow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
-.statrow .heatcard{margin-bottom:0;padding:11px 10px}
-.statrow .diamond-icon{font-size:23px}
-.statrow .diamond-val{font-size:19px}
-.statrow .diamond-val .diamond-max{font-size:13px}
-.statrow .diamond-lbl{font-size:9px}
-
-.diamond-row{display:flex;align-items:center;gap:9px;height:100%}
-.diamond-icon{font-size:28px;line-height:1}
-.diamond-text{flex:1}
-.diamond-val{font-family:var(--sys);font-size:23px;font-weight:700;color:var(--ink)}
-.diamond-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin-top:2px}
-.diamond-val .diamond-max{font-size:15px;font-weight:500;color:var(--ink-soft);margin-left:2px}
-#diamondCard .info-hint{position:absolute;top:13px;right:13px}
-#diamondCard{position:relative}
+.stat-card{position:relative;border-radius:16px;padding:16px;color:#fff;box-shadow:var(--shadow);min-height:92px}
+.stat-card.sage-grad{background:linear-gradient(135deg,var(--sage),#8FC2B6)}
+.stat-card.lav-grad{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
+.stat-icon{font-size:26px;line-height:1;margin-bottom:10px}
+.stat-icon svg{width:24px;height:24px}
+.stat-val{font-family:var(--sys);font-size:25px;font-weight:700;line-height:1}
+.stat-val .stat-max{font-size:15px;font-weight:500;opacity:.85;margin-left:2px}
+.stat-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;opacity:.9;margin-top:5px}
+.info-hint.light{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.15);color:#fff}
+.stat-card .info-hint{position:absolute;top:13px;right:13px}
 
 .starsrow{display:flex;align-items:flex-start;gap:0;padding:4px 0 0}
 .star-item{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
@@ -798,6 +796,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
 .btn svg{width:15px;height:15px}
 .btn.primary{background:var(--lav);color:#fff}
+.btn.primary.grad{background:linear-gradient(90deg,var(--lav),var(--sage))}
 .btn.primary:disabled{background:var(--surface-2);color:var(--ink-soft);cursor:default}
 .btn.primary.is-closed{background:var(--surface-2);color:var(--ink-soft)}
 .btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
@@ -1004,6 +1003,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mlist-title{display:flex;align-items:center;gap:10px;margin:4px 0 10px}
 .mlist-title::before,.mlist-title::after{content:"";flex:1;height:1px;background:var(--line)}
 .mlist-title span{font-family:var(--font-head);font-weight:600;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
+.mat-more-btn{display:block;width:100%;margin:6px 0 4px;padding:11px;border:1.5px solid var(--line);border-radius:999px;
+  background:var(--surface);color:var(--lav-ink);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sys)}
 .mitem{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0;cursor:pointer}
 .mitem.is-locked{opacity:.55;cursor:default}
 .mitem-thumb{width:58px;height:58px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
@@ -1248,26 +1249,22 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="dh-sub" id="daySub"></div>
       </div>
       <div class="statrow">
-        <div class="heatcard" id="diamondCard">
-          <div class="diamond-row">
-            <div class="diamond-icon">💎</div>
-            <div class="diamond-val"><span id="diamondVal">0</span><span class="diamond-max">/27</span></div>
-            <button class="info-hint" id="diamondInfoBtn" type="button" aria-label="как начисляются бриллианты">?</button>
-          </div>
+        <div class="stat-card sage-grad" id="diamondCard">
+          <button class="info-hint light" id="diamondInfoBtn" type="button" aria-label="как начисляются бриллианты">?</button>
+          <div class="stat-icon">💎</div>
+          <div class="stat-val"><span id="diamondVal">0</span><span class="stat-max">/27</span></div>
+          <div class="stat-lbl">Кристаллы</div>
         </div>
 
-        <div class="heatcard" id="countdownCard">
-          <div class="diamond-row">
-            <div class="diamond-text">
-              <div class="diamond-val"><span id="countdownVal">0</span></div>
-              <div class="diamond-lbl">дней до финала</div>
-            </div>
-          </div>
+        <div class="stat-card lav-grad" id="countdownCard">
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></div>
+          <div class="stat-val"><span id="countdownVal">0</span></div>
+          <div class="stat-lbl">Дней до финала</div>
         </div>
       </div>
 
       <div class="heatcard" id="heatmapCard" style="position:relative">
-        <h3>Карта 21 дня</h3>
+        <h3>Твой путь — 21 день</h3>
         <button class="info-hint" id="heatmapInfoBtn" type="button" aria-label="что значит цвет" style="position:absolute;top:13px;right:13px">?</button>
         <div class="weeklbl" id="weeklbl1">неделя 1</div>
         <div class="heatgrid" id="heatgrid1"></div>
@@ -1295,7 +1292,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <svg class="hc-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
       </button>
 
-      <button class="btn primary" id="progressContinueBtn" type="button" style="width:100%;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+      <button class="btn primary grad" id="progressContinueBtn" type="button" style="width:100%;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
         Продолжить
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
@@ -1659,12 +1656,9 @@ function renderStars(){
 }
 const MM_ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>';
 const MM_ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5 9.5 17 19 7"/></svg>';
-const MM_ICON_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V9a4 4 0 0 1 7.5-1.9"/></svg>';
 function mmStatus(m){
   const done = !!(STATE.mastermind && STATE.mastermind[m.mmId]);
-  if(done) return {cls:"done", icon:MM_ICON_CHECK, text:"Получено"};
-  if(m.day > TODAY) return {cls:"locked", icon:MM_ICON_LOCK, text:"Впереди"};
-  return {cls:"open", icon:MM_ICON_OPEN, text:"Доступно"};
+  return done ? {cls:"done", icon:MM_ICON_CHECK, text:"Получено"} : {cls:"locked", icon:MM_ICON_LOCK, text:"Впереди"};
 }
 function renderMmCards(){
   document.getElementById("mmCardRow").innerHTML = MASTERMIND_MATERIALS.map(m=>{
@@ -1677,7 +1671,7 @@ function renderMmCards(){
   }).join("");
 }
 function renderMmCodeCard(){
-  const pending = MASTERMIND_MATERIALS.find(m => m.day <= TODAY && !(STATE.mastermind && STATE.mastermind[m.mmId]));
+  const pending = MASTERMIND_MATERIALS.find(m => !(STATE.mastermind && STATE.mastermind[m.mmId]));
   const card = document.getElementById("mmCodeCard");
   card.hidden = !pending;
   if(!pending) return;
@@ -2033,6 +2027,7 @@ function renderThemeFilterOptions(){
   dd.querySelectorAll(".fopt").forEach(el=>{
     el.addEventListener("click", ()=>{
       activeTheme = el.dataset.t;
+      matVisibleCount = MAT_PAGE_SIZE;
       document.getElementById("themeFilterDd").hidden = true;
       renderThemeFilterOptions();
       updateThemeFilterBtn();
@@ -2048,6 +2043,7 @@ function updateThemeFilterBtn(){
 function setActiveFolder(f){
   activeFolder = f;
   activeTheme = "all";
+  matVisibleCount = MAT_PAGE_SIZE;
   renderThemeFilterOptions();
   updateThemeFilterBtn();
   renderMaterials();
@@ -2292,10 +2288,13 @@ function renderHeat(){
     let cls;
     if(d > TODAY) cls = "future";
     else cls = heatClass(dayPct(doneCountForDay(d), HABITS.length));
+    const isClosed = d===TODAY ? dayClosed : !!logForDate(dateForDay(d)).closed;
     const cell = document.createElement("div");
     cell.className = "hday "+cls+(d===TODAY?" istoday":"");
     const dt = dayToDate(d);
-    cell.innerHTML = `<span class="hday-main"><span class="hday-dd">${dt.getUTCDate()}</span><span class="hday-mm">${RU_MONTHS_SHORT[dt.getUTCMonth()]}</span></span>`;
+    cell.innerHTML = (d<=TODAY && isClosed)
+      ? `<span class="hday-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12.5 9.5 17 19 7"/></svg></span>`
+      : `<span class="hday-main"><span class="hday-dd">${dt.getUTCDate()}</span><span class="hday-mm">${RU_MONTHS_SHORT[dt.getUTCMonth()]}</span></span>`;
     cell.title = "День "+d+" · "+fmtDateRu(dt)+(d===TODAY?" · сегодня":"");
     cell.addEventListener("click", ()=>openDay(d));
     const gridId = "heatgrid"+(Math.ceil(d/7));
@@ -2798,6 +2797,8 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
 
 /* ---------- материалы ---------- */
 let activeTheme="all", activeFolder="all", activeType="all", query="";
+const MAT_PAGE_SIZE = 6;
+let matVisibleCount = MAT_PAGE_SIZE;
 const TYPE_LABEL = {video:"Видео", audio:"Аудио", pdf:"PDF", link:"Материал"};
 const PHOTOS = {
   mila: "https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/mila.jpg",
@@ -2934,10 +2935,16 @@ function renderMaterials(){
   } else {
     headerHtml = `<div class="mlist-title"><span>Практики и материалы</span></div>`;
   }
-  flat.innerHTML = headerHtml + (items.length ? items.map(mItemHtml).join("") :
+  const visibleItems = items.slice(0, matVisibleCount);
+  const moreHtml = items.length > matVisibleCount
+    ? `<button class="mat-more-btn" id="matMoreBtn" type="button">Показать ещё · осталось ${items.length - matVisibleCount}</button>`
+    : "";
+  flat.innerHTML = headerHtml + (items.length ? visibleItems.map(mItemHtml).join("") + moreHtml :
     `<p class="note" style="margin:12px 0">Ничего не нашлось</p>`);
   const backBtn = flat.querySelector("#folderBackBtn");
   if(backBtn) backBtn.addEventListener("click", ()=>setActiveFolder("all"));
+  const moreBtn = document.getElementById("matMoreBtn");
+  if(moreBtn) moreBtn.addEventListener("click", ()=>{ matVisibleCount += MAT_PAGE_SIZE; renderMaterials(); });
   flat.querySelectorAll(".mitem[data-i]").forEach(row=>{
     const m = items[Number(row.dataset.i)];
     row.addEventListener("click", ()=>openMaterialDetailFor(m, (AUTHORS[m.author]||{}).name||"", "← назад", ()=>{
@@ -3047,12 +3054,14 @@ document.getElementById("folderChips").addEventListener("click", e=>{
 document.getElementById("typeChips").addEventListener("click", e=>{
   const b = e.target.closest(".type-chip"); if(!b) return;
   activeType = b.dataset.type;
+  matVisibleCount = MAT_PAGE_SIZE;
   document.querySelectorAll("#typeChips .type-chip").forEach(c=>c.classList.toggle("active", c===b));
   renderMaterials();
 });
 const searchBox=document.getElementById("searchBox"), searchDrop=document.getElementById("searchDrop");
 searchBox.addEventListener("input",()=>{
   query = searchBox.value.trim().toLowerCase();
+  matVisibleCount = MAT_PAGE_SIZE;
   if(!query){ searchDrop.hidden=true; renderMaterials(); return; }
   const results = MATERIALS.filter(matchesQuery).slice(0,6);
   searchDrop.innerHTML = results.length ? results.map(m=>
