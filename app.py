@@ -3051,8 +3051,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   const body=document.getElementById("shareOverlayBody");
   body.innerHTML = `<div class="share-out">
       <img src="${c.toDataURL('image/png')}" alt="карточка дня">
-      <button class="btn primary" id="shareToChatBtn" type="button" style="width:100%;margin-top:14px">Поделиться в чат</button>
-      <p class="share-note">Сохрани картинку или сделай скриншот, чтобы поделиться днём</p>
+      <button class="btn primary" id="shareToChatBtn" type="button" style="width:auto;flex:none;margin:14px auto 0;padding:10px 22px;font-size:13.5px;display:block">Поделиться в чат</button>
     </div>`;
   document.getElementById("shareOverlay").classList.add("open");
 
