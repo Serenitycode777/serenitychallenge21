@@ -790,6 +790,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .hc-time-icon svg{width:17px;height:17px;color:var(--sage-ink)}
 .hc-time-val{font-family:var(--font-head);font-weight:600;font-size:18px;color:var(--ink);text-transform:uppercase;letter-spacing:.04em}
 .hc-time-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
+.hc-time-num{width:48px;height:48px;border-radius:50%;background:var(--sage);color:#fff;font-family:var(--font-head);font-weight:700;font-size:23px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 14px -6px rgba(63,102,96,.55)}
+.hc-time-num.long{font-size:18px}
 .habits-card-status{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding-top:10px;
   border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-soft);line-height:1.4}
 .hab-badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--sage-ink);
@@ -1429,8 +1431,9 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           <div class="hc-progress-row"><b id="hcDoneNum">0</b> из <b id="hcTotalNum">0</b> выполнено</div>
           <div class="hc-bar-row"><div class="hc-bar"><i id="hcBarFill" style="width:0%"></i></div><span class="hc-bar-pct" id="hcBarPct">0%</span></div>
           <div class="hc-time-row" id="hcTimeRow" hidden>
+            <div class="hc-time-num" id="hcTimeNum"></div>
+            <div style="flex:1;min-width:0"><div class="hc-time-val" id="hcTimeVal"></div><div class="hc-time-sub" id="hcTimeSub" hidden>Без учёта сна</div></div>
             <div class="hc-time-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
-            <div><div class="hc-time-val" id="hcTimeVal"></div><div class="hc-time-sub" id="hcTimeSub" hidden>Без учёта сна</div></div>
           </div>
         </div>
         <div class="habits-card-status"><span class="hcs-pill" id="dayStatusPill" hidden></span><span id="dayStatus"></span></div>
@@ -2562,7 +2565,11 @@ function renderChecklist(){
     const timeRow = document.getElementById("hcTimeRow");
     timeRow.hidden = !(todayHabits.length && todayMins > 0);
     if(!timeRow.hidden){
-      document.getElementById("hcTimeVal").textContent = `${formatMinutesRu(todayMins)} заботы о себе`;
+      document.getElementById("hcTimeNum").textContent = todayMins;
+      document.getElementById("hcTimeNum").classList.toggle("long", todayMins >= 100);
+      const _m10 = todayMins % 10, _m100 = todayMins % 100;
+      const _minLabel = (_m10===1 && _m100!==11) ? "минута" : (_m10>=2 && _m10<=4 && (_m100<12 || _m100>14)) ? "минуты" : "минут";
+      document.getElementById("hcTimeVal").textContent = `${_minLabel} заботы о себе`;
       const hasSleepHabit = todayHabits.some(h=>{ const meta = findHabitMeta(h); return meta && meta.noTime; });
       document.getElementById("hcTimeSub").hidden = !hasSleepHabit;
     }
