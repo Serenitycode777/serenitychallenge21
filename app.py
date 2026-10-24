@@ -132,6 +132,16 @@ async def init_db(app):
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS dot_color TEXT DEFAULT ''")
     # описание мероприятия Милы — добавлено позже исходной таблицы mila_events
     await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''")
+    # фото + раздельные дата/место (вместо единой строки date_place) — добавлено позже
+    await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS photo_url TEXT")
+    await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS date_label TEXT DEFAULT ''")
+    await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS place_label TEXT DEFAULT ''")
+    await DB_POOL.execute(
+        "UPDATE mila_events SET date_label=split_part(date_place,',',1), "
+        "place_label=trim(substring(date_place from position(',' in date_place)+1)) "
+        "WHERE (date_label IS NULL OR date_label='') AND date_place IS NOT NULL "
+        "AND date_place<>'' AND position(',' in date_place)>0"
+    )
 
     await seed_materials_once()
 
@@ -185,6 +195,7 @@ def normalize_email(e: str) -> str:
 MATERIALS_FILE = HERE / "data" / "materials.json"  # больше не источник правды, см. seed_materials_once()
 MARATHON_START_DEFAULT = "2026-10-19"  # используется, пока в settings нет значения "marathon_start" (задаётся в админке)
 MARATHON_TZ = "America/New_York"
+INTRO_FOLDER_ID = "662d1a2b85"  # папка "Перед началом марафона" — обычная папка материалов, жёстко привязана к карточке
 
 
 async def get_marathon_start() -> str:
@@ -965,15 +976,18 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .editform .field:last-of-type{margin-bottom:0}
 .editform .savebtn{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:12px;
   font-weight:600;font-size:13.5px;cursor:pointer;margin-top:4px}
-.evcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:12px}
-.evcard .ph{min-height:92px;background:linear-gradient(135deg,var(--sage),var(--lav));position:relative;
-  padding:14px 16px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff}
-.evcard .ph h4{font-family:var(--sys);font-size:15.5px;font-weight:600;color:#fff}
-.evcard .ph .dt{font-size:12px;color:rgba(255,255,255,.9);margin:3px 0 0}
-.evcard .b{padding:14px 16px}
-.evcard .b h4{font-family:var(--sys);font-size:15.5px;font-weight:600}
-.evcard .b .dt{font-size:12px;color:var(--ink-soft);margin:3px 0 10px}
-.evcard .desc{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 10px}
+.evcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:12px}
+.evcard .ph{height:150px;background:linear-gradient(135deg,var(--sage),var(--lav));background-size:cover;background-position:center}
+.evcard .b{display:flex;gap:14px;padding:16px}
+.evcard .datebadge{flex-shrink:0;width:64px;min-height:56px;border-radius:14px;background:var(--surface-2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px 4px}
+.evcard .datebadge .num{font-family:var(--font-head);font-size:22px;font-weight:600;color:var(--lav-ink);line-height:1}
+.evcard .datebadge .mon{font-size:10.5px;color:var(--ink-soft);margin-top:2px}
+.evcard .info{flex:1;min-width:0}
+.evcard .info h4{font-family:var(--sys);font-size:15.5px;font-weight:600;margin:0 0 4px}
+.evcard .place{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--ink-soft);margin-bottom:8px}
+.evcard .place svg{width:13px;height:13px;flex-shrink:0}
+.evcard .desc{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 8px}
 .evcard a{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--lav-ink);text-decoration:none}
 
 /* overlays – центрированное модальное окно с цветной шапкой */
@@ -2167,12 +2181,26 @@ function renderMilaEvents(){
   const wrap = document.getElementById("profileMilaEvents");
   const events = STATE.mila_events || [];
   wrap.innerHTML = events.length ? events.map(e=>{
-    const bg = COLOR_CSS[e.color] || COLOR_CSS.lav;
+    const bg = e.photo ? `background-image:url('${e.photo}')` : `background:${COLOR_CSS[e.color] || COLOR_CSS.lav}`;
     const link = e.link ? `<a href="${e.link}" target="_blank" rel="noopener">Узнать больше →</a>` : "";
     const desc = e.description ? `<p class="desc">${e.description}</p>` : "";
+    const dateStr = e.date || e.date_place || "";
+    const m = dateStr.match(/^(\d{1,2})\s*(.*)$/);
+    const dateBadge = m
+      ? `<div class="num">${m[1]}</div><div class="mon">${m[2]}</div>`
+      : `<div class="mon">${dateStr}</div>`;
+    const place = e.place ? `<div class="place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="10.5" r="3"/><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/></svg>${e.place}</div>` : "";
     return `<div class="evcard">
-      <div class="ph" style="background:${bg}"><h4>${e.title}</h4><div class="dt">${e.date_place}</div></div>
-      <div class="b">${desc}${link}</div>
+      <div class="ph" style="${bg}"></div>
+      <div class="b">
+        <div class="datebadge">${dateBadge}</div>
+        <div class="info">
+          <h4>${e.title}</h4>
+          ${place}
+          ${desc}
+          ${link}
+        </div>
+      </div>
     </div>`;
   }).join("") : `<p class="note" style="margin:8px 0 16px">пока нет мероприятий</p>`;
 }
@@ -3803,10 +3831,6 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
                 <summary>цвет / градиент, если без фото</summary>
                 <div class="nf-swatches" id="nfColorPicker"></div>
               </details>
-              <div class="toggle-row" style="margin-top:10px">
-                <span class="l">Карточка «Перед началом марафона» в материалах</span>
-                <button class="sw" id="nfIntroToggle" type="button"></button>
-              </div>
               <button id="nfCreate" class="nf-create-btn">Создать</button>
             </div>
           </div>
@@ -3942,8 +3966,16 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
         <input type="text" id="mevTitle" placeholder="Например: Ретрит выходного дня">
       </div>
       <div class="field">
-        <label>Дата и место <span class="req">*</span></label>
-        <input type="text" id="mevDate" placeholder="14-15 ноября · Durham, NC (или «онлайн»)">
+        <label>Фото мероприятия</label>
+        <input type="file" id="mevPhoto" accept="image/*">
+      </div>
+      <div class="field">
+        <label>Дата <span class="req">*</span></label>
+        <input type="text" id="mevDate" placeholder="25 октября">
+      </div>
+      <div class="field">
+        <label>Место</label>
+        <input type="text" id="mevPlace" placeholder="Дома у Милы (или «онлайн»)">
       </div>
       <div class="field">
         <label>Описание</label>
@@ -4270,17 +4302,10 @@ function renderFolderPicker(){
     if(f.style.display==="flex") document.getElementById("nfName").focus();
   });
 }
-let introFolderId = null;
 async function loadFolders(){
   try{ FOLDERS = await apiFetch("/api/admin/folders"); }catch(e){ FOLDERS = []; }
   renderFolderPicker();
 }
-async function loadIntroFolderId(){
-  try{ const data = await apiFetch("/api/admin/settings/intro-folder"); introFolderId = data.folder_id || null; }catch(e){}
-}
-document.getElementById("nfIntroToggle").addEventListener("click", ()=>{
-  document.getElementById("nfIntroToggle").classList.toggle("on");
-});
 document.getElementById("nfCreate").addEventListener("click", async ()=>{
   const name = document.getElementById("nfName").value.trim();
   const dup = FOLDERS.some(f=>f.name===name && f.id!==editingFolderId);
@@ -4288,7 +4313,6 @@ document.getElementById("nfCreate").addEventListener("click", async ()=>{
   const photoFile = document.getElementById("nfPhoto").files[0];
   const photo = photoFile ? await readFileAsDataUrl(photoFile) : null;
   const wasEditing = editingFolderId;
-  const makeIntro = document.getElementById("nfIntroToggle").classList.contains("on");
   try{
     const body = {
       name, description: document.getElementById("nfDesc").value.trim(),
@@ -4303,13 +4327,6 @@ document.getElementById("nfCreate").addEventListener("click", async ()=>{
       FOLDERS.push(f);
       showToast("Папка «"+name+"» создана ✓");
     }
-    if(makeIntro && introFolderId !== f.id){
-      await apiFetch("/api/admin/settings/intro-folder", {method:"POST", body: JSON.stringify({folder_id: f.id})});
-      introFolderId = f.id;
-    } else if(!makeIntro && introFolderId === f.id){
-      await apiFetch("/api/admin/settings/intro-folder", {method:"POST", body: JSON.stringify({folder_id: null})});
-      introFolderId = null;
-    }
     selectedFolder = f.id;
     editingFolderId = null;
     document.getElementById("nfName").value = "";
@@ -4317,7 +4334,6 @@ document.getElementById("nfCreate").addEventListener("click", async ()=>{
     document.getElementById("nfPhoto").value = "";
     selectedNfColor = NF_COLORS[0].v;
     renderNfColorPicker();
-    document.getElementById("nfIntroToggle").classList.remove("on");
     document.getElementById("nfCreate").textContent = "Создать";
     document.getElementById("newFolderForm").style.display = "none";
     renderFolderPicker();
@@ -4335,7 +4351,6 @@ function startEditFolder(f){
   document.getElementById("nfDesc").value = f.description || "";
   selectedNfColor = f.color || NF_COLORS[0].v;
   renderNfColorPicker();
-  document.getElementById("nfIntroToggle").classList.toggle("on", introFolderId === f.id);
   document.getElementById("nfCreate").textContent = "Сохранить изменения";
   document.getElementById("newFolderForm").scrollIntoView({block:"center", behavior:"smooth"});
 }
@@ -4346,7 +4361,6 @@ function cancelEditFolder(){
   document.getElementById("nfPhoto").value = "";
   selectedNfColor = NF_COLORS[0].v;
   renderNfColorPicker();
-  document.getElementById("nfIntroToggle").classList.remove("on");
   document.getElementById("nfCreate").textContent = "Создать";
   document.getElementById("newFolderForm").style.display = "none";
   renderFolderPicker();
@@ -4485,7 +4499,7 @@ document.getElementById("toggleMaterialForm").addEventListener("click", ()=>{
   if(open && editingFolderId) cancelEditFolder();
   openMaterialForm(!open);
 });
-loadFolders().then(()=>{ loadMaterials(); loadIntroFolderId(); });
+loadFolders().then(loadMaterials);
 
 document.getElementById("evtHintDot").addEventListener("click", ()=>{
   document.getElementById("evtHintDot").classList.toggle("on");
@@ -4830,9 +4844,11 @@ let editingMevId = null;
 function startEditMev(ev){
   editingMevId = ev.id;
   document.getElementById("mevTitle").value = ev.title || "";
-  document.getElementById("mevDate").value = ev.date_place || "";
+  document.getElementById("mevDate").value = ev.date || "";
+  document.getElementById("mevPlace").value = ev.place || "";
   document.getElementById("mevDesc").value = ev.description || "";
   document.getElementById("mevLink").value = (ev.link && ev.link!=="#") ? ev.link : "";
+  document.getElementById("mevPhoto").value = "";
   selectedMevColor = ev.color || MEV_COLORS[0].v;
   renderMevColorPicker();
   document.getElementById("saveEventMila").textContent = "Сохранить изменения";
@@ -4843,8 +4859,10 @@ function cancelEditMev(){
   editingMevId = null;
   document.getElementById("mevTitle").value = "";
   document.getElementById("mevDate").value = "";
+  document.getElementById("mevPlace").value = "";
   document.getElementById("mevDesc").value = "";
   document.getElementById("mevLink").value = "";
+  document.getElementById("mevPhoto").value = "";
   selectedMevColor = MEV_COLORS[0].v;
   renderMevColorPicker();
   document.getElementById("saveEventMila").textContent = "Добавить мероприятие";
@@ -4857,11 +4875,14 @@ async function loadMilaEvents(){
 loadMilaEvents();
 document.getElementById("saveEventMila").addEventListener("click", async ()=>{
   const title = document.getElementById("mevTitle").value.trim();
-  const datePlace = document.getElementById("mevDate").value.trim();
+  const dateVal = document.getElementById("mevDate").value.trim();
   if(!title){ document.getElementById("mevTitle").focus(); return; }
-  if(!datePlace){ document.getElementById("mevDate").focus(); return; }
+  if(!dateVal){ document.getElementById("mevDate").focus(); return; }
+  const photoFile = document.getElementById("mevPhoto").files[0];
+  const photo = photoFile ? await readFileAsDataUrl(photoFile) : null;
   const body = JSON.stringify({
-    title, date_place: datePlace, description: document.getElementById("mevDesc").value.trim(),
+    title, date: dateVal, place: document.getElementById("mevPlace").value.trim(),
+    description: document.getElementById("mevDesc").value.trim(), photo,
     link: document.getElementById("mevLink").value.trim() || "#", color: selectedMevColor,
   });
   try{
@@ -4874,8 +4895,10 @@ document.getElementById("saveEventMila").addEventListener("click", async ()=>{
       showToast("Мероприятие «"+title+"» добавлено ✓");
       document.getElementById("mevTitle").value = "";
       document.getElementById("mevDate").value = "";
+      document.getElementById("mevPlace").value = "";
       document.getElementById("mevDesc").value = "";
       document.getElementById("mevLink").value = "";
+      document.getElementById("mevPhoto").value = "";
     }
     await loadMilaEvents();
   }catch(e){}
@@ -5448,7 +5471,7 @@ async def api_cabinet_bootstrap(request):
         "marathon_start": marathon_start, "mastermind": mastermind,
         "authors": materials_data["authors"], "materials": materials_data["materials"], "events": events,
         "mila_events": mila_events,
-        "intro_folder_id": await get_setting("intro_folder_id"),
+        "intro_folder_id": INTRO_FOLDER_ID,
     })
 
 
@@ -5806,6 +5829,7 @@ def _calendar_json(r) -> dict:
 
 def _mila_event_json(r) -> dict:
     return {"id": r["id"], "title": r["title"], "date_place": r["date_place"],
+            "date": r["date_label"] or "", "place": r["place_label"] or "", "photo": r["photo_url"],
             "link": r["link"], "color": r["color"], "description": r["description"] or ""}
 
 
@@ -6134,12 +6158,16 @@ async def api_mila_events_add(request):
         return web.json_response({"error": "unauthorized"}, status=401)
     data = await request.json()
     title = str(data.get("title", "")).strip()
-    date_place = str(data.get("date_place", "")).strip()
-    if not title or not date_place:
-        return web.json_response({"error": "title and date_place required"}, status=400)
+    date_label = str(data.get("date", "")).strip()
+    place_label = str(data.get("place", "")).strip()
+    if not title or not date_label:
+        return web.json_response({"error": "title and date required"}, status=400)
+    date_place = date_label + (", " + place_label if place_label else "")
     row_id = await DB_POOL.fetchval(
-        "INSERT INTO mila_events (title, date_place, link, color, description, created) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id",
-        title, date_place, str(data.get("link", "")).strip(), str(data.get("color", "lav")).strip(),
+        "INSERT INTO mila_events (title, date_place, date_label, place_label, photo_url, link, color, description, created) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",
+        title, date_place, date_label, place_label, data.get("photo") or None,
+        str(data.get("link", "")).strip(), str(data.get("color", "lav")).strip(),
         str(data.get("description", "")).strip(), time.time(),
     )
     row = await DB_POOL.fetchrow("SELECT * FROM mila_events WHERE id=$1", row_id)
@@ -6152,12 +6180,16 @@ async def api_mila_events_update(request):
     ev_id = int(request.match_info["id"])
     data = await request.json()
     title = str(data.get("title", "")).strip()
-    date_place = str(data.get("date_place", "")).strip()
-    if not title or not date_place:
-        return web.json_response({"error": "title and date_place required"}, status=400)
+    date_label = str(data.get("date", "")).strip()
+    place_label = str(data.get("place", "")).strip()
+    if not title or not date_label:
+        return web.json_response({"error": "title and date required"}, status=400)
+    date_place = date_label + (", " + place_label if place_label else "")
     await DB_POOL.execute(
-        "UPDATE mila_events SET title=$2, date_place=$3, link=$4, color=$5, description=$6 WHERE id=$1",
-        ev_id, title, date_place, str(data.get("link", "")).strip(), str(data.get("color", "lav")).strip(),
+        "UPDATE mila_events SET title=$2, date_place=$3, date_label=$4, place_label=$5, "
+        "photo_url=COALESCE($6, photo_url), link=$7, color=$8, description=$9 WHERE id=$1",
+        ev_id, title, date_place, date_label, place_label, data.get("photo") or None,
+        str(data.get("link", "")).strip(), str(data.get("color", "lav")).strip(),
         str(data.get("description", "")).strip(),
     )
     row = await DB_POOL.fetchrow("SELECT * FROM mila_events WHERE id=$1", ev_id)
@@ -6230,20 +6262,6 @@ async def api_settings_marathon_start(request):
             return web.json_response({"error": "bad_date"}, status=400)
         await set_setting("marathon_start", raw)
     return web.json_response({"marathon_start": await get_marathon_start()})
-
-
-async def api_settings_intro_folder(request):
-    """GET – id папки для карточки "Перед началом марафона"; POST {"folder_id": "..."} – задать/снять (null/"")."""
-    if not admin_token_ok(request):
-        return web.json_response({"error": "unauthorized"}, status=401)
-    if request.method == "POST":
-        data = await request.json()
-        raw = data.get("folder_id")
-        if raw in (None, ""):
-            await DB_POOL.execute("DELETE FROM settings WHERE key='intro_folder_id'")
-        else:
-            await set_setting("intro_folder_id", str(raw))
-    return web.json_response({"folder_id": await get_setting("intro_folder_id")})
 
 
 async def cabinet(request):
@@ -6339,8 +6357,6 @@ def make_app():
         web.post("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
         web.get("/api/admin/settings/marathon-start", api_settings_marathon_start),
         web.post("/api/admin/settings/marathon-start", api_settings_marathon_start),
-        web.get("/api/admin/settings/intro-folder", api_settings_intro_folder),
-        web.post("/api/admin/settings/intro-folder", api_settings_intro_folder),
         web.get("/api/admin/folders", api_folders_list),
         web.post("/api/admin/folders", api_folders_add),
         web.delete("/api/admin/folders/{id}", api_folders_delete),
