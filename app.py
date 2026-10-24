@@ -3387,6 +3387,8 @@ document.getElementById("folderChips").addEventListener("click", e=>{
 });
 document.getElementById("matFeatureBtn").addEventListener("click", ()=>{
   playPopSound();
+  const key = STATE.intro_folder_id;
+  if(key && AUTHORS[key]){ openMaterial(key); return; }
   openOverlay("Перед началом марафона");
   document.getElementById("overlayBody").innerHTML = `<p class="note" style="margin:0">Текст скоро добавим.</p>`;
 });
@@ -3764,6 +3766,16 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
   </div>
 
   <div id="t-content">
+    <div class="card">
+      <h2>Карточка «Перед началом марафона»</h2>
+      <div class="hint">выбери папку материалов — её содержимое откроется по клику на эту карточку в кабинете</div>
+      <div class="field">
+        <label>Папка</label>
+        <select id="introFolderSelect"><option value="">— не выбрано (заглушка «скоро добавим») —</option></select>
+      </div>
+      <button id="introFolderSave">Сохранить</button>
+      <div class="hint" id="introFolderStatus"></div>
+    </div>
     <div class="card">
       <h2>Материалы</h2>
       <div id="materialsList"></div>
@@ -4460,7 +4472,21 @@ document.getElementById("toggleMaterialForm").addEventListener("click", ()=>{
   if(open && editingFolderId) cancelEditFolder();
   openMaterialForm(!open);
 });
-loadFolders().then(loadMaterials);
+async function loadIntroFolder(){
+  const sel = document.getElementById("introFolderSelect");
+  sel.innerHTML = `<option value="">— не выбрано (заглушка «скоро добавим») —</option>`
+    + FOLDERS.map(f=>`<option value="${f.id}">${f.name}</option>`).join("");
+  const data = await apiFetch("/api/admin/settings/intro-folder");
+  sel.value = data.folder_id || "";
+}
+document.getElementById("introFolderSave").addEventListener("click", async ()=>{
+  const statusEl = document.getElementById("introFolderStatus");
+  statusEl.textContent = "сохраняю…";
+  const folder_id = document.getElementById("introFolderSelect").value;
+  const data = await apiFetch("/api/admin/settings/intro-folder", {method:"POST", body: JSON.stringify({folder_id})});
+  statusEl.textContent = data.folder_id ? "сохранено ✓" : "заглушка включена (папка снята)";
+});
+loadFolders().then(()=>{ loadMaterials(); loadIntroFolder(); });
 
 document.getElementById("evtHintDot").addEventListener("click", ()=>{
   document.getElementById("evtHintDot").classList.toggle("on");
@@ -5423,6 +5449,7 @@ async def api_cabinet_bootstrap(request):
         "marathon_start": marathon_start, "mastermind": mastermind,
         "authors": materials_data["authors"], "materials": materials_data["materials"], "events": events,
         "mila_events": mila_events,
+        "intro_folder_id": await get_setting("intro_folder_id"),
     })
 
 
@@ -6206,6 +6233,20 @@ async def api_settings_marathon_start(request):
     return web.json_response({"marathon_start": await get_marathon_start()})
 
 
+async def api_settings_intro_folder(request):
+    """GET – id папки для карточки "Перед началом марафона"; POST {"folder_id": "..."} – задать/снять (null/"")."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    if request.method == "POST":
+        data = await request.json()
+        raw = data.get("folder_id")
+        if raw in (None, ""):
+            await DB_POOL.execute("DELETE FROM settings WHERE key='intro_folder_id'")
+        else:
+            await set_setting("intro_folder_id", str(raw))
+    return web.json_response({"folder_id": await get_setting("intro_folder_id")})
+
+
 async def cabinet(request):
     return html_response(CABINET_APP_HTML)
 
@@ -6299,6 +6340,8 @@ def make_app():
         web.post("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
         web.get("/api/admin/settings/marathon-start", api_settings_marathon_start),
         web.post("/api/admin/settings/marathon-start", api_settings_marathon_start),
+        web.get("/api/admin/settings/intro-folder", api_settings_intro_folder),
+        web.post("/api/admin/settings/intro-folder", api_settings_intro_folder),
         web.get("/api/admin/folders", api_folders_list),
         web.post("/api/admin/folders", api_folders_add),
         web.delete("/api/admin/folders/{id}", api_folders_delete),
