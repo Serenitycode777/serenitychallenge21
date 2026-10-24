@@ -1097,7 +1097,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mitem-play svg{width:12px;height:12px;color:var(--ink);margin-left:1px}
 .mitem-doc svg{width:20px;height:20px;color:#fff}
 .mitem-body{flex:1;min-width:0}
-.mitem-title{font-size:14px;font-weight:600;line-height:1.3}
+.mitem-title{font-size:14px;font-weight:600;line-height:1.3;padding-right:26px}
 .mitem-author{font-size:12px;color:var(--ink-soft);margin-top:2px}
 .mitem-meta{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-soft);margin-top:4px}
 .mitem-meta svg{width:12px;height:12px;flex-shrink:0}
