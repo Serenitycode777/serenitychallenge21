@@ -2135,7 +2135,7 @@ function buildMaterialsState(){
   document.getElementById("folderChips").innerHTML =
     `<button class="chip folder active" data-f="all">все папки</button>` +
     `<button class="chip folder" data-f="__fav__">${BOOKMARK_SVG_FILLED} Избранное</button>` +
-    Object.entries(AUTHORS).filter(([key])=>MATERIALS.some(m=>m.author===key))
+    Object.entries(AUTHORS).filter(([key])=>key!==STATE.intro_folder_id && MATERIALS.some(m=>m.author===key))
       .map(([key,a])=>`<button class="chip folder" data-f="${key}">${a.name}</button>`).join("");
 }
 function renderThemeFilterOptions(){
@@ -3208,6 +3208,7 @@ function renderMaterials(){
   document.querySelectorAll("#folderChips .chip").forEach(c=>c.classList.toggle("active", c.dataset.f===activeFolder));
 
   const items = MATERIALS.filter(m=>
+    (activeFolder!=="all"||m.author!==STATE.intro_folder_id) &&
     (activeTheme==="all"||(m.tags||[]).includes(activeTheme)) &&
     (activeFolder==="all"||activeFolder==="__fav__"||m.author===activeFolder) &&
     (activeFolder!=="__fav__"||isFavorite(m.id)) &&
@@ -3397,7 +3398,7 @@ searchBox.addEventListener("input",()=>{
   query = searchBox.value.trim().toLowerCase();
   matVisibleCount = MAT_PAGE_SIZE;
   if(!query){ searchDrop.hidden=true; renderMaterials(); return; }
-  const results = MATERIALS.filter(matchesQuery).slice(0,6);
+  const results = MATERIALS.filter(m=>m.author!==STATE.intro_folder_id && matchesQuery(m)).slice(0,6);
   searchDrop.innerHTML = results.length ? results.map(m=>
     `<div class="sr-item" data-a="${m.author}"><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div><div>${m.title}<div class="mat-tags">${(AUTHORS[m.author]||{}).name||''}</div></div></div>`
   ).join("") : `<div class="sr-item">Ничего не нашлось</div>`;
