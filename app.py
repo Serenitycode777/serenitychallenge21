@@ -2864,11 +2864,11 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   const HEAD='"Cormorant Garamond"', SYS='"Montserrat"';
   try{
     await Promise.all([
-      document.fonts.load('600 112px '+HEAD), document.fonts.load('600 42px '+HEAD),
+      document.fonts.load('600 112px '+HEAD), document.fonts.load('600 34px '+HEAD),
       document.fonts.load('600 64px '+HEAD), document.fonts.load('italic 600 24px '+HEAD),
       document.fonts.load('600 18px '+SYS), document.fonts.load('600 19px '+SYS),
       document.fonts.load('600 22px '+SYS), document.fonts.load('500 20px '+SYS),
-      document.fonts.load('600 14px '+SYS)
+      document.fonts.load('600 12px '+SYS)
     ]);
   }catch(e){}
   const W=640;
@@ -2892,8 +2892,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   const habitWrapW = cardWidth-28 - panelPadX*2 - iconSize - iconGap;
   const habitLines=HABITS.map(h=>wrapLines(measure,h,habitWrapW));
 
-  measure.font="italic 600 24px "+HEAD+", Georgia, serif";
-  const quoteLines=wrapLines(measure,"Маленькие шаги каждый день — путь к большим переменам",520);
+  const quoteLines=["Маленькие шаги каждый день —","путь к большим переменам"];
 
   const ribbonTop=cardTop+40, ribbonH=38;
   const eyebrowY=ribbonTop+ribbonH+34;
@@ -2964,20 +2963,20 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.font="600 22px "+SYS+", sans-serif";
   ctx.fillText("привычек сегодня", contentX, subtitleBaseline);
 
-  const badgeR=64, badgeCx=cardRight-54, badgeCy=cardTop+14+badgeR;
+  const badgeR=52, badgeCx=cardRight-16-badgeR, badgeCy=cardTop+16+badgeR;
   ctx.save();
-  ctx.shadowColor="rgba(0,0,0,.35)"; ctx.shadowBlur=30; ctx.shadowOffsetY=14;
+  ctx.shadowColor="rgba(0,0,0,.35)"; ctx.shadowBlur=26; ctx.shadowOffsetY=12;
   ctx.fillStyle="#fff";
   ctx.beginPath(); ctx.arc(badgeCx,badgeCy,badgeR,0,Math.PI*2); ctx.fill();
   ctx.restore();
   ctx.strokeStyle="rgba(255,255,255,.5)"; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.arc(badgeCx,badgeCy,badgeR+2,0,Math.PI*2); ctx.stroke();
-  ctx.strokeStyle="rgba(255,255,255,.12)"; ctx.lineWidth=9;
-  ctx.beginPath(); ctx.arc(badgeCx,badgeCy,badgeR+8,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle="rgba(255,255,255,.12)"; ctx.lineWidth=7;
+  ctx.beginPath(); ctx.arc(badgeCx,badgeCy,badgeR+6,0,Math.PI*2); ctx.stroke();
 
   ctx.save();
   ctx.fillStyle="#D9BD8A";
-  const starCx=badgeCx, starCy=badgeCy-26, starR=11;
+  const starCx=badgeCx, starCy=badgeCy-21, starR=9;
   ctx.beginPath();
   for(let i=0;i<5;i++){
     const a=-Math.PI/2+i*(Math.PI*2/5), a2=a+Math.PI/5;
@@ -2989,11 +2988,11 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.restore();
 
   ctx.fillStyle="#3F6660"; ctx.textAlign="center";
-  ctx.font="600 42px "+HEAD+", Georgia, serif";
-  ctx.fillText(String(TODAY), badgeCx, badgeCy+18);
+  ctx.font="600 34px "+HEAD+", Georgia, serif";
+  ctx.fillText(String(TODAY), badgeCx, badgeCy+15);
   ctx.fillStyle="#6B6475";
-  ctx.font="600 14px "+SYS+", sans-serif";
-  ctx.fillText("ДЕНЬ", badgeCx, badgeCy+34);
+  ctx.font="600 12px "+SYS+", sans-serif";
+  ctx.fillText("ДЕНЬ", badgeCx, badgeCy+29);
 
   ctx.save();
   ctx.shadowColor="rgba(51,46,61,.32)"; ctx.shadowBlur=40; ctx.shadowOffsetY=18;
