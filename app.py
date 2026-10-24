@@ -683,7 +683,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mm-cardrow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
 .mm-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 .mm-card-top{display:flex;align-items:center;gap:10px}
-.mm-card-icon{width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--lav)}
+.mm-card-icon{width:34px;height:34px;border-radius:50%;background:rgba(170,157,184,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#6E4FA0}
 .mm-card-icon svg{width:17px;height:17px}
 .mm-card-title{font-family:var(--font-head);font-weight:600;font-size:14.5px;color:var(--ink)}
 .mm-card-status{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:4px 10px}
