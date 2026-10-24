@@ -3209,10 +3209,7 @@ function renderMaterialEmbed(type, url){
     inner = `<audio controls style="width:100%;display:block" src="${url}"></audio>`;
   } else {
     isFrame = true;
-    const frameUrl = type === "pdf"
-      ? "https://docs.google.com/viewer?embedded=true&url=" + encodeURIComponent(url)
-      : url;
-    inner = `<iframe src="${frameUrl}" title="материал"></iframe>`;
+    inner = `<iframe src="${url}" title="материал"></iframe>`;
   }
   box.innerHTML = inner + `<a href="${url}" target="_blank" rel="noopener" class="mat-embed-fallback">открыть в отдельной вкладке</a>`;
   box.hidden = false;
