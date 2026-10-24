@@ -985,7 +985,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   box-shadow:0 30px 70px -24px rgba(0,0,0,.45)}
 .overlay.open .panel{transform:scale(1)}
 .panel-head2{position:relative;background:linear-gradient(135deg,var(--lav),var(--sage) 130%);padding:20px 50px 18px 22px;color:#fff;flex-shrink:0}
-.panel-head2.has-back{padding-left:50px}
+.panel-head2.has-back{padding-left:64px}
 .panel-head2.has-back .close-x{display:none}
 .panel-head2 .eyebrow2{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin:0 0 4px}
 .panel-head2 h2{font-size:19px;color:#fff}
