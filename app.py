@@ -684,7 +684,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mm-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 .mm-card-top{display:flex;align-items:center;gap:10px}
 .mm-card-icon{width:34px;height:34px;border-radius:50%;background:rgba(170,157,184,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#6E4FA0}
-.mm-card-icon svg{width:17px;height:17px}
+.mm-card-icon svg{width:21px;height:21px}
 .mm-card-title{font-family:var(--font-head);font-weight:600;font-size:14.5px;color:var(--ink)}
 .mm-card-status{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:4px 10px}
 .mm-card-status svg{width:11px;height:11px;flex-shrink:0}
@@ -1793,7 +1793,7 @@ function renderMmCards(){
     const s = mmStatus(m);
     return `<div class="heatcard mm-card">
       <div class="mm-card-top">
-        <div class="mm-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><circle cx="16.5" cy="8.5" r="2.6" opacity=".65"/><path d="M14.8 19c.3-2.2 1.9-4 3.9-4.6" opacity=".65"/></svg></div>
+        <div class="mm-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 4.6H5.2a1.7 1.7 0 0 0-1.7 1.7v10.2h16.2v-6.4"/><path d="M5.7 6.8v7.6h11.8v-4"/><path d="M1.8 16.5h19.6v.9a1.6 1.6 0 0 1-1.6 1.6H3.4a1.6 1.6 0 0 1-1.6-1.6z"/><path d="M10 16.6v.6h3.2v-.6"/><rect x="7.5" y="8.8" width="4.8" height="3.7" rx=".8"/><path d="m12.3 10 1.9-1.1v3.5l-1.9-1.1"/><circle cx="18.8" cy="5.2" r="3.7"/><g stroke-width="1.15" transform="rotate(-45 18.8 5.2)"><rect x="16.5" y="4.3" width="2.8" height="1.8" rx=".9"/><rect x="18.3" y="4.3" width="2.8" height="1.8" rx=".9"/></g></svg></div>
         <div class="mm-card-title">Мастермайнд ${m.mmId}</div>
       </div>
       <span class="mm-card-status ${s.cls}">${s.icon}${s.text}</span>
