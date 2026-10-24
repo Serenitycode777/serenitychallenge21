@@ -1186,45 +1186,49 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .past-name{font-size:13.5px;color:var(--ink)}
 .past-sub{font-size:11px;color:var(--ink-soft)}
 
-.authscreen{max-width:380px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
+.authscreen{max-width:400px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
   align-items:center;justify-content:center;padding:32px 20px;box-sizing:border-box}
 .authscreen[hidden]{display:none}
-.authscreen .mark{width:48px;height:48px;object-fit:contain;margin-bottom:14px}
-.authscreen h1{font-size:19px;margin-bottom:4px;text-align:center}
-.authscreen .sub{font-size:12.5px;color:var(--ink-soft);text-align:center;margin-bottom:22px;line-height:1.5}
-.authcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;
-  box-shadow:var(--shadow);width:100%}
-.authcard .field{margin-bottom:12px}
-.authcard .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
-.authcard .field input{width:100%;font-family:var(--sys);font-size:14px;color:var(--ink);background:var(--bg);
-  border:1px solid var(--line);border-radius:12px;padding:11px 40px 11px 13px}
+.authscreen .mark{width:140px;object-fit:contain;margin-bottom:16px}
+.authscreen h1{font-family:var(--font-head);font-weight:600;font-size:32px;color:var(--sage-ink);margin:0 0 8px;text-align:center}
+.authscreen .sub{font-size:14.5px;color:var(--lav-ink);text-align:center;margin-bottom:24px;line-height:1.5}
+.authcard{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:28px;
+  box-shadow:0 20px 44px -22px rgba(51,46,61,.22);width:100%}
+.authcard .field{margin-bottom:18px}
+.authcard .field label{display:block;font-size:15px;font-weight:500;color:var(--ink);margin-bottom:8px}
+.authcard .field input{width:100%;font-family:var(--sys);font-size:14.5px;color:var(--ink);background:var(--surface-2);
+  border:1px solid var(--line);border-radius:14px;padding:15px 44px 15px 17px}
+.authcard .field input::placeholder{color:var(--ink-soft)}
 .pwd-wrap{position:relative}
-.pwd-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;
-  font-size:15px;cursor:pointer;padding:6px;color:var(--ink-soft);line-height:1;font-family:var(--sys)}
+.pwd-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:8px;color:var(--sage-ink);line-height:1}
+.pwd-eye svg{width:20px;height:20px}
 .auth-err{font-size:12px;color:#a8443a;margin:0 0 10px;line-height:1.4}
 .auth-err[hidden]{display:none}
-.auth-submit{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:13px;
-  font-weight:600;font-size:13.5px;cursor:pointer;font-family:var(--sys);margin-top:4px}
+#authForgotWrap{text-align:right;margin:-8px 0 20px!important}
+#authForgotWrap button{text-decoration:underline}
+.auth-submit{width:100%;border:none;background:linear-gradient(90deg,var(--sage),var(--lav));color:#fff;border-radius:999px;padding:17px;
+  font-weight:600;font-size:16px;cursor:pointer;font-family:var(--sys);margin-top:4px}
 .auth-submit:disabled{opacity:.6;cursor:default}
-.auth-switch{text-align:center;font-size:12.5px;color:var(--ink-soft);margin-top:16px}
-.auth-switch button{background:none;border:none;color:var(--lav-ink);font-weight:600;cursor:pointer;font-family:var(--sys);font-size:12.5px;padding:0}
+.auth-switch{text-align:center;font-size:14px;color:var(--ink);margin-top:20px}
+.auth-switch button{background:none;border:none;color:var(--lav-ink);font-weight:600;cursor:pointer;font-family:var(--sys);font-size:14px;padding:0;text-decoration:underline}
 .auth-loading{text-align:center;color:var(--ink-soft);font-size:13px;padding:40px 0}
 </style>
 
 <div class="authscreen" id="authScreen" hidden>
   <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
   <h1 id="authTitle">Вход в кабинет</h1>
-  <p class="sub" id="authSub">Марафон «Начни сегодня» · Serenity Moon</p>
+  <p class="sub" id="authSub">Марафон «Начни сегодня!» · Serenity Moon</p>
   <form class="authcard" id="authForm">
     <p class="auth-err" id="authErr" hidden></p>
-    <div class="field"><label>email</label><input type="email" id="authEmail" name="email" autocomplete="email"></div>
-    <div class="field"><label>пароль</label><div class="pwd-wrap">
-      <input type="password" id="authPassword" name="password" autocomplete="current-password">
-      <button type="button" class="pwd-eye" id="authPwdEye" aria-label="показать пароль">👁</button>
+    <div class="field"><label>Email</label><input type="email" id="authEmail" name="email" autocomplete="email" placeholder="Введите email"></div>
+    <div class="field"><label>Пароль</label><div class="pwd-wrap">
+      <input type="password" id="authPassword" name="password" autocomplete="current-password" placeholder="Введите пароль">
+      <button type="button" class="pwd-eye" id="authPwdEye" aria-label="показать пароль"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div></div>
-    <div class="field" id="authPassword2Field" hidden><label>повтори пароль</label><div class="pwd-wrap">
-      <input type="password" id="authPassword2" name="password2" autocomplete="new-password">
-      <button type="button" class="pwd-eye" id="authPwdEye2" aria-label="показать пароль">👁</button>
+    <div class="field" id="authPassword2Field" hidden><label>Повтори пароль</label><div class="pwd-wrap">
+      <input type="password" id="authPassword2" name="password2" autocomplete="new-password" placeholder="Повтори пароль">
+      <button type="button" class="pwd-eye" id="authPwdEye2" aria-label="показать пароль"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div></div>
     <p class="auth-switch" id="authForgotWrap" style="margin:-2px 0 4px"><button id="authForgotBtn" type="button">Забыла пароль?</button></p>
     <button class="auth-submit" id="authSubmit" type="submit">Войти</button>
@@ -1238,7 +1242,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   <p class="sub">Пришлём ссылку на email, по ней можно будет задать новый пароль</p>
   <form class="authcard" id="recoverForm">
     <p class="auth-err" id="recoverErr" hidden></p>
-    <div class="field"><label>email</label><input type="email" id="recoverEmail" name="email" autocomplete="email"></div>
+    <div class="field"><label>Email</label><input type="email" id="recoverEmail" name="email" autocomplete="email" placeholder="Введите email"></div>
     <button class="auth-submit" id="recoverSubmit" type="submit">Отправить ссылку</button>
   </form>
   <p class="auth-switch"><button id="recoverBack" type="button">← назад ко входу</button></p>
@@ -1250,13 +1254,13 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   <p class="sub">Придумай новый пароль для входа в кабинет</p>
   <form class="authcard" id="newPasswordForm">
     <p class="auth-err" id="newPasswordErr" hidden></p>
-    <div class="field"><label>новый пароль</label><div class="pwd-wrap">
-      <input type="password" id="newPassword1" name="password" autocomplete="new-password">
-      <button type="button" class="pwd-eye" id="newPwdEye1" aria-label="показать пароль">👁</button>
+    <div class="field"><label>Новый пароль</label><div class="pwd-wrap">
+      <input type="password" id="newPassword1" name="password" autocomplete="new-password" placeholder="Введите пароль">
+      <button type="button" class="pwd-eye" id="newPwdEye1" aria-label="показать пароль"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div></div>
-    <div class="field"><label>повтори пароль</label><div class="pwd-wrap">
-      <input type="password" id="newPassword2" name="password2" autocomplete="new-password">
-      <button type="button" class="pwd-eye" id="newPwdEye2" aria-label="показать пароль">👁</button>
+    <div class="field"><label>Повтори пароль</label><div class="pwd-wrap">
+      <input type="password" id="newPassword2" name="password2" autocomplete="new-password" placeholder="Повтори пароль">
+      <button type="button" class="pwd-eye" id="newPwdEye2" aria-label="показать пароль"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div></div>
     <button class="auth-submit" id="newPasswordSubmit" type="submit">Сохранить и войти</button>
   </form>
