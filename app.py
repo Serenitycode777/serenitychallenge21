@@ -1551,7 +1551,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 <div class="overlay" id="overlay"><div class="panel">
   <div class="panel-head2">
     <button class="back-arrow" id="overlayBackBtn" type="button" aria-label="назад" hidden>&#8592;</button>
-    <button class="close-x" id="closePanel">&#10005;</button>
+    <button class="close-x" id="closePanel" type="button">&#10005;</button>
     <p class="eyebrow2" id="overlayEyebrow" hidden></p>
     <h2 id="overlayTitle"></h2>
   </div>
@@ -1559,12 +1559,12 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 </div></div>
 
 <div class="overlay" id="infoOverlay"><div class="panel info-panel">
-  <button class="close-x info-close" id="closeInfoPanel">&#10005;</button>
+  <button class="close-x info-close" id="closeInfoPanel" type="button">&#10005;</button>
   <div id="infoOverlayBody"></div>
 </div></div>
 
 <div class="overlay" id="shareOverlay"><div class="panel info-panel">
-  <button class="close-x info-close" id="closeShareOverlay">&#10005;</button>
+  <button class="close-x info-close" id="closeShareOverlay" type="button">&#10005;</button>
   <div id="shareOverlayBody"></div>
 </div></div>
 
@@ -1584,7 +1584,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   <div class="star-big">⭐</div>
   <h2 id="starTitle">Поздравляю, ты прошла неделю марафона – и за это получаешь звезду</h2>
   <div class="star-progress" id="starProgress"></div>
-  <button id="starClose">Забрать звезду</button>
+  <button id="starClose" type="button">Забрать звезду</button>
 </div></div>
 
 <div class="hm-backdrop" id="habitModalBackdrop">
@@ -2199,8 +2199,8 @@ function checkStarCelebration(){
   try{ localStorage.setItem(STAR_SHOWN_KEY, JSON.stringify(shown)); }catch(e){}
 }
 document.getElementById("starClose").addEventListener("click", ()=>{
-  playPopSound();
   document.getElementById("starOverlay").classList.remove("open");
+  playPopSound();
 });
 
 async function bootCabinet(){
@@ -2470,7 +2470,7 @@ function openDay(d){
   }
   draw();
 }
-document.getElementById("closePanel").onclick=()=>{ playPopSound(); if(onboarding) onboarding = false; document.getElementById("overlay").classList.remove("open"); };
+document.getElementById("closePanel").onclick=()=>{ document.getElementById("overlay").classList.remove("open"); if(onboarding) onboarding = false; playPopSound(); };
 document.getElementById("overlay").addEventListener("click",e=>{if(e.target.id==="overlay"){ if(onboarding) onboarding = false; e.currentTarget.classList.remove("open"); }});
 
 /* ---------- сегодня ---------- */
@@ -2578,7 +2578,7 @@ document.getElementById("closeDayBtn").addEventListener("click", ()=>{
   saveTodayLog(true);
   renderProgress();
 });
-document.getElementById("fdClose").addEventListener("click",()=>{ playPopSound(); document.getElementById("fdOverlay").classList.remove("open"); });
+document.getElementById("fdClose").addEventListener("click",()=>{ document.getElementById("fdOverlay").classList.remove("open"); playPopSound(); });
 document.getElementById("fdOverlay").addEventListener("click",e=>{if(e.target.id==="fdOverlay")e.currentTarget.classList.remove("open");});
 
 /* ---------- выбор привычек ---------- */
@@ -2618,7 +2618,7 @@ function showChipDetail(name){
   }
   document.getElementById("infoOverlay").classList.add("open");
 }
-document.getElementById("closeInfoPanel").addEventListener("click", ()=>{ playPopSound(); document.getElementById("infoOverlay").classList.remove("open"); });
+document.getElementById("closeInfoPanel").addEventListener("click", ()=>{ document.getElementById("infoOverlay").classList.remove("open"); playPopSound(); });
 document.getElementById("infoOverlay").addEventListener("click",e=>{if(e.target.id==="infoOverlay")e.currentTarget.classList.remove("open");});
 function renderPickTotal(){
   const el = document.getElementById("pickTotal");
@@ -2802,7 +2802,7 @@ document.getElementById("habitMinutesInput").addEventListener("input", e=>{
   hmState.minutes = Math.max(0, parseInt(e.target.value, 10) || 0);
 });
 document.getElementById("addHabitBtn").addEventListener("click", openHabitPicker);
-document.getElementById("habitModalClose").addEventListener("click", ()=>{ playPopSound(); closeHabitModal(); });
+document.getElementById("habitModalClose").addEventListener("click", ()=>{ closeHabitModal(); playPopSound(); });
 document.getElementById("habitModalBackdrop").addEventListener("click", e=>{
   if(e.target.id === "habitModalBackdrop") closeHabitModal();
 });
@@ -2951,7 +2951,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
     </div>`;
   document.getElementById("shareOverlay").classList.add("open");
 });
-document.getElementById("closeShareOverlay").addEventListener("click", ()=>{ playPopSound(); document.getElementById("shareOverlay").classList.remove("open"); });
+document.getElementById("closeShareOverlay").addEventListener("click", ()=>{ document.getElementById("shareOverlay").classList.remove("open"); playPopSound(); });
 document.getElementById("shareOverlay").addEventListener("click",e=>{if(e.target.id==="shareOverlay")e.currentTarget.classList.remove("open");});
 
 /* ---------- материалы ---------- */
@@ -3853,7 +3853,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 
 <div class="crm-modal-overlay" id="crmAddOverlay">
   <div class="crm-modal">
-    <div class="crm-modal-head"><h3>Добавить вручную</h3><button class="crm-modal-x" id="crmAddClose">✕</button></div>
+    <div class="crm-modal-head"><h3>Добавить вручную</h3><button class="crm-modal-x" id="crmAddClose" type="button">✕</button></div>
     <div class="crm-addbody">
       <label>Имя<input type="text" id="caName"></label>
       <label>Email <span style="color:#B3415A">*</span><input type="text" id="caEmail"></label>
