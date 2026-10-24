@@ -1793,7 +1793,7 @@ function renderMmCards(){
     const s = mmStatus(m);
     return `<div class="heatcard mm-card">
       <div class="mm-card-top">
-        <div class="mm-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 4.6H5.2a1.7 1.7 0 0 0-1.7 1.7v10.2h16.2v-6.4"/><path d="M5.7 6.8v7.6h11.8v-4"/><path d="M1.8 16.5h19.6v.9a1.6 1.6 0 0 1-1.6 1.6H3.4a1.6 1.6 0 0 1-1.6-1.6z"/><path d="M10 16.6v.6h3.2v-.6"/><rect x="7.5" y="8.8" width="4.8" height="3.7" rx=".8"/><path d="m12.3 10 1.9-1.1v3.5l-1.9-1.1"/><circle cx="18.8" cy="5.2" r="3.7"/><g stroke-width="1.15" transform="rotate(-45 18.8 5.2)"><rect x="16.5" y="4.3" width="2.8" height="1.8" rx=".9"/><rect x="18.3" y="4.3" width="2.8" height="1.8" rx=".9"/></g></svg></div>
+        <div class="mm-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 4.6H5.2a1.7 1.7 0 0 0-1.7 1.7v10.2h16.2v-6.4"/><path d="M5.7 6.8v7.6h11.8v-4"/><path d="M1.8 16.5h19.6v.9a1.6 1.6 0 0 1-1.6 1.6H3.4a1.6 1.6 0 0 1-1.6-1.6z"/><path d="M10 16.6v.6h3.2v-.6"/><rect x="7.5" y="8.8" width="4.8" height="3.7" rx=".8"/><path d="m12.3 10 1.9-1.1v3.5l-1.9-1.1"/><circle cx="18.8" cy="5.2" r="3.7"/><g stroke-width=".85" transform="rotate(-45 18.8 5.2)"><rect x="16.5" y="4.3" width="2.8" height="1.8" rx=".9"/><rect x="18.3" y="4.3" width="2.8" height="1.8" rx=".9"/></g></svg></div>
         <div class="mm-card-title">Мастермайнд ${m.mmId}</div>
       </div>
       <span class="mm-card-status ${s.cls}">${s.icon}${s.text}</span>
