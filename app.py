@@ -1080,7 +1080,9 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .fav-card-icon{width:48px;height:48px;border-radius:50%;background:rgba(170,157,184,.16);display:flex;align-items:center;
   justify-content:center;flex-shrink:0;color:var(--lav-ink)}
 .fav-card-icon svg{width:22px;height:22px}
-.fav-card-title{flex:1;min-width:0;font-family:var(--font-head);font-weight:600;font-size:15px;color:var(--ink);line-height:1.3}
+.fav-card .fav-card-icon{background:rgba(217,112,122,.13);color:#D9707A}
+.fav-card .fav-card-icon svg{fill:rgba(217,112,122,.22)}
+.fav-card-title{flex:1;min-width:0;font-family:var(--font-head);font-weight:600;font-size:18px;color:var(--ink);line-height:1.3;text-transform:uppercase;letter-spacing:.04em}
 .fav-card-btn{display:flex;align-items:center;gap:4px;flex-shrink:0;background:var(--surface-2);border:none;border-radius:999px;
   padding:9px 16px;font-family:var(--sys);font-size:13px;font-weight:600;color:var(--lav-ink)}
 .fav-card-btn svg{width:14px;height:14px}
