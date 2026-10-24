@@ -3296,9 +3296,9 @@ function renderMaterials(){
     }));
   });
   flat.querySelectorAll(".mitem-fav").forEach(btn=>{
-    btn.addEventListener("click", e=>{
+    btn.addEventListener("click", async e=>{
       e.stopPropagation();
-      if(isFavorite(btn.dataset.favid) && !confirm("Убрать материал из избранного?")) return;
+      if(isFavorite(btn.dataset.favid) && !(await askConfirm("Убрать материал из избранного?", "Убрать"))) return;
       playPopSound();
       toggleFavorite(btn.dataset.favid);
       renderMaterials();
@@ -3488,7 +3488,7 @@ document.getElementById("avatarFileInput").addEventListener("change", async (e)=
   }catch(err){}
 });
 async function removePhoto(){
-  if(!confirm("Удалить фото профиля?")) return;
+  if(!(await askConfirm("Удалить фото профиля?", "Удалить"))) return;
   const p = STATE.profile || {};
   try{
     await apiFetch("/api/cabinet/profile", {method:"PUT", body:{
@@ -3554,6 +3554,29 @@ document.getElementById("logoutBtn").addEventListener("click", ()=>{
 
 </script>
 
+<div id="askConfirmBox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(40,34,48,.45);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:22px 20px 18px;box-shadow:0 24px 60px -20px rgba(0,0,0,.45);text-align:center">
+    <div id="askConfirmMsg" style="font-size:15px;line-height:1.45;color:#3D3646;margin-bottom:18px"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button type="button" id="askConfirmNo" style="flex:1;padding:11px 14px;border-radius:999px;border:1px solid #E6DED6;background:#fff;color:#3D3646;font:inherit;font-weight:600;cursor:pointer">Отмена</button>
+      <button type="button" id="askConfirmYes" style="flex:1;padding:11px 14px;border-radius:999px;border:none;background:#B3415A;color:#fff;font:inherit;font-weight:600;cursor:pointer">Удалить</button>
+    </div>
+  </div>
+</div>
+<script>
+function askConfirm(msg, yesLabel){
+  return new Promise(resolve=>{
+    const box=document.getElementById("askConfirmBox");
+    document.getElementById("askConfirmMsg").textContent=msg;
+    const yes=document.getElementById("askConfirmYes"), no=document.getElementById("askConfirmNo");
+    yes.textContent=yesLabel||"Удалить";
+    box.style.display="flex";
+    const done=v=>{box.style.display="none";yes.onclick=no.onclick=box.onclick=null;resolve(v);};
+    yes.onclick=()=>done(true); no.onclick=()=>done(false);
+    box.onclick=e=>{ if(e.target===box) done(false); };
+  });
+}
+</script>
 </body></html>"""
 
 
