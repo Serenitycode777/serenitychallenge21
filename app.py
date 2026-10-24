@@ -999,8 +999,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evcard .place svg{width:13px;height:13px;flex-shrink:0}
 .evcard .desc{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 8px}
 .evcard a{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--lav-ink);text-decoration:none}
-.evcard .ev-hero{position:relative;height:auto;min-height:0;display:flex;align-items:center;gap:14px;padding:18px 16px}
-.evcard .ev-hero::before{content:"";position:absolute;inset:0;background:rgba(40,34,48,.16);pointer-events:none}
+.evcard .ev-hero{position:relative;height:auto;min-height:118px;display:flex;align-items:flex-end;gap:14px;padding:16px}
+.evcard .ev-hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(40,34,48,.38) 100%);pointer-events:none}
 .evcard .ev-hero>*{position:relative}
 .evcard .ev-hero .datebadge{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff}
 .evcard .ev-hero .datebadge .num,.evcard .ev-hero .datebadge .mon{color:#fff}
