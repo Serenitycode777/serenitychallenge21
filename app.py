@@ -880,35 +880,45 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .sr-item{display:flex;gap:10px;padding:11px 14px;cursor:pointer;font-size:13px;border-top:1px solid var(--line)}
 .sr-item:first-child{border-top:none}
 .sr-item:hover{background:var(--surface-2)}
-.filter-btn{display:flex;align-items:center;gap:6px;flex-shrink:0;background:var(--surface);border:1px solid var(--line);
-  border-radius:14px;padding:0 15px;height:46px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;
-  font-family:var(--sys);box-shadow:var(--shadow)}
-.filter-btn svg{width:15px;height:15px;color:var(--ink-soft)}
-.filter-btn.active{border-color:var(--sage);color:var(--sage-ink)}
-.filter-btn.active svg{color:var(--sage-ink)}
-.filter-badge{background:var(--lav);color:#fff;font-size:10px;font-weight:700;border-radius:999px;
-  min-width:16px;height:16px;padding:0 4px;display:flex;align-items:center;justify-content:center}
-.filter-dd{position:absolute;right:0;top:54px;width:200px;background:var(--surface);border:1px solid var(--line);
-  border-radius:16px;box-shadow:0 16px 40px -12px rgba(0,0,0,.25);padding:8px;z-index:30}
-.filter-dd[hidden]{display:none}
-.filter-dd .fopt{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;
-  font-size:13px;color:var(--ink);cursor:pointer}
-.filter-dd .fopt:hover{background:var(--surface-2)}
-.filter-dd .fopt.active{color:var(--sage-ink);font-weight:600}
-.filter-dd .fopt .ck{width:16px;height:16px;border-radius:50%;background:var(--sage);flex-shrink:0;position:relative}
-.filter-dd .fopt .ck::after{content:"";position:absolute;left:5px;top:3px;width:4px;height:8px;
-  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.filters-toggle{display:flex;align-items:center;gap:10px;width:100%;background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:13px 16px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;
+  font-family:var(--sys);box-shadow:var(--shadow);margin:0 0 16px}
+.filters-toggle-icon{display:flex;color:var(--sage-ink);flex-shrink:0}
+.filters-toggle-icon svg{width:17px;height:17px}
+.filters-toggle-label{flex:1;text-align:left}
+.filters-toggle-chev{display:flex;color:var(--ink-soft);flex-shrink:0;transition:transform .15s}
+.filters-toggle-chev svg{width:16px;height:16px}
+.filters-toggle.active{border-color:var(--sage);color:var(--sage-ink)}
+.filters-toggle.active .filters-toggle-icon{color:var(--sage-ink)}
+.filters-toggle.open .filters-toggle-chev{transform:rotate(180deg)}
+.filters-panel{background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:14px;margin:-10px 0 16px;
+  display:flex;flex-direction:column;gap:12px}
+.filters-panel[hidden]{display:none}
+.filters-field{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.filters-label{font-size:13.5px;color:var(--ink-soft);flex-shrink:0}
+.filters-select-wrap{position:relative;flex:1;max-width:200px}
+.filters-select{width:100%;appearance:none;-webkit-appearance:none;font-family:var(--sys);font-size:13.5px;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 30px 9px 12px;cursor:pointer}
+.filters-select-chev{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;
+  color:var(--ink-soft);pointer-events:none}
+.filters-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:4px;border-top:1px solid var(--line)}
+.filters-reset{background:none;border:none;font-family:var(--sys);font-size:13px;font-weight:600;color:var(--lav-ink);
+  cursor:pointer;padding:6px 0}
+.filters-apply{background:var(--sage);border:none;border-radius:999px;color:#fff;font-family:var(--sys);font-size:13.5px;
+  font-weight:600;padding:10px 22px;cursor:pointer}
 .folder-back{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;color:var(--ink-soft);
   cursor:pointer;margin:2px 0 8px}
-.filter-row{display:flex;flex-direction:column;gap:8px;margin:18px 0}
-.filter-row .chipset{display:flex;flex-wrap:wrap;gap:10px 7px}
+.filter-row{display:flex;flex-direction:column;gap:10px;margin:18px 0}
+.filter-row .chipset{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:10px}
 .flabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);width:100%}
 .chip{font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--sys)}
 .chip.active{background:var(--lav);border-color:var(--lav);color:#fff}
 .chip.active.theme{background:var(--sage);border-color:var(--sage)}
-.chip.folder[data-f="__fav__"]{display:inline-flex;align-items:center;gap:5px}
-.chip.folder[data-f="__fav__"] svg{width:12px;height:12px}
+.chip.folder{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;font-size:13px;
+  font-weight:600;border-radius:14px;padding:14px 10px;min-height:46px}
+.chip.folder.active{background:linear-gradient(135deg,var(--lav),var(--sage));border-color:transparent;color:#fff}
+.chip.folder[data-f="__fav__"] svg{width:14px;height:14px;flex-shrink:0}
 .mgrid{display:flex;flex-direction:column;gap:10px;background:var(--surface);border-radius:18px;padding:12px;box-shadow:var(--shadow)}
 .mcard{background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;padding:16px;cursor:pointer;
   display:flex;gap:14px;align-items:flex-start}
@@ -1020,10 +1030,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mat-new{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:#fff;background:var(--lav);
   border-radius:999px;padding:2px 7px;vertical-align:middle}
 .note{font-size:12.5px;color:var(--ink-soft);background:var(--surface-2);border-radius:10px;padding:10px 14px;margin-top:4px;line-height:1.5}
-.type-chips{display:flex;gap:8px;margin:0 0 14px;overflow-x:auto}
-.type-chip{flex-shrink:0;font-family:var(--sys);font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);
-  border:1px solid var(--line);border-radius:999px;padding:9px 18px;cursor:pointer;white-space:nowrap}
-.type-chip.active{background:var(--lav);border-color:var(--lav);color:#fff}
 .mlist-title{display:flex;align-items:center;gap:10px;margin:4px 0 10px}
 .mlist-title::before,.mlist-title::after{content:"";flex:1;height:1px;background:var(--line)}
 .mlist-title span{font-family:var(--font-head);font-weight:600;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--ink);white-space:nowrap}
@@ -1040,6 +1046,15 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mat-feature-arrow{width:36px;height:36px;border-radius:50%;background:rgba(170,157,184,.16);display:flex;align-items:center;
   justify-content:center;flex-shrink:0;color:var(--lav-ink)}
 .mat-feature-arrow svg{width:16px;height:16px}
+.fav-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;background:var(--surface);
+  border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:14px 0;cursor:pointer;font-family:var(--sys)}
+.fav-card-icon{width:48px;height:48px;border-radius:50%;background:rgba(170,157,184,.16);display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;color:var(--lav-ink)}
+.fav-card-icon svg{width:22px;height:22px}
+.fav-card-title{flex:1;min-width:0;font-family:var(--font-head);font-weight:600;font-size:15px;color:var(--ink);line-height:1.3}
+.fav-card-btn{display:flex;align-items:center;gap:4px;flex-shrink:0;background:var(--surface-2);border:none;border-radius:999px;
+  padding:9px 16px;font-family:var(--sys);font-size:13px;font-weight:600;color:var(--lav-ink)}
+.fav-card-btn svg{width:14px;height:14px}
 .mitem{position:relative;display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0;cursor:pointer}
 .mitem.is-locked{opacity:.55;cursor:default}
 .mitem-fav{position:absolute;top:8px;right:8px;width:30px;height:30px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);cursor:pointer;z-index:1}
@@ -1406,6 +1421,11 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="habits-card-status"><span class="hcs-pill" id="dayStatusPill" hidden></span><span id="dayStatus"></span></div>
         <div class="checklist" id="checklist"></div>
       </div>
+      <button class="fav-card" id="favMaterialsBtn" type="button">
+        <span class="fav-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20.5s-7.5-4.6-9.8-9.3C.7 7.8 2.4 4.5 5.7 4c2-.3 3.8.7 4.8 2.3C11.5 4.7 13.3 3.7 15.3 4c3.3.5 5 3.8 3.5 7.2C16.5 15.9 12 20.5 12 20.5Z"/></svg></span>
+        <span class="fav-card-title">Избранные материалы</span>
+        <span class="fav-card-btn">Смотреть <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></span>
+      </button>
       <div class="evening-rem" id="eveningRem" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         <div>
@@ -1430,20 +1450,41 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           <div class="search-filter-row">
             <div class="search-wrap">
               <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-              <input class="search-box" id="searchBox" type="text" placeholder="Поиск: массаж лица, питание…" autocomplete="off">
+              <input class="search-box" id="searchBox" type="text" placeholder="Поиск материалов" autocomplete="off">
               <div class="search-drop" id="searchDrop" hidden></div>
             </div>
-            <button class="filter-btn" id="themeFilterBtn" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-              <span id="themeFilterLabel">фильтр</span>
-            </button>
-            <div class="filter-dd" id="themeFilterDd" hidden></div>
           </div>
-          <div class="type-chips" id="typeChips">
-            <button class="type-chip active" data-type="all" type="button">Все</button>
-            <button class="type-chip" data-type="video" type="button">Видео</button>
-            <button class="type-chip" data-type="audio" type="button">Аудио</button>
-            <button class="type-chip" data-type="pdf" type="button">PDF</button>
+          <button class="filters-toggle" id="filtersToggleBtn" type="button">
+            <span class="filters-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="13" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="17" r="2" fill="currentColor" stroke="none"/></svg></span>
+            <span class="filters-toggle-label">Фильтры материалов</span>
+            <span class="filters-toggle-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
+          </button>
+          <div class="filters-panel" id="filtersPanel" hidden>
+            <div class="filters-field">
+              <span class="filters-label">Формат</span>
+              <div class="filters-select-wrap">
+                <select id="formatSelect" class="filters-select">
+                  <option value="all">Любой</option>
+                  <option value="video">Видео</option>
+                  <option value="audio">Аудио</option>
+                  <option value="pdf">PDF</option>
+                </select>
+                <svg class="filters-select-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+            <div class="filters-field">
+              <span class="filters-label">Категория</span>
+              <div class="filters-select-wrap">
+                <select id="categorySelect" class="filters-select">
+                  <option value="all">Любая</option>
+                </select>
+                <svg class="filters-select-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+            <div class="filters-actions">
+              <button type="button" class="filters-reset" id="filtersResetBtn">Сбросить</button>
+              <button type="button" class="filters-apply" id="filtersApplyBtn">Применить</button>
+            </div>
           </div>
           <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
           <button class="mat-feature" id="matFeatureBtn" type="button">
@@ -1889,6 +1930,11 @@ document.querySelectorAll(".navbtn").forEach(btn=>{
     }
   });
 });
+document.getElementById("favMaterialsBtn").addEventListener("click", ()=>{
+  playPopSound();
+  setActiveTab("materials");
+  setActiveFolder("__fav__");
+});
 let initialTab = "today";
 try{ initialTab = new URLSearchParams(location.search).get("tab") || localStorage.getItem(TAB_KEY) || "home"; }catch(e){}
 if(!document.getElementById("tab-"+initialTab)) initialTab = "home";
@@ -2088,8 +2134,8 @@ function buildMaterialsState(){
   loadFavorites();
   activeTheme = "all"; activeFolder = "all"; activeType = "all"; query = "";
   renderThemeFilterOptions();
-  updateThemeFilterBtn();
-  document.querySelectorAll("#typeChips .type-chip").forEach(c=>c.classList.toggle("active", c.dataset.type==="all"));
+  document.getElementById("formatSelect").value = "all";
+  updateFiltersToggleState();
   document.getElementById("folderChips").innerHTML =
     `<button class="chip folder active" data-f="all">все папки</button>` +
     `<button class="chip folder" data-f="__fav__">${BOOKMARK_SVG_FILLED} Избранное</button>` +
@@ -2097,33 +2143,20 @@ function buildMaterialsState(){
       .map(([key,a])=>`<button class="chip folder" data-f="${key}">${a.name}</button>`).join("");
 }
 function renderThemeFilterOptions(){
-  const dd = document.getElementById("themeFilterDd");
-  const opts = [{v:"all",label:"все темы"}, ...THEMES.map(t=>({v:t,label:t}))];
-  dd.innerHTML = opts.map(o=>
-    `<div class="fopt ${activeTheme===o.v?'active':''}" data-t="${o.v}">${o.label}${activeTheme===o.v?'<span class="ck"></span>':''}</div>`
-  ).join("");
-  dd.querySelectorAll(".fopt").forEach(el=>{
-    el.addEventListener("click", ()=>{
-      activeTheme = el.dataset.t;
-      matVisibleCount = MAT_PAGE_SIZE;
-      document.getElementById("themeFilterDd").hidden = true;
-      renderThemeFilterOptions();
-      updateThemeFilterBtn();
-      renderMaterials();
-    });
-  });
+  const sel = document.getElementById("categorySelect");
+  const opts = [{v:"all",label:"Любая"}, ...THEMES.map(t=>({v:t,label:t}))];
+  sel.innerHTML = opts.map(o=>`<option value="${o.v}"${activeTheme===o.v?' selected':''}>${o.label}</option>`).join("");
 }
-function updateThemeFilterBtn(){
-  const active = activeTheme !== "all";
-  document.getElementById("themeFilterBtn").classList.toggle("active", active);
-  document.getElementById("themeFilterLabel").textContent = active ? activeTheme : "фильтр";
+function updateFiltersToggleState(){
+  const active = activeTheme !== "all" || activeType !== "all";
+  document.getElementById("filtersToggleBtn").classList.toggle("active", active);
 }
 function setActiveFolder(f){
   activeFolder = f;
   activeTheme = "all";
   matVisibleCount = MAT_PAGE_SIZE;
   renderThemeFilterOptions();
-  updateThemeFilterBtn();
+  updateFiltersToggleState();
   renderMaterials();
 }
 
@@ -3147,15 +3180,37 @@ function renderMaterialEmbed(type, url){
   body.classList.toggle("no-scroll", isFrame);
   document.querySelector(".panel").classList.toggle("force-tall", isFrame);
 }
-document.getElementById("themeFilterBtn").addEventListener("click", (e)=>{
-  e.stopPropagation();
-  const dd = document.getElementById("themeFilterDd");
-  dd.hidden = !dd.hidden;
+document.getElementById("filtersToggleBtn").addEventListener("click", ()=>{
+  playPopSound();
+  const panel = document.getElementById("filtersPanel");
+  panel.hidden = !panel.hidden;
+  document.getElementById("filtersToggleBtn").classList.toggle("open", !panel.hidden);
 });
-document.addEventListener("click", (e)=>{
-  const dd = document.getElementById("themeFilterDd");
-  const btn = document.getElementById("themeFilterBtn");
-  if(!dd.hidden && !dd.contains(e.target) && !btn.contains(e.target)) dd.hidden = true;
+document.getElementById("formatSelect").addEventListener("change", e=>{
+  activeType = e.target.value;
+  matVisibleCount = MAT_PAGE_SIZE;
+  updateFiltersToggleState();
+  renderMaterials();
+});
+document.getElementById("categorySelect").addEventListener("change", e=>{
+  activeTheme = e.target.value;
+  matVisibleCount = MAT_PAGE_SIZE;
+  updateFiltersToggleState();
+  renderMaterials();
+});
+document.getElementById("filtersResetBtn").addEventListener("click", ()=>{
+  playPopSound();
+  activeType = "all"; activeTheme = "all";
+  document.getElementById("formatSelect").value = "all";
+  renderThemeFilterOptions();
+  updateFiltersToggleState();
+  matVisibleCount = MAT_PAGE_SIZE;
+  renderMaterials();
+});
+document.getElementById("filtersApplyBtn").addEventListener("click", ()=>{
+  playPopSound();
+  document.getElementById("filtersPanel").hidden = true;
+  document.getElementById("filtersToggleBtn").classList.remove("open");
 });
 document.getElementById("folderChips").addEventListener("click", e=>{
   const b = e.target.closest(".chip"); if(!b) return;
@@ -3165,13 +3220,6 @@ document.getElementById("matFeatureBtn").addEventListener("click", ()=>{
   playPopSound();
   openOverlay("Перед началом марафона");
   document.getElementById("overlayBody").innerHTML = `<p class="note" style="margin:0">Текст скоро добавим.</p>`;
-});
-document.getElementById("typeChips").addEventListener("click", e=>{
-  const b = e.target.closest(".type-chip"); if(!b) return;
-  activeType = b.dataset.type;
-  matVisibleCount = MAT_PAGE_SIZE;
-  document.querySelectorAll("#typeChips .type-chip").forEach(c=>c.classList.toggle("active", c===b));
-  renderMaterials();
 });
 const searchBox=document.getElementById("searchBox"), searchDrop=document.getElementById("searchDrop");
 searchBox.addEventListener("input",()=>{
