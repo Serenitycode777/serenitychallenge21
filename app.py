@@ -2864,12 +2864,14 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   const HEAD='"Cormorant Garamond"', SYS='"Montserrat"';
   try{
     await Promise.all([
-      document.fonts.load('600 96px '+HEAD), document.fonts.load('600 88px '+HEAD),
-      document.fonts.load('600 20px '+SYS), document.fonts.load('600 24px '+SYS),
-      document.fonts.load('600 22px '+SYS), document.fonts.load('600 20px '+SYS)
+      document.fonts.load('600 112px '+HEAD), document.fonts.load('600 42px '+HEAD),
+      document.fonts.load('600 64px '+HEAD), document.fonts.load('italic 600 24px '+HEAD),
+      document.fonts.load('600 18px '+SYS), document.fonts.load('600 19px '+SYS),
+      document.fonts.load('600 22px '+SYS), document.fonts.load('500 20px '+SYS),
+      document.fonts.load('600 14px '+SYS)
     ]);
   }catch(e){}
-  const W=640, PAD=48, CW=W-PAD*2, RIGHT=W-PAD;
+  const W=640;
   const measure=document.createElement("canvas").getContext("2d");
   const wrapLines=(ctx,text,maxWidth)=>{
     const words=text.split(" "); const lines=[]; let line="";
@@ -2880,72 +2882,148 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
     if(line) lines.push(line);
     return lines;
   };
-  measure.font="600 22px "+SYS+", sans-serif";
-  const habitLines=HABITS.map(h=>wrapLines(measure,h,CW-48));
-  measure.font="600 20px "+SYS+", sans-serif";
-  const quoteLines=wrapLines(measure,"Маленькие шаги каждый день — путь к большим переменам",440);
 
-  const headerBottom=226; // "Марафон «Начни сегодня!»" baseline, after date block / star+day badge
-  const statBottom=headerBottom+132; // after huge "N из N" + "привычек сегодня"
-  let checklistY=statBottom+38;
-  habitLines.forEach(lines=>{ checklistY += lines.length*30 + 24; });
-  const quoteTop=checklistY+8;
-  const quoteBottom=quoteTop + quoteLines.length*27;
-  const H=quoteBottom+PAD;
+  const cardLeft=28, cardTop=28, cardRight=W-28, cardWidth=cardRight-cardLeft;
+  const cardRadius=32;
+  const contentX=cardLeft+40;
+
+  const panelPadX=26, iconSize=38, iconGap=18, rowGap=22;
+  measure.font="500 20px "+SYS+", sans-serif";
+  const habitWrapW = cardWidth-28 - panelPadX*2 - iconSize - iconGap;
+  const habitLines=HABITS.map(h=>wrapLines(measure,h,habitWrapW));
+
+  measure.font="italic 600 24px "+HEAD+", Georgia, serif";
+  const quoteLines=wrapLines(measure,"Маленькие шаги каждый день — путь к большим переменам",520);
+
+  const ribbonTop=cardTop+40, ribbonH=38;
+  const eyebrowY=ribbonTop+ribbonH+34;
+  const heroBaseline=eyebrowY+100;
+  const subtitleBaseline=heroBaseline+34;
+  const gradientCardBottom=subtitleBaseline+60;
+  const panelOverlap=46;
+  const panelLeft=cardLeft+14, panelRight=cardRight-14, panelWidth=panelRight-panelLeft;
+  const panelRadius=28;
+  const panelPadTop=32, panelPadBottom=26;
+  const panelTop=gradientCardBottom-panelOverlap;
+  let rowY=panelTop+panelPadTop+16;
+  habitLines.forEach(lines=>{ rowY += Math.max(iconSize, lines.length*26) + rowGap; });
+  const panelBottom=rowY - rowGap + panelPadBottom - 16;
+
+  const quoteMarkBaseline=panelBottom+74;
+  const quoteTextTop=quoteMarkBaseline+30;
+  const quoteLineH=32;
+  const quoteBottom=quoteTextTop+(quoteLines.length-1)*quoteLineH;
+  const H=quoteBottom+48;
 
   const c=document.createElement("canvas"); c.width=W; c.height=H;
   const ctx=c.getContext("2d");
-  const grad=ctx.createLinearGradient(0,0,W,H); grad.addColorStop(0,"#AA9DB8"); grad.addColorStop(1,"#6A9993");
-  ctx.fillStyle=grad;
-  ctx.beginPath(); ctx.roundRect(0,0,W,H,28); ctx.fill();
+
   ctx.fillStyle="#fff";
+  ctx.beginPath(); ctx.roundRect(0,0,W,H,40); ctx.fill();
 
-  const dayNum=dayToDate(TODAY).getUTCDate();
-  ctx.textAlign="left";
-  ctx.font="600 88px "+HEAD+", Georgia, serif"; ctx.fillText(String(dayNum), PAD-2, 134);
-  ctx.font="600 20px "+SYS+", sans-serif"; ctx.fillText(RU_MONTHS_SHORT[dayToDate(TODAY).getUTCMonth()], PAD+2, 164);
-
-  const starCx=RIGHT-26, starCy=62, starR=25;
   ctx.save();
-  ctx.fillStyle="#D9BD8A"; ctx.beginPath();
+  ctx.beginPath(); ctx.roundRect(cardLeft,cardTop,cardWidth,gradientCardBottom-cardTop,cardRadius); ctx.clip();
+  const base=ctx.createLinearGradient(cardLeft,cardTop,cardRight,gradientCardBottom);
+  base.addColorStop(0,"#AA9DB8"); base.addColorStop(0.48,"#8E93A8"); base.addColorStop(1,"#6A9993");
+  ctx.fillStyle=base;
+  ctx.fillRect(cardLeft,cardTop,cardWidth,gradientCardBottom-cardTop);
+  const glow1=ctx.createRadialGradient(cardLeft+cardWidth*0.8,cardTop+40,0,cardLeft+cardWidth*0.8,cardTop+40,220);
+  glow1.addColorStop(0,"rgba(217,189,138,.38)"); glow1.addColorStop(1,"rgba(217,189,138,0)");
+  ctx.fillStyle=glow1; ctx.fillRect(cardLeft,cardTop,cardWidth,gradientCardBottom-cardTop);
+  const glow2=ctx.createRadialGradient(cardLeft+cardWidth*0.1,cardTop+(gradientCardBottom-cardTop)*0.6,0,cardLeft+cardWidth*0.1,cardTop+(gradientCardBottom-cardTop)*0.6,240);
+  glow2.addColorStop(0,"rgba(255,255,255,.10)"); glow2.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=glow2; ctx.fillRect(cardLeft,cardTop,cardWidth,gradientCardBottom-cardTop);
+  ctx.restore();
+
+  const dateText=fmtDateRu(dayToDate(TODAY));
+  measure.font="600 19px "+SYS+", sans-serif";
+  const dateTextW=measure.measureText(dateText).width;
+  const ribbonPadX=18, ribbonW=dateTextW+ribbonPadX*2;
+  ctx.save();
+  ctx.translate(contentX+ribbonW/2, ribbonTop+ribbonH/2);
+  ctx.rotate(-2*Math.PI/180);
+  ctx.fillStyle="rgba(255,255,255,.16)";
+  ctx.strokeStyle="rgba(255,255,255,.3)"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(-ribbonW/2,-ribbonH/2,ribbonW,ribbonH,[13,13,13,4]); ctx.fill(); ctx.stroke();
+  ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.font="600 19px "+SYS+", sans-serif";
+  ctx.fillText(dateText,0,1);
+  ctx.restore();
+  ctx.textBaseline="alphabetic";
+
+  ctx.textAlign="left"; ctx.fillStyle="rgba(255,255,255,.72)";
+  ctx.font="600 18px "+SYS+", sans-serif";
+  ctx.fillText("МАРАФОН «НАЧНИ СЕГОДНЯ!»", contentX, eyebrowY);
+
+  const done=liveChecked.filter(Boolean).length;
+  ctx.fillStyle="#fff";
+  ctx.font="600 112px "+HEAD+", Georgia, serif";
+  ctx.fillText(done+" из "+HABITS.length, contentX, heroBaseline);
+
+  ctx.fillStyle="rgba(255,255,255,.78)";
+  ctx.font="600 22px "+SYS+", sans-serif";
+  ctx.fillText("привычек сегодня", contentX, subtitleBaseline);
+
+  const badgeR=64, badgeCx=cardRight-54, badgeCy=cardTop+14+badgeR;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,.35)"; ctx.shadowBlur=30; ctx.shadowOffsetY=14;
+  ctx.fillStyle="#fff";
+  ctx.beginPath(); ctx.arc(badgeCx,badgeCy,badgeR,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle="rgba(255,255,255,.5)"; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(badgeCx,badgeCy,badgeR+2,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle="rgba(255,255,255,.12)"; ctx.lineWidth=9;
+  ctx.beginPath(); ctx.arc(badgeCx,badgeCy,badgeR+8,0,Math.PI*2); ctx.stroke();
+
+  ctx.save();
+  ctx.fillStyle="#D9BD8A";
+  const starCx=badgeCx, starCy=badgeCy-26, starR=11;
+  ctx.beginPath();
   for(let i=0;i<5;i++){
     const a=-Math.PI/2+i*(Math.PI*2/5), a2=a+Math.PI/5;
     const x1=starCx+Math.cos(a)*starR, y1=starCy+Math.sin(a)*starR;
     const x2=starCx+Math.cos(a2)*starR*0.42, y2=starCy+Math.sin(a2)*starR*0.42;
     i===0?ctx.moveTo(x1,y1):ctx.lineTo(x1,y1); ctx.lineTo(x2,y2);
   }
-  ctx.closePath(); ctx.fill(); ctx.restore();
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
 
-  const dayBadgeText="День "+TODAY;
-  ctx.font="600 20px "+SYS+", sans-serif";
-  const badgeW=ctx.measureText(dayBadgeText).width+44, badgeH=46, badgeY=98;
-  ctx.fillStyle="#fff";
-  ctx.beginPath(); ctx.roundRect(RIGHT-badgeW, badgeY, badgeW, badgeH, 23); ctx.fill();
   ctx.fillStyle="#3F6660"; ctx.textAlign="center";
-  ctx.fillText(dayBadgeText, RIGHT-badgeW/2, badgeY+30);
+  ctx.font="600 42px "+HEAD+", Georgia, serif";
+  ctx.fillText(String(TODAY), badgeCx, badgeCy+18);
+  ctx.fillStyle="#6B6475";
+  ctx.font="600 14px "+SYS+", sans-serif";
+  ctx.fillText("ДЕНЬ", badgeCx, badgeCy+34);
 
-  ctx.fillStyle="#fff"; ctx.textAlign="center";
-  ctx.font="600 20px "+SYS+", sans-serif";
-  ctx.fillText("Марафон «Начни сегодня!»", W/2, headerBottom);
+  ctx.save();
+  ctx.shadowColor="rgba(51,46,61,.32)"; ctx.shadowBlur=40; ctx.shadowOffsetY=18;
+  ctx.fillStyle="#fff";
+  ctx.beginPath(); ctx.roundRect(panelLeft,panelTop,panelWidth,panelBottom-panelTop,panelRadius); ctx.fill();
+  ctx.restore();
 
-  const done=liveChecked.filter(Boolean).length;
-  ctx.font="600 96px "+HEAD+", Georgia, serif"; ctx.fillText(done+" из "+HABITS.length, W/2, headerBottom+92);
-  ctx.font="600 24px "+SYS+", sans-serif"; ctx.fillText("привычек сегодня", W/2, headerBottom+132);
-
-  let y=statBottom+32; ctx.textAlign="left"; ctx.font="600 22px "+SYS+", sans-serif";
+  let y=panelTop+panelPadTop;
+  ctx.textAlign="left";
   HABITS.forEach((h,i)=>{
-    const cx=PAD+9, cy=y-7;
+    const chipX=panelLeft+panelPadX, chipY=y;
+    ctx.fillStyle="rgba(106,153,147,.12)";
+    ctx.strokeStyle="rgba(106,153,147,.22)"; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(chipX,chipY,iconSize,iconSize,11); ctx.fill(); ctx.stroke();
     ctx.save();
-    ctx.strokeStyle = liveChecked[i] ? "#fff" : "rgba(255,255,255,.5)";
-    ctx.lineWidth=4; ctx.lineCap="round"; ctx.lineJoin="round";
-    ctx.beginPath(); ctx.moveTo(cx-9,cy); ctx.lineTo(cx-2,cy+9); ctx.lineTo(cx+13,cy-11); ctx.stroke();
+    ctx.strokeStyle="#3F6660"; ctx.lineWidth=3; ctx.lineCap="round"; ctx.lineJoin="round";
+    const cx=chipX+iconSize/2, cy=chipY+iconSize/2;
+    ctx.beginPath(); ctx.moveTo(cx-8,cy+1); ctx.lineTo(cx-2,cy+7); ctx.lineTo(cx+9,cy-8); ctx.stroke();
     ctx.restore();
-    habitLines[i].forEach((ln,li)=>{ ctx.fillText(ln, PAD+38, y+li*30); });
-    y += habitLines[i].length*30 + 24;
+    ctx.fillStyle="#332E3D"; ctx.font="500 20px "+SYS+", sans-serif";
+    habitLines[i].forEach((ln,li)=>{ ctx.fillText(ln, chipX+iconSize+iconGap, chipY+18+li*26); });
+    y += Math.max(iconSize, habitLines[i].length*26) + rowGap;
   });
 
-  ctx.textAlign="center"; ctx.font="600 20px "+SYS+", sans-serif";
-  quoteLines.forEach((ln,li)=>{ ctx.fillText(ln, W/2, quoteTop+li*27); });
+  ctx.textAlign="center"; ctx.fillStyle="rgba(63,102,96,.25)";
+  ctx.font="600 64px "+HEAD+", Georgia, serif";
+  ctx.fillText("“", W/2, quoteMarkBaseline);
+
+  ctx.fillStyle="#3F6660"; ctx.font="italic 600 24px "+HEAD+", Georgia, serif";
+  quoteLines.forEach((ln,li)=>{ ctx.fillText(ln, W/2, quoteTextTop+li*quoteLineH); });
 
   const body=document.getElementById("shareOverlayBody");
   body.innerHTML = `<div class="share-out">
