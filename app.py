@@ -4102,7 +4102,7 @@ function renderProgress(){
   </tr>`).join("") : `<tr><td colspan="9" style="text-align:center;color:#999">пока никто не зарегистрировался в кабинете</td></tr>`;
   document.querySelectorAll("[data-pdel]").forEach(btn=>{
     btn.addEventListener("click", async ()=>{
-      if(!confirm("Удалить эту участницу из кабинета? Это сотрёт её привычки и отметки, вернуть будет нельзя.")) return;
+      if(!(await askConfirm("Удалить эту участницу из кабинета? Это сотрёт её привычки и отметки, вернуть будет нельзя."))) return;
       btn.disabled = true;
       try{
         await apiFetch("/api/admin/participants/"+btn.dataset.pdel, {method:"DELETE"});
@@ -4408,7 +4408,7 @@ function renderMaterialsList(){
   });
   wrap.querySelectorAll("[data-matdel]").forEach(b=>{
     b.addEventListener("click", async ()=>{
-      if(!confirm("Удалить материал?")) return;
+      if(!(await askConfirm("Удалить материал?"))) return;
       try{
         await apiFetch(`/api/admin/materials/${b.dataset.matdel}`, {method:"DELETE"});
         MATERIALS = MATERIALS.filter(m=>String(m.id)!==b.dataset.matdel);
@@ -4427,10 +4427,10 @@ function renderMaterialsList(){
   wrap.querySelectorAll("[data-folderdel]").forEach(b=>{
     b.addEventListener("click", async ()=>{
       if(MATERIALS.some(m=>m.folder_id===b.dataset.folderdel)){
-        alert("В этой папке есть материалы – сначала удали или перенеси их");
+        showToast("В этой папке есть материалы – сначала удали или перенеси их");
         return;
       }
-      if(!confirm("Удалить папку?")) return;
+      if(!(await askConfirm("Удалить папку?"))) return;
       try{
         await apiFetch(`/api/admin/folders/${b.dataset.folderdel}`, {method:"DELETE"});
         FOLDERS = FOLDERS.filter(f=>f.id!==b.dataset.folderdel);
@@ -4991,7 +4991,7 @@ function renderParticipants(){
   });
   body.querySelectorAll("[data-del]").forEach(b=>{
     b.addEventListener("click", async ()=>{
-      if(!confirm("Удалить эту заявку?")) return;
+      if(!(await askConfirm("Удалить эту заявку?"))) return;
       try{
         await apiFetch(`/api/admin/signups/${b.dataset.del}`, {method:"DELETE"});
         PARTICIPANTS = PARTICIPANTS.filter(p=>String(p.id)!==b.dataset.del);
@@ -5064,6 +5064,28 @@ document.getElementById("caAdd").addEventListener("click", async ()=>{
 document.getElementById("crmAddOpen").addEventListener("click", ()=>{ document.getElementById("crmAddOverlay").classList.add("open"); });
 document.getElementById("crmAddClose").addEventListener("click", ()=>{ document.getElementById("crmAddOverlay").classList.remove("open"); });
 document.getElementById("crmAddOverlay").addEventListener("click", e=>{ if(e.target.id==="crmAddOverlay") e.currentTarget.classList.remove("open"); });
+</script>
+<div id="askConfirmBox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(40,34,48,.45);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:18px;max-width:340px;width:100%;padding:22px 20px 18px;box-shadow:0 24px 60px -20px rgba(0,0,0,.45);font-family:inherit;text-align:center">
+    <div id="askConfirmMsg" style="font-size:15px;line-height:1.45;color:#3D3646;margin-bottom:18px"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button type="button" id="askConfirmNo" style="flex:1;padding:11px 14px;border-radius:999px;border:1px solid #E6DED6;background:#fff;color:#3D3646;font:inherit;font-weight:600;cursor:pointer">Отмена</button>
+      <button type="button" id="askConfirmYes" style="flex:1;padding:11px 14px;border-radius:999px;border:none;background:#B3415A;color:#fff;font:inherit;font-weight:600;cursor:pointer">Удалить</button>
+    </div>
+  </div>
+</div>
+<script>
+function askConfirm(msg){
+  return new Promise(resolve=>{
+    const box=document.getElementById("askConfirmBox");
+    document.getElementById("askConfirmMsg").textContent=msg;
+    box.style.display="flex";
+    const yes=document.getElementById("askConfirmYes"), no=document.getElementById("askConfirmNo");
+    const done=v=>{box.style.display="none";yes.onclick=no.onclick=box.onclick=null;resolve(v);};
+    yes.onclick=()=>done(true); no.onclick=()=>done(false);
+    box.onclick=e=>{ if(e.target===box) done(false); };
+  });
+}
 </script>
 </body></html>"""
 
