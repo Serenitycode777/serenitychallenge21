@@ -788,7 +788,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .hc-time-row{display:flex;align-items:center;gap:12px;padding-top:12px;margin-top:8px;border-top:1px solid var(--line)}
 .hc-time-icon{width:38px;height:38px;border-radius:50%;background:rgba(106,153,147,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .hc-time-icon svg{width:17px;height:17px;color:var(--sage-ink)}
-.hc-time-val{font-family:var(--font-head);font-weight:600;font-size:16px;color:var(--ink)}
+.hc-time-val{font-family:var(--font-head);font-weight:600;font-size:18px;color:var(--ink);text-transform:uppercase;letter-spacing:.04em}
 .hc-time-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
 .habits-card-status{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding-top:10px;
   border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-soft);line-height:1.4}
