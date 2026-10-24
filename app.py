@@ -1996,7 +1996,7 @@ let RU_MONTHS_SHORT = ["янв","фев","мар","апр","мая","июн","и
 let RU_MONTHS_FULL = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 let calViewYear = null, calViewMonth = null;
 const TG_CHANNEL_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
-const TG_CHAT_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
+const TG_CHAT_URL = "https://t.me/+b1UKYlrCL5o5YWY0";
 document.getElementById("chanLinkBtn").href = TG_CHANNEL_URL;
 document.getElementById("chatLinkBtn").href = TG_CHAT_URL;
 let TODAY = 1;
