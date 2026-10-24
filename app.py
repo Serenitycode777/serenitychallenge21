@@ -723,13 +723,11 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   background:linear-gradient(90deg,var(--sage),var(--lav));border-radius:18px;padding:20px 22px;
   box-shadow:var(--shadow);color:#fff;margin:10px 0 18px}
 .affirm-date{flex:0 0 auto;text-align:center;line-height:1;position:relative;z-index:1}
-.affirm-date .num{font-family:var(--font-head);font-size:30px;font-weight:600;line-height:1}
+.affirm-date .num{font-family:var(--font-head);font-size:38px;font-weight:600;line-height:1}
 .affirm-date .mon{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;opacity:.85;margin-top:3px}
 .affirm-divider{flex:0 0 auto;width:1px;align-self:stretch;background:rgba(255,255,255,.4)}
 .affirm-body{flex:1;min-width:0;position:relative;z-index:1;text-align:center}
-.affirm-body .elbl{font-family:var(--sys);font-style:italic;font-size:12px;opacity:.85;margin-bottom:6px}
 .affirm-body .txt{font-family:var(--font-head);font-style:italic;font-size:19px;font-weight:600;line-height:1.3}
-.affirm-leaf{position:absolute;right:-6px;bottom:-14px;width:100px;height:114px;opacity:.3;pointer-events:none}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
 .hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none;background:var(--surface-2)}
 .hab.done{background:rgba(170,157,184,.14)}
@@ -825,7 +823,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 @media (min-width:900px){
   .share-out img{width:260px;display:block;margin:0 auto}
 }
-.share-note{font-size:11px;color:var(--ink-soft);margin-top:8px;line-height:1.5;text-align:center}
+.share-note{font-size:12.5px;font-weight:600;color:var(--lav-ink);margin-top:10px;line-height:1.5;text-align:center}
 .share-divider{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--ink-soft);font-size:10.5px;
   font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .share-divider::before,.share-divider::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -1378,21 +1376,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
       <div class="affirm-card">
         <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
         <div class="affirm-divider"></div>
-        <div class="affirm-body"><div class="elbl">Аффирмация дня</div><div class="txt" id="affirmText"></div></div>
-        <svg class="affirm-leaf" viewBox="0 0 140 160" fill="none" stroke="#fff" stroke-width="1.2" aria-hidden="true">
-          <defs><path id="leafShape" d="M0 0C4 -9 13 -9 17 0C13 9 4 9 0 0Z"/></defs>
-          <path d="M130 10C110 40 95 70 85 100C78 122 70 140 55 158" stroke-linecap="round"/>
-          <use href="#leafShape" transform="translate(118,22) rotate(40)"/>
-          <use href="#leafShape" transform="translate(100,45) rotate(-20)"/>
-          <use href="#leafShape" transform="translate(108,55) rotate(50)"/>
-          <use href="#leafShape" transform="translate(88,78) rotate(-15)"/>
-          <use href="#leafShape" transform="translate(95,88) rotate(55)"/>
-          <use href="#leafShape" transform="translate(74,105) rotate(-25)"/>
-          <use href="#leafShape" transform="translate(80,113) rotate(60)"/>
-          <use href="#leafShape" transform="translate(62,130) rotate(-20)"/>
-          <circle cx="125" cy="15" r="2.2" fill="#fff" stroke="none"/>
-          <circle cx="131" cy="10" r="2" fill="#fff" stroke="none"/>
-        </svg>
+        <div class="affirm-body"><div class="txt" id="affirmText"></div></div>
       </div>
       <div class="chanchat-row">
         <a class="chanchat-btn" id="chanLinkBtn" target="_blank" rel="noopener">
@@ -1460,7 +1444,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           </div>
           <button class="filters-toggle" id="filtersToggleBtn" type="button">
             <span class="filters-toggle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="8" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="13" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="17" r="2" fill="currentColor" stroke="none"/></svg></span>
-            <span class="filters-toggle-label">Фильтры материалов</span>
+            <span class="filters-toggle-label" id="filtersToggleLabel">Фильтры материалов</span>
             <span class="filters-toggle-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span>
           </button>
           <div class="filters-panel" id="filtersPanel" hidden>
@@ -2154,6 +2138,13 @@ function renderThemeFilterOptions(){
 function updateFiltersToggleState(){
   const active = activeTheme !== "all" || activeType !== "all";
   document.getElementById("filtersToggleBtn").classList.toggle("active", active);
+  const label = document.getElementById("filtersToggleLabel");
+  if(!active){ label.textContent = "Фильтры материалов"; return; }
+  const typeLabels = {video:"Видео", audio:"Аудио", pdf:"PDF"};
+  const parts = [];
+  if(activeType !== "all") parts.push(typeLabels[activeType] || activeType);
+  if(activeTheme !== "all") parts.push(activeTheme);
+  label.textContent = parts.join(", ");
 }
 function setActiveFolder(f){
   activeFolder = f;
@@ -2869,50 +2860,94 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   const HEAD='"Cormorant Garamond"', SYS='"Montserrat"';
   try{
     await Promise.all([
-      document.fonts.load('600 14px '+SYS), document.fonts.load('500 22px '+SYS),
-      document.fonts.load('italic 500 20px '+HEAD), document.fonts.load('italic 500 18px '+HEAD),
-      document.fonts.load('italic 500 17px '+HEAD), document.fonts.load('600 46px '+HEAD)
+      document.fonts.load('700 72px '+HEAD), document.fonts.load('700 56px '+HEAD),
+      document.fonts.load('700 20px '+SYS), document.fonts.load('600 20px '+SYS),
+      document.fonts.load('700 22px '+SYS), document.fonts.load('700 21px '+SYS),
+      document.fonts.load('700 19px '+SYS)
     ]);
   }catch(e){}
-  const c=document.createElement("canvas"); c.width=640; c.height=640;
+  const W=640, PAD=48, CW=W-PAD*2, RIGHT=W-PAD;
+  const measure=document.createElement("canvas").getContext("2d");
+  const wrapLines=(ctx,text,maxWidth)=>{
+    const words=text.split(" "); const lines=[]; let line="";
+    words.forEach(w=>{
+      const test=line?line+" "+w:w;
+      if(measure.measureText(test).width>maxWidth && line){ lines.push(line); line=w; } else line=test;
+    });
+    if(line) lines.push(line);
+    return lines;
+  };
+  measure.font="700 21px "+SYS+", sans-serif";
+  const habitLines=HABITS.map(h=>wrapLines(measure,h,CW-48));
+  measure.font="700 19px "+SYS+", sans-serif";
+  const quoteLines=wrapLines(measure,"Маленькие шаги каждый день — путь к большим переменам",420);
+
+  const headerBottom=232; // after date block / star+day badge / marathon line
+  const statBottom=headerBottom+100; // "N из N" + "привычек сегодня"
+  let checklistY=statBottom+44;
+  habitLines.forEach(lines=>{ checklistY += lines.length*28 + 22; });
+  const quoteTop=checklistY+6;
+  const quoteBottom=quoteTop + quoteLines.length*26;
+  const H=quoteBottom+PAD;
+
+  const c=document.createElement("canvas"); c.width=W; c.height=H;
   const ctx=c.getContext("2d");
-  const grad=ctx.createLinearGradient(0,0,640,640); grad.addColorStop(0,"#AA9DB8"); grad.addColorStop(1,"#6A9993");
-  ctx.fillStyle=grad; ctx.fillRect(0,0,640,640);
-  ctx.fillStyle="#fff"; ctx.textAlign="center";
-  ctx.font="32px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"; ctx.fillText("🌙", 320, 58);
-  const dateText=fmtDateRu(dayToDate(TODAY)).toUpperCase();
-  const marathonText="Марафон «Начни сегодня!» · день "+TODAY;
-  ctx.font="600 14px "+SYS+", sans-serif";
-  const dateW=ctx.measureText(dateText).width;
-  ctx.font="italic 500 20px "+HEAD+", Georgia, serif";
-  const marathonW=ctx.measureText(marathonText).width;
-  const boxW=Math.max(dateW,marathonW)+56, boxH=64, boxX=320-boxW/2, boxY=70;
-  ctx.strokeStyle="rgba(255,255,255,.4)"; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.roundRect(boxX, boxY, boxW, boxH, 14); ctx.stroke();
+  const grad=ctx.createLinearGradient(0,0,W,H); grad.addColorStop(0,"#AA9DB8"); grad.addColorStop(1,"#6A9993");
+  ctx.fillStyle=grad;
+  ctx.beginPath(); ctx.roundRect(0,0,W,H,28); ctx.fill();
   ctx.fillStyle="#fff";
-  ctx.font="600 14px "+SYS+", sans-serif"; ctx.fillText(dateText, 320, boxY+26);
-  ctx.font="italic 500 20px "+HEAD+", Georgia, serif"; ctx.fillText(marathonText, 320, boxY+50);
+
+  const dayNum=dayToDate(TODAY).getUTCDate();
+  ctx.textAlign="left";
+  ctx.font="700 72px "+HEAD+", Georgia, serif"; ctx.fillText(String(dayNum), PAD, 112);
+  ctx.font="700 20px "+SYS+", sans-serif"; ctx.fillText(RU_MONTHS_SHORT[dayToDate(TODAY).getUTCMonth()], PAD+2, 142);
+
+  const starCx=RIGHT-22, starCy=66, starR=22;
+  ctx.save();
+  ctx.fillStyle="#D9BD8A"; ctx.beginPath();
+  for(let i=0;i<5;i++){
+    const a=-Math.PI/2+i*(Math.PI*2/5), a2=a+Math.PI/5;
+    const x1=starCx+Math.cos(a)*starR, y1=starCy+Math.sin(a)*starR;
+    const x2=starCx+Math.cos(a2)*starR*0.42, y2=starCy+Math.sin(a2)*starR*0.42;
+    i===0?ctx.moveTo(x1,y1):ctx.lineTo(x1,y1); ctx.lineTo(x2,y2);
+  }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+
+  const dayBadgeText="День "+TODAY;
+  ctx.font="700 18px "+SYS+", sans-serif";
+  const badgeW=ctx.measureText(dayBadgeText).width+40, badgeH=42, badgeY=100;
+  ctx.fillStyle="#fff";
+  ctx.beginPath(); ctx.roundRect(RIGHT-badgeW, badgeY, badgeW, badgeH, 21); ctx.fill();
+  ctx.fillStyle="#3F6660"; ctx.textAlign="center";
+  ctx.fillText(dayBadgeText, RIGHT-badgeW/2, badgeY+27);
+
+  ctx.fillStyle="#fff"; ctx.textAlign="center";
+  ctx.font="600 20px "+SYS+", sans-serif";
+  ctx.fillText("Марафон «Начни сегодня!»", W/2, headerBottom);
+
   const done=liveChecked.filter(Boolean).length;
-  ctx.font="600 46px "+HEAD+", Georgia, serif"; ctx.fillText(done+" из "+HABITS.length, 320, boxY+boxH+64);
-  ctx.font="italic 500 18px "+HEAD+", Georgia, serif"; ctx.fillText("привычек сегодня", 320, boxY+boxH+92);
-  let y=282; ctx.font="500 22px "+SYS+", sans-serif"; ctx.textAlign="left";
+  ctx.font="700 56px "+HEAD+", Georgia, serif"; ctx.fillText(done+" из "+HABITS.length, W/2, headerBottom+56);
+  ctx.font="700 22px "+SYS+", sans-serif"; ctx.fillText("привычек сегодня", W/2, headerBottom+92);
+
+  let y=statBottom+30; ctx.textAlign="left"; ctx.font="700 21px "+SYS+", sans-serif";
   HABITS.forEach((h,i)=>{
-    const cy = y-7, cx = 92, r = 9;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-    ctx.lineWidth=2; ctx.strokeStyle="rgba(255,255,255,.75)"; ctx.stroke();
-    if(liveChecked[i]){
-      ctx.beginPath(); ctx.moveTo(cx-4, cy); ctx.lineTo(cx-1, cy+4); ctx.lineTo(cx+5, cy-5);
-      ctx.lineWidth=2; ctx.strokeStyle="#fff"; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.stroke();
-    }
-    ctx.fillText(h, cx+r+15, y);
-    y+=54;
+    const cx=PAD+8, cy=y-7;
+    ctx.save();
+    ctx.strokeStyle = liveChecked[i] ? "#fff" : "rgba(255,255,255,.5)";
+    ctx.lineWidth=4; ctx.lineCap="round"; ctx.lineJoin="round";
+    ctx.beginPath(); ctx.moveTo(cx-8,cy); ctx.lineTo(cx-2,cy+8); ctx.lineTo(cx+12,cy-10); ctx.stroke();
+    ctx.restore();
+    habitLines[i].forEach((ln,li)=>{ ctx.fillText(ln, PAD+36, y+li*28); });
+    y += habitLines[i].length*28 + 22;
   });
-  ctx.textAlign="center"; ctx.font='italic 500 17px '+HEAD+', Georgia, serif';
-  ctx.fillText("Маленькие шаги каждый день создают большие результаты", 320, 580);
+
+  ctx.textAlign="center"; ctx.font="700 19px "+SYS+", sans-serif";
+  quoteLines.forEach((ln,li)=>{ ctx.fillText(ln, W/2, quoteTop+li*26); });
+
   const body=document.getElementById("shareOverlayBody");
   body.innerHTML = `<div class="share-out">
       <img src="${c.toDataURL('image/png')}" alt="карточка дня">
-      <p class="share-note">сохрани картинку или сделай скриншот, чтобы поделиться днём</p>
+      <p class="share-note">Сохрани картинку или сделай скриншот, чтобы поделиться днём</p>
     </div>`;
   document.getElementById("shareOverlay").classList.add("open");
 });
@@ -3093,6 +3128,7 @@ function renderMaterials(){
   flat.querySelectorAll(".mitem-fav").forEach(btn=>{
     btn.addEventListener("click", e=>{
       e.stopPropagation();
+      if(isFavorite(btn.dataset.favid) && !confirm("Убрать материал из избранного?")) return;
       playPopSound();
       toggleFavorite(btn.dataset.favid);
       renderMaterials();
