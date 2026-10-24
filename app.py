@@ -2860,10 +2860,10 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   const HEAD='"Cormorant Garamond"', SYS='"Montserrat"';
   try{
     await Promise.all([
-      document.fonts.load('700 72px '+HEAD), document.fonts.load('700 56px '+HEAD),
-      document.fonts.load('700 20px '+SYS), document.fonts.load('600 20px '+SYS),
-      document.fonts.load('700 22px '+SYS), document.fonts.load('700 21px '+SYS),
-      document.fonts.load('700 19px '+SYS)
+      document.fonts.load('600 72px '+HEAD), document.fonts.load('600 56px '+HEAD),
+      document.fonts.load('600 20px '+SYS), document.fonts.load('600 20px '+SYS),
+      document.fonts.load('600 22px '+SYS), document.fonts.load('600 21px '+SYS),
+      document.fonts.load('600 19px '+SYS)
     ]);
   }catch(e){}
   const W=640, PAD=48, CW=W-PAD*2, RIGHT=W-PAD;
@@ -2877,9 +2877,9 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
     if(line) lines.push(line);
     return lines;
   };
-  measure.font="700 21px "+SYS+", sans-serif";
+  measure.font="600 21px "+SYS+", sans-serif";
   const habitLines=HABITS.map(h=>wrapLines(measure,h,CW-48));
-  measure.font="700 19px "+SYS+", sans-serif";
+  measure.font="600 19px "+SYS+", sans-serif";
   const quoteLines=wrapLines(measure,"Маленькие шаги каждый день — путь к большим переменам",420);
 
   const headerBottom=232; // after date block / star+day badge / marathon line
@@ -2899,8 +2899,8 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
 
   const dayNum=dayToDate(TODAY).getUTCDate();
   ctx.textAlign="left";
-  ctx.font="700 72px "+HEAD+", Georgia, serif"; ctx.fillText(String(dayNum), PAD, 112);
-  ctx.font="700 20px "+SYS+", sans-serif"; ctx.fillText(RU_MONTHS_SHORT[dayToDate(TODAY).getUTCMonth()], PAD+2, 142);
+  ctx.font="600 72px "+HEAD+", Georgia, serif"; ctx.fillText(String(dayNum), PAD, 112);
+  ctx.font="600 20px "+SYS+", sans-serif"; ctx.fillText(RU_MONTHS_SHORT[dayToDate(TODAY).getUTCMonth()], PAD+2, 142);
 
   const starCx=RIGHT-22, starCy=66, starR=22;
   ctx.save();
@@ -2914,7 +2914,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.closePath(); ctx.fill(); ctx.restore();
 
   const dayBadgeText="День "+TODAY;
-  ctx.font="700 18px "+SYS+", sans-serif";
+  ctx.font="600 18px "+SYS+", sans-serif";
   const badgeW=ctx.measureText(dayBadgeText).width+40, badgeH=42, badgeY=100;
   ctx.fillStyle="#fff";
   ctx.beginPath(); ctx.roundRect(RIGHT-badgeW, badgeY, badgeW, badgeH, 21); ctx.fill();
@@ -2926,10 +2926,10 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.fillText("Марафон «Начни сегодня!»", W/2, headerBottom);
 
   const done=liveChecked.filter(Boolean).length;
-  ctx.font="700 56px "+HEAD+", Georgia, serif"; ctx.fillText(done+" из "+HABITS.length, W/2, headerBottom+56);
-  ctx.font="700 22px "+SYS+", sans-serif"; ctx.fillText("привычек сегодня", W/2, headerBottom+92);
+  ctx.font="600 56px "+HEAD+", Georgia, serif"; ctx.fillText(done+" из "+HABITS.length, W/2, headerBottom+56);
+  ctx.font="600 22px "+SYS+", sans-serif"; ctx.fillText("привычек сегодня", W/2, headerBottom+92);
 
-  let y=statBottom+30; ctx.textAlign="left"; ctx.font="700 21px "+SYS+", sans-serif";
+  let y=statBottom+30; ctx.textAlign="left"; ctx.font="600 21px "+SYS+", sans-serif";
   HABITS.forEach((h,i)=>{
     const cx=PAD+8, cy=y-7;
     ctx.save();
@@ -2941,7 +2941,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
     y += habitLines[i].length*28 + 22;
   });
 
-  ctx.textAlign="center"; ctx.font="700 19px "+SYS+", sans-serif";
+  ctx.textAlign="center"; ctx.font="600 19px "+SYS+", sans-serif";
   quoteLines.forEach((ln,li)=>{ ctx.fillText(ln, W/2, quoteTop+li*26); });
 
   const body=document.getElementById("shareOverlayBody");
