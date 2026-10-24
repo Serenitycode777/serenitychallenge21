@@ -999,14 +999,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evcard .place svg{width:13px;height:13px;flex-shrink:0}
 .evcard .desc{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 8px}
 .evcard a{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--lav-ink);text-decoration:none}
-.evcard .ev-hero{position:relative;height:auto;min-height:118px;display:flex;align-items:flex-end;gap:14px;padding:16px}
-.evcard .ev-hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(40,34,48,.38) 100%);pointer-events:none}
-.evcard .ev-hero>*{position:relative}
-.evcard .ev-hero .datebadge{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff}
-.evcard .ev-hero .datebadge .num,.evcard .ev-hero .datebadge .mon{color:#fff}
-.evcard .ev-hero h4{font-family:var(--font-head);font-size:21px;font-weight:600;line-height:1.2;color:#fff;margin:0 0 2px;text-shadow:0 1px 8px rgba(40,34,48,.35)}
-.evcard .ev-hero + .b{padding-top:12px}
-.evcard .ev-hero + .b .info>*:last-child{margin-bottom:0}
 
 /* overlays – центрированное модальное окно с цветной шапкой */
 .overlay{position:fixed;inset:0;background:rgba(26,21,33,.5);display:flex;align-items:center;justify-content:center;
@@ -2212,12 +2204,11 @@ function renderMilaEvents(){
       : `<div class="mon">${dateStr}</div>`;
     const place = e.place ? `<div class="place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="10.5" r="3"/><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/></svg>${e.place}</div>` : "";
     return `<div class="evcard">
-      <div class="ph ev-hero" style="${bg}">
-        <div class="datebadge">${dateBadge}</div>
-        <h4>${e.title}</h4>
-      </div>
+      <div class="ph" style="${bg}"></div>
       <div class="b">
+        <div class="datebadge">${dateBadge}</div>
         <div class="info">
+          <h4>${e.title}</h4>
           ${place}
           ${desc}
           ${link}
