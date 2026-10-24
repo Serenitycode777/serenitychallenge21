@@ -991,7 +991,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evcard .b{display:flex;gap:14px;padding:16px}
 .evcard .datebadge{flex-shrink:0;width:64px;min-height:56px;border-radius:14px;background:var(--surface-2);
   display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px 4px}
-.evcard .datebadge .num{font-family:var(--font-head);font-size:22px;font-weight:600;color:var(--lav-ink);line-height:1}
+.evcard .datebadge .num{font-family:var(--font-head);font-size:30px;font-weight:600;color:var(--lav-ink);line-height:1}
 .evcard .datebadge .mon{font-size:10.5px;color:var(--ink-soft);margin-top:2px}
 .evcard .info{flex:1;min-width:0}
 .evcard .info h4{font-family:var(--sys);font-size:15.5px;font-weight:600;margin:0 0 4px}
