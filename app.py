@@ -2565,11 +2565,15 @@ function renderChecklist(){
     const timeRow = document.getElementById("hcTimeRow");
     timeRow.hidden = !(todayHabits.length && todayMins > 0);
     if(!timeRow.hidden){
-      document.getElementById("hcTimeNum").textContent = todayMins;
-      document.getElementById("hcTimeNum").classList.toggle("long", todayMins >= 100);
-      const _m10 = todayMins % 10, _m100 = todayMins % 100;
-      const _minLabel = (_m10===1 && _m100!==11) ? "минута" : (_m10>=2 && _m10<=4 && (_m100<12 || _m100>14)) ? "минуты" : "минут";
-      document.getElementById("hcTimeVal").textContent = `${_minLabel} заботы о себе`;
+      const _plural = (n, one, few, many) => { const a=n%10, b=n%100; return (a===1 && b!==11) ? one : (a>=2 && a<=4 && (b<12 || b>14)) ? few : many; };
+      let _circle, _label;
+      if(todayMins < 60){ _circle = String(todayMins); _label = _plural(todayMins,"минута","минуты","минут"); }
+      else { const _h = Math.floor(todayMins/60), _mm = todayMins % 60;
+        _circle = _mm ? `${_h}:${String(_mm).padStart(2,"0")}` : String(_h);
+        _label = _mm ? "часа" : _plural(_h,"час","часа","часов"); }
+      document.getElementById("hcTimeNum").textContent = _circle;
+      document.getElementById("hcTimeNum").classList.toggle("long", _circle.length >= 3);
+      document.getElementById("hcTimeVal").textContent = `${_label} заботы о себе`;
       const hasSleepHabit = todayHabits.some(h=>{ const meta = findHabitMeta(h); return meta && meta.noTime; });
       document.getElementById("hcTimeSub").hidden = !hasSleepHabit;
     }
