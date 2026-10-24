@@ -3768,16 +3768,6 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 
   <div id="t-content">
     <div class="card">
-      <h2>Карточка «Перед началом марафона»</h2>
-      <div class="hint">выбери папку материалов — её содержимое откроется по клику на эту карточку в кабинете</div>
-      <div class="field">
-        <label>Папка</label>
-        <select id="introFolderSelect"><option value="">— не выбрано (заглушка «скоро добавим») —</option></select>
-      </div>
-      <button id="introFolderSave">Сохранить</button>
-      <div class="hint" id="introFolderStatus"></div>
-    </div>
-    <div class="card">
       <h2>Материалы</h2>
       <div id="materialsList"></div>
     </div>
@@ -3813,6 +3803,10 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
                 <summary>цвет / градиент, если без фото</summary>
                 <div class="nf-swatches" id="nfColorPicker"></div>
               </details>
+              <div class="toggle-row" style="margin-top:10px">
+                <span class="l">Карточка «Перед началом марафона» в материалах</span>
+                <button class="sw" id="nfIntroToggle" type="button"></button>
+              </div>
               <button id="nfCreate" class="nf-create-btn">Создать</button>
             </div>
           </div>
@@ -4276,10 +4270,17 @@ function renderFolderPicker(){
     if(f.style.display==="flex") document.getElementById("nfName").focus();
   });
 }
+let introFolderId = null;
 async function loadFolders(){
   try{ FOLDERS = await apiFetch("/api/admin/folders"); }catch(e){ FOLDERS = []; }
   renderFolderPicker();
 }
+async function loadIntroFolderId(){
+  try{ const data = await apiFetch("/api/admin/settings/intro-folder"); introFolderId = data.folder_id || null; }catch(e){}
+}
+document.getElementById("nfIntroToggle").addEventListener("click", ()=>{
+  document.getElementById("nfIntroToggle").classList.toggle("on");
+});
 document.getElementById("nfCreate").addEventListener("click", async ()=>{
   const name = document.getElementById("nfName").value.trim();
   const dup = FOLDERS.some(f=>f.name===name && f.id!==editingFolderId);
@@ -4287,6 +4288,7 @@ document.getElementById("nfCreate").addEventListener("click", async ()=>{
   const photoFile = document.getElementById("nfPhoto").files[0];
   const photo = photoFile ? await readFileAsDataUrl(photoFile) : null;
   const wasEditing = editingFolderId;
+  const makeIntro = document.getElementById("nfIntroToggle").classList.contains("on");
   try{
     const body = {
       name, description: document.getElementById("nfDesc").value.trim(),
@@ -4301,6 +4303,13 @@ document.getElementById("nfCreate").addEventListener("click", async ()=>{
       FOLDERS.push(f);
       showToast("Папка «"+name+"» создана ✓");
     }
+    if(makeIntro && introFolderId !== f.id){
+      await apiFetch("/api/admin/settings/intro-folder", {method:"POST", body: JSON.stringify({folder_id: f.id})});
+      introFolderId = f.id;
+    } else if(!makeIntro && introFolderId === f.id){
+      await apiFetch("/api/admin/settings/intro-folder", {method:"POST", body: JSON.stringify({folder_id: null})});
+      introFolderId = null;
+    }
     selectedFolder = f.id;
     editingFolderId = null;
     document.getElementById("nfName").value = "";
@@ -4308,6 +4317,7 @@ document.getElementById("nfCreate").addEventListener("click", async ()=>{
     document.getElementById("nfPhoto").value = "";
     selectedNfColor = NF_COLORS[0].v;
     renderNfColorPicker();
+    document.getElementById("nfIntroToggle").classList.remove("on");
     document.getElementById("nfCreate").textContent = "Создать";
     document.getElementById("newFolderForm").style.display = "none";
     renderFolderPicker();
@@ -4325,6 +4335,7 @@ function startEditFolder(f){
   document.getElementById("nfDesc").value = f.description || "";
   selectedNfColor = f.color || NF_COLORS[0].v;
   renderNfColorPicker();
+  document.getElementById("nfIntroToggle").classList.toggle("on", introFolderId === f.id);
   document.getElementById("nfCreate").textContent = "Сохранить изменения";
   document.getElementById("newFolderForm").scrollIntoView({block:"center", behavior:"smooth"});
 }
@@ -4335,6 +4346,7 @@ function cancelEditFolder(){
   document.getElementById("nfPhoto").value = "";
   selectedNfColor = NF_COLORS[0].v;
   renderNfColorPicker();
+  document.getElementById("nfIntroToggle").classList.remove("on");
   document.getElementById("nfCreate").textContent = "Создать";
   document.getElementById("newFolderForm").style.display = "none";
   renderFolderPicker();
@@ -4473,21 +4485,7 @@ document.getElementById("toggleMaterialForm").addEventListener("click", ()=>{
   if(open && editingFolderId) cancelEditFolder();
   openMaterialForm(!open);
 });
-async function loadIntroFolder(){
-  const sel = document.getElementById("introFolderSelect");
-  sel.innerHTML = `<option value="">— не выбрано (заглушка «скоро добавим») —</option>`
-    + FOLDERS.map(f=>`<option value="${f.id}">${f.name}</option>`).join("");
-  const data = await apiFetch("/api/admin/settings/intro-folder");
-  sel.value = data.folder_id || "";
-}
-document.getElementById("introFolderSave").addEventListener("click", async ()=>{
-  const statusEl = document.getElementById("introFolderStatus");
-  statusEl.textContent = "сохраняю…";
-  const folder_id = document.getElementById("introFolderSelect").value;
-  const data = await apiFetch("/api/admin/settings/intro-folder", {method:"POST", body: JSON.stringify({folder_id})});
-  statusEl.textContent = data.folder_id ? "сохранено ✓" : "заглушка включена (папка снята)";
-});
-loadFolders().then(()=>{ loadMaterials(); loadIntroFolder(); });
+loadFolders().then(()=>{ loadMaterials(); loadIntroFolderId(); });
 
 document.getElementById("evtHintDot").addEventListener("click", ()=>{
   document.getElementById("evtHintDot").classList.toggle("on");
