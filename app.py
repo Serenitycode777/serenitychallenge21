@@ -183,8 +183,12 @@ def normalize_email(e: str) -> str:
 
 # ---------- материалы ----------
 MATERIALS_FILE = HERE / "data" / "materials.json"  # больше не источник правды, см. seed_materials_once()
-MARATHON_START = "2026-10-19"  # ВРЕМЕННО для теста по просьбе Ники (2026-10-20) – вернуть на 2026-11-09 перед реальным запуском
+MARATHON_START_DEFAULT = "2026-10-19"  # используется, пока в settings нет значения "marathon_start" (задаётся в админке)
 MARATHON_TZ = "America/New_York"
+
+
+async def get_marathon_start() -> str:
+    return await get_setting("marathon_start", MARATHON_START_DEFAULT)
 
 
 def load_materials() -> dict:
@@ -216,7 +220,7 @@ async def load_materials_from_db() -> dict:
          "type": m["format"] or "link", "tags": _jsonb(m["tags"]) or [], "day": m["day"], "url": m["url"] or "#"}
         for m in materials
     ]
-    return {"marathon_start": MARATHON_START, "timezone": MARATHON_TZ, "authors": authors, "materials": mats}
+    return {"marathon_start": await get_marathon_start(), "timezone": MARATHON_TZ, "authors": authors, "materials": mats}
 
 
 def marathon_day_today(marathon_start: str, tz_name: str) -> int:
@@ -3745,6 +3749,16 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 
   <div id="t-calendar" style="display:none">
     <div class="card">
+      <h2>Дата начала марафона</h2>
+      <div class="hint">день 1 отсчитывается от этой даты; меняй только до запуска или по согласованию</div>
+      <div class="field">
+        <label>Дата начала</label>
+        <input type="date" id="marathonStartInput">
+      </div>
+      <button id="marathonStartSave">Сохранить дату</button>
+      <div class="hint" id="marathonStartStatus"></div>
+    </div>
+    <div class="card">
       <h2>Текущие эфиры марафона</h2>
       <div class="evlist" id="evList"></div>
     </div>
@@ -4329,7 +4343,7 @@ evtToggle.addEventListener("click", ()=>{
   document.getElementById("evtPickWrap").style.display = evtToggle.classList.contains("on") ? "" : "none";
 });
 
-const MARATHON_START_ISO = "2026-11-09"; // держать в паре с MARATHON_START в app.py
+let MARATHON_START_ISO = "2026-11-09"; // подтягивается с сервера, см. loadMarathonStart()
 function isoDateToMarathonDay(iso){
   if(!iso) return null;
   const a = new Date(MARATHON_START_ISO+"T00:00:00"), b = new Date(iso+"T00:00:00");
@@ -4342,6 +4356,33 @@ function dayToIso(day){
   dt.setUTCDate(dt.getUTCDate() + (day-1));
   return dt.toISOString().slice(0,10);
 }
+async function loadMarathonStart(){
+  const r = await fetch("/api/admin/settings/marathon-start");
+  const data = await r.json();
+  if(data.marathon_start){
+    MARATHON_START_ISO = data.marathon_start;
+    document.getElementById("marathonStartInput").value = data.marathon_start;
+  }
+}
+document.getElementById("marathonStartSave").addEventListener("click", async ()=>{
+  const val = document.getElementById("marathonStartInput").value;
+  const statusEl = document.getElementById("marathonStartStatus");
+  if(!val){ statusEl.textContent = "выбери дату"; return; }
+  statusEl.textContent = "сохраняю…";
+  const r = await fetch("/api/admin/settings/marathon-start", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({marathon_start: val})
+  });
+  const data = await r.json();
+  if(r.ok && data.marathon_start){
+    MARATHON_START_ISO = data.marathon_start;
+    statusEl.textContent = "сохранено: " + data.marathon_start;
+  } else {
+    statusEl.textContent = "ошибка сохранения";
+  }
+});
+loadMarathonStart();
 
 async function uploadMaterialFile(file){
   const box = document.getElementById("mFileBox");
@@ -5233,11 +5274,12 @@ async def api_cabinet_bootstrap(request):
     logs = [{"date": r["log_date"].isoformat(), "habits_done": _jsonb(r["habits_done"]) or {}, "closed": r["closed"]}
             for r in log_rows]
 
-    today = marathon_day_today(MARATHON_START, MARATHON_TZ)
+    marathon_start = await get_marathon_start()
+    today = marathon_day_today(marathon_start, MARATHON_TZ)
     materials_data = await load_materials_from_db()
 
     cal_rows = await DB_POOL.fetch("SELECT * FROM calendar_events ORDER BY date")
-    start = date.fromisoformat(MARATHON_START)
+    start = date.fromisoformat(marathon_start)
     events = [{
         "day": (r["date"] - start).days + 1, "date": r["date"].isoformat(), "title": r["title"],
         "time": r["time"] or "", "type": r["type"] or "", "link": r["link"] or "",
@@ -5249,7 +5291,7 @@ async def api_cabinet_bootstrap(request):
     return web.json_response({
         "ok": True, "profile": profile, "habits": habits, "logs": logs, "today": today,
         "today_date": datetime.now(ZoneInfo(MARATHON_TZ)).date().isoformat(),
-        "marathon_start": MARATHON_START, "mastermind": mastermind,
+        "marathon_start": marathon_start, "mastermind": mastermind,
         "authors": materials_data["authors"], "materials": materials_data["materials"], "events": events,
         "mila_events": mila_events,
     })
@@ -5800,7 +5842,7 @@ async def api_cabinet_material_link(request):
     row = await DB_POOL.fetchrow("SELECT * FROM materials WHERE id=$1", mat_id)
     if not row:
         return web.json_response({"ok": False, "error": "not_found"}, status=404)
-    today = marathon_day_today(MARATHON_START, MARATHON_TZ)
+    today = marathon_day_today(await get_marathon_start(), MARATHON_TZ)
     if row["day"] is not None and row["day"] > today:
         return web.json_response({"ok": False, "error": "locked"}, status=403)
     url = row["url"] or ""
@@ -6020,6 +6062,21 @@ async def api_settings_cabinet_opens(request):
     })
 
 
+async def api_settings_marathon_start(request):
+    """GET – текущая дата старта марафона (YYYY-MM-DD); POST {"marathon_start": "YYYY-MM-DD"} – задать."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    if request.method == "POST":
+        data = await request.json()
+        raw = str(data.get("marathon_start", "")).strip()
+        try:
+            date.fromisoformat(raw)
+        except ValueError:
+            return web.json_response({"error": "bad_date"}, status=400)
+        await set_setting("marathon_start", raw)
+    return web.json_response({"marathon_start": await get_marathon_start()})
+
+
 async def cabinet(request):
     return html_response(CABINET_APP_HTML)
 
@@ -6111,6 +6168,8 @@ def make_app():
         web.delete("/api/admin/signups/{id}", api_signup_delete),
         web.get("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
         web.post("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
+        web.get("/api/admin/settings/marathon-start", api_settings_marathon_start),
+        web.post("/api/admin/settings/marathon-start", api_settings_marathon_start),
         web.get("/api/admin/folders", api_folders_list),
         web.post("/api/admin/folders", api_folders_add),
         web.delete("/api/admin/folders/{id}", api_folders_delete),
