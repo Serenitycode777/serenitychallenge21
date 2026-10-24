@@ -822,7 +822,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .btn.primary:disabled{background:var(--surface-2);color:var(--ink-soft);cursor:default}
 .btn.primary.is-closed{background:var(--surface-2);color:var(--ink-soft)}
 .btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
-.share-out{margin-top:14px}
+.share-out{margin-top:14px;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
 .share-out img{width:100%;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow)}
 @media (min-width:900px){
   .share-out img{width:260px;display:block;margin:0 auto}
