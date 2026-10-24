@@ -722,11 +722,16 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mm-half .mm-field{width:100%}
 .mm-half .mm-btn{width:100%;padding:9px 12px;text-align:center}
 .mm-half .mm-done{font-size:12px}
-.hc-row-compact{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;
-  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;
+.hc-row-compact{position:relative;display:grid;grid-template-columns:auto 1fr auto;
+  grid-template-areas:"icon title chev" "icon sub chev";align-items:center;column-gap:12px;row-gap:1px;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;
   box-shadow:var(--shadow);cursor:pointer;font-family:var(--sys);text-align:left;width:100%}
-.hc-row-compact .hc-row-icon{margin-bottom:4px}
-.hc-row-compact .hc-row-chev{position:absolute;top:14px;right:14px}
+.hc-row-compact .hc-row-icon{grid-area:icon;width:48px;height:48px;margin:0;
+  background:rgba(170,157,184,.22);color:var(--lav-ink)}
+.hc-row-compact .hc-row-icon svg{width:25px;height:25px}
+.hc-row-compact .hc-row-title{grid-area:title;align-self:end}
+.hc-row-compact .hc-row-sub{grid-area:sub;align-self:start}
+.hc-row-compact .hc-row-chev{grid-area:chev}
 
 /* сегодня */
 .chanchat-row{display:flex;gap:8px;justify-content:center;margin:0 0 14px}
