@@ -1018,7 +1018,11 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mat-body{flex:1;min-width:0}
 .mat-title{font-size:14px;font-weight:500;line-height:1.35}
 .mat-tags{font-size:12.5px;color:var(--ink-soft);margin-top:3px}
-.mat-embed{margin:4px 0 10px}
+.mat-embed{margin:4px 0 10px;position:relative}
+.mat-embed-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px;z-index:1;transition:opacity .25s ease}
+.mat-embed-loading.hide{opacity:0;pointer-events:none}
+.mat-spinner{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--sage);animation:matSpin .8s linear infinite}
+@keyframes matSpin{to{transform:rotate(360deg)}}
 .mat-embed-fallback{display:block;text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:8px;flex-shrink:0}
 .panel.force-tall{height:min(640px,86vh)}
 #overlayBody.no-scroll{overflow:hidden;display:flex;flex-direction:column;flex:1;min-height:0}
@@ -3282,20 +3286,28 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
 function renderMaterialEmbed(type, url){
   const box = document.getElementById("matEmbed");
   const body = document.getElementById("overlayBody");
-  let inner, isFrame = false;
+  let inner, isFrame = false, loadEvt = "load", tag = "iframe";
   if(type === "video"){
     inner = `<video controls playsinline style="width:100%;border-radius:12px;display:block" src="${url}"></video>`;
+    loadEvt = "loadeddata"; tag = "video";
   } else if(type === "audio"){
     inner = `<audio controls style="width:100%;display:block" src="${url}"></audio>`;
+    loadEvt = "loadeddata"; tag = "audio";
   } else {
     isFrame = true;
     inner = `<iframe src="${url}" title="материал"></iframe>`;
   }
-  box.innerHTML = inner + `<a href="${url}" target="_blank" rel="noopener" class="mat-embed-fallback">открыть в отдельной вкладке</a>`;
+  box.innerHTML = `<div class="mat-embed-loading" id="matEmbedLoading"><span class="mat-spinner"></span></div>`
+    + inner + `<a href="${url}" target="_blank" rel="noopener" class="mat-embed-fallback">открыть в отдельной вкладке</a>`;
   box.hidden = false;
   box.classList.toggle("is-frame", isFrame);
   body.classList.toggle("no-scroll", isFrame);
   document.querySelector(".panel").classList.toggle("force-tall", isFrame);
+  const loadingEl = document.getElementById("matEmbedLoading");
+  const hideLoading = ()=>{ if(loadingEl) loadingEl.classList.add("hide"); };
+  const mediaEl = box.querySelector(tag);
+  if(mediaEl) mediaEl.addEventListener(loadEvt, hideLoading, {once:true});
+  setTimeout(hideLoading, 8000);
 }
 document.getElementById("filtersToggleBtn").addEventListener("click", ()=>{
   playPopSound();
