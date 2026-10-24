@@ -790,8 +790,10 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .hc-time-icon svg{width:17px;height:17px;color:var(--sage-ink)}
 .hc-time-val{font-family:var(--font-head);font-weight:600;font-size:18px;color:var(--ink);text-transform:uppercase;letter-spacing:.04em}
 .hc-time-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
-.hc-time-num{width:48px;height:48px;border-radius:50%;background:var(--sage);color:#fff;font-family:var(--font-head);font-weight:700;font-size:23px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 14px -6px rgba(63,102,96,.55)}
-.hc-time-num.long{font-size:18px}
+.hc-time-num{min-width:58px;height:54px;padding:0 8px;border-radius:14px;background:var(--sage);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 14px -6px rgba(63,102,96,.55)}
+.hc-time-num b{font-family:var(--font-head);font-weight:700;font-size:24px;line-height:1}
+.hc-time-num b.long{font-size:20px}
+.hc-time-num span{font-family:var(--sys);font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.9;margin-top:3px}
 .habits-card-status{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding-top:10px;
   border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-soft);line-height:1.4}
 .hab-badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--sage-ink);
@@ -1431,9 +1433,9 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           <div class="hc-progress-row"><b id="hcDoneNum">0</b> из <b id="hcTotalNum">0</b> выполнено</div>
           <div class="hc-bar-row"><div class="hc-bar"><i id="hcBarFill" style="width:0%"></i></div><span class="hc-bar-pct" id="hcBarPct">0%</span></div>
           <div class="hc-time-row" id="hcTimeRow" hidden>
-            <div class="hc-time-num" id="hcTimeNum"></div>
-            <div style="flex:1;min-width:0"><div class="hc-time-val" id="hcTimeVal"></div><div class="hc-time-sub" id="hcTimeSub" hidden>Без учёта сна</div></div>
             <div class="hc-time-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
+            <div style="flex:1;min-width:0"><div class="hc-time-val" id="hcTimeVal">Время для себя любимой</div><div class="hc-time-sub" id="hcTimeSub" hidden>Без учёта сна</div></div>
+            <div class="hc-time-num"><b id="hcTimeNum"></b><span id="hcTimeUnit">всего мин</span></div>
           </div>
         </div>
         <div class="habits-card-status"><span class="hcs-pill" id="dayStatusPill" hidden></span><span id="dayStatus"></span></div>
@@ -2565,15 +2567,11 @@ function renderChecklist(){
     const timeRow = document.getElementById("hcTimeRow");
     timeRow.hidden = !(todayHabits.length && todayMins > 0);
     if(!timeRow.hidden){
-      const _plural = (n, one, few, many) => { const a=n%10, b=n%100; return (a===1 && b!==11) ? one : (a>=2 && a<=4 && (b<12 || b>14)) ? few : many; };
-      let _circle, _label;
-      if(todayMins < 60){ _circle = String(todayMins); _label = _plural(todayMins,"минута","минуты","минут"); }
-      else { const _h = Math.floor(todayMins/60), _mm = todayMins % 60;
-        _circle = _mm ? `${_h}:${String(_mm).padStart(2,"0")}` : String(_h);
-        _label = _mm ? "часа" : _plural(_h,"час","часа","часов"); }
-      document.getElementById("hcTimeNum").textContent = _circle;
-      document.getElementById("hcTimeNum").classList.toggle("long", _circle.length >= 3);
-      document.getElementById("hcTimeVal").textContent = `${_label} заботы о себе`;
+      const _h = Math.floor(todayMins/60), _mm = todayMins % 60;
+      const _big = todayMins < 60 ? String(todayMins) : (_mm ? `${_h}:${String(_mm).padStart(2,"0")}` : String(_h));
+      document.getElementById("hcTimeNum").textContent = _big;
+      document.getElementById("hcTimeNum").classList.toggle("long", _big.length >= 3);
+      document.getElementById("hcTimeUnit").textContent = todayMins < 60 ? "всего мин" : "всего ч";
       const hasSleepHabit = todayHabits.some(h=>{ const meta = findHabitMeta(h); return meta && meta.noTime; });
       document.getElementById("hcTimeSub").hidden = !hasSleepHabit;
     }
