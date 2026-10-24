@@ -727,7 +727,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;
   box-shadow:var(--shadow);cursor:pointer;font-family:var(--sys);text-align:left;width:100%}
 .hc-row-compact .hc-row-icon{grid-area:icon;width:48px;height:48px;margin:0;
-  background:rgba(170,157,184,.22);color:var(--lav-ink)}
+  background:rgba(170,157,184,.3);color:#6E4FA0}
 .hc-row-compact .hc-row-icon svg{width:25px;height:25px}
 .hc-row-compact .hc-row-title{grid-area:title;align-self:end}
 .hc-row-compact .hc-row-sub{grid-area:sub;align-self:start}
