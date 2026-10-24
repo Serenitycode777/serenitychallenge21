@@ -195,7 +195,7 @@ def normalize_email(e: str) -> str:
 MATERIALS_FILE = HERE / "data" / "materials.json"  # больше не источник правды, см. seed_materials_once()
 MARATHON_START_DEFAULT = "2026-10-19"  # используется, пока в settings нет значения "marathon_start" (задаётся в админке)
 MARATHON_TZ = "America/New_York"
-INTRO_FOLDER_ID = "662d1a2b85"  # папка "Перед началом марафона" — обычная папка материалов, жёстко привязана к карточке
+INTRO_FOLDER_ID = "662d1a2b85"  # папка "Перед началом клуба" — обычная папка материалов, жёстко привязана к карточке
 
 
 async def get_marathon_start() -> str:
@@ -253,7 +253,7 @@ async def send_payment_qr_email(to_email: str, name: str, method: str):
     greet_name = name if name else "дорогая участница"
     method_title = "Venmo" if method == "venmo" else "Zelle"
     body = (f"Привет, {greet_name}! \n\n"
-            f"Спасибо за заявку на марафон «Начни сегодня» 💗 \n\n"
+            f"Спасибо за заявку на участие в клубе «Начни сегодня» 💗 \n\n"
             f"Высылаю код оплаты через {method_title}. QR-код во вложении. \n"
             f"После оплаты пришли, пожалуйста, чек в личные сообщения Миле @milaserenity в Телеграм.\n\n"
             f"До скорой встречи! ✨\n"
@@ -292,11 +292,11 @@ async def send_access_email(to_email: str, name: str):
     invite = CHANNEL_INVITE_LINK or "[DEV] ссылка появится, как только настроим CHANNEL_INVITE_LINK"
     greet_name = name if name else "дорогая участница"
     body = (f"Привет, {greet_name}! \n\n"
-            f"Как здорово, что ты решила присоединиться к нашему 21-дневному марафону «Начни сегодня»!\n\n"
-            f"🟣 Вход в наш закрытый Telegram-канал, где будет проходить марафон по ссылке:\n\n"
+            f"Как здорово, что ты решила присоединиться к нашему клубу «Начни сегодня»!\n\n"
+            f"🟣 Вход в наш закрытый Telegram-канал, где будет проходить клуб, по ссылке:\n\n"
             f"{invite}\n\n"
             f"🌿 Что дальше?\n\n"
-            f"Наш марафон стартует 8 ноября!\n\n"
+            f"Наш клуб стартует 8 ноября!\n\n"
             f"1 ноября ты получишь на эту же почту ссылку для доступа к онлайн-платформе со всеми материалами и практиками. "
             f"Ссылка также будет опубликована в нашем Telegram-канале.\n\n"
             f"Очень рада, что ты с нами! 💗\n\n"
@@ -308,7 +308,7 @@ async def send_access_email(to_email: str, name: str):
     payload = {
         "from": MAIL_FROM,
         "to": [to_email],
-        "subject": "Serenity Moon – доступ к марафону",
+        "subject": "Serenity Moon – доступ к клубу",
         "text": body,
     }
     if MAIL_REPLY_TO:
@@ -375,7 +375,7 @@ def login_page(error: str = "") -> str:
     return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Вход – заявки марафона</title>
+<title>Вход – заявки клуба</title>
 <style>
 body{{margin:0;font-family:Inter,system-ui,sans-serif;background:#F7F4F1;color:#352F3D;
 display:flex;align-items:center;justify-content:center;min-height:100vh}}
@@ -386,7 +386,7 @@ button{{margin-top:16px;width:100%;background:#7C6A9C;color:#fff;border:none;bor
 padding:11px;font-size:14px;cursor:pointer}}
 </style></head><body>
 <div class="card">
-<h2 style="margin:0 0 4px;font-size:18px;">Заявки марафона</h2>
+<h2 style="margin:0 0 4px;font-size:18px;">Заявки клуба</h2>
 <p style="margin:0;font-size:13px;color:#8A8390;">только для Милы и Ники</p>
 <form method="post" action="/admin/login">
 <label style="font-size:13px;">Пароль</label>
@@ -453,7 +453,7 @@ details.addform summary{{cursor:pointer;font-size:13.5px;color:#5A5266;font-weig
 </style></head><body>
 <div class="wrap">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-<h1 style="font-size:24px;margin:0;">Заявки марафона</h1>
+<h1 style="font-size:24px;margin:0;">Заявки клуба</h1>
 <div style="display:flex;gap:16px;align-items:center;">
 <a href="/admin/export.csv" style="font-size:13px;color:#7C6A9C;font-weight:600;">скачать CSV</a>
 <a href="/admin/logout" style="font-size:13px;color:#8A8390;">выйти</a>
@@ -491,7 +491,7 @@ CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><m
 <link rel="icon" type="image/jpeg" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/app-icon.jpg">
 <link rel="apple-touch-icon" href="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/app-icon.jpg">
 <meta property="og:title" content="Serenity Moon">
-<meta property="og:description" content="Личный кабинет участницы марафона «Начни сегодня!»">
+<meta property="og:description" content="Личный кабинет участницы клуба «Начни сегодня!»">
 <meta property="og:image" content="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/app-icon.jpg">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1250,7 +1250,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 <div class="authscreen" id="authScreen" hidden>
   <img class="mark" src="https://zmwvcprkhudqqgmrduxn.supabase.co/storage/v1/object/public/avatars/brand/logo.png" alt="Serenity Moon">
   <h1 id="authTitle">Вход в кабинет</h1>
-  <p class="sub" id="authSub">Марафон «Начни сегодня!» · Serenity Moon</p>
+  <p class="sub" id="authSub">Клуб «Начни сегодня!» · Serenity Moon</p>
   <form class="authcard" id="authForm">
     <p class="auth-err" id="authErr" hidden></p>
     <div class="field"><label>Email</label><input type="email" id="authEmail" name="email" autocomplete="email" placeholder="Введите email"></div>
@@ -1331,7 +1331,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   <main><div class="maininner">
     <section class="screen" id="tab-home" hidden>
       <h1 class="page-title">Мой прогресс</h1>
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
       <div class="hcard dayhero heatcard">
         <div class="dh-top"><span class="dh-title">День <span id="bigDayTxt">8</span> из 21</span><span class="dh-pct" id="dayPct">38%</span></div>
         <div class="dh-pill"><i id="dayPillFill"></i></div>
@@ -1406,7 +1406,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
     <section class="screen" id="tab-today">
       <h1 class="page-title">Сегодня</h1>
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
       <div class="affirm-card">
         <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
         <div class="affirm-divider"></div>
@@ -1467,7 +1467,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
     <section class="screen" id="tab-materials" hidden>
       <h1 class="page-title">Материалы</h1>
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
       <div class="mat-layout">
         <div class="mat-main">
           <div class="search-filter-row">
@@ -1513,7 +1513,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           <button class="mat-feature" id="matFeatureBtn" type="button">
             <div class="mat-feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21V11"/><path d="M12 11c0-3.2 2.2-5.5 5.5-5.5 0 3.2-2.3 5.5-5.5 5.5Z"/><path d="M12 14c0-3-2-5-5-5 0 3 2 5 5 5Z"/></svg></div>
             <div class="mat-feature-body">
-              <div class="mat-feature-title">Перед началом марафона</div>
+              <div class="mat-feature-title">Перед началом клуба</div>
               <div class="mat-feature-desc">Важная информация, как получить максимальную пользу от материалов</div>
             </div>
             <div class="mat-feature-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
@@ -1525,7 +1525,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
     <section class="screen" id="tab-schedule" hidden>
       <h1 class="page-title">Расписание</h1>
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
       <div class="heatcard cal-card">
         <div class="cal-head">
           <h3 id="calMonthLabel"></h3>
@@ -1543,7 +1543,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
     <section class="screen" id="tab-profile" hidden>
       <h1 class="page-title">Профиль</h1>
-      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
       <input type="file" id="avatarFileInput" accept="image/*" hidden>
       <div class="avatar-row">
         <div class="avatar" id="mainAvatar">
@@ -1617,7 +1617,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 <div class="star-overlay" id="starOverlay"><div class="star-card">
   <div class="star-eyebrow" id="starEyebrow">неделя 1 пройдена</div>
   <div class="star-big">⭐</div>
-  <h2 id="starTitle">Поздравляю, ты прошла неделю марафона – и за это получаешь звезду</h2>
+  <h2 id="starTitle">Поздравляю, ты прошла первую неделю в клубе – и за это получаешь звезду</h2>
   <div class="star-progress" id="starProgress"></div>
   <button id="starClose" type="button">Забрать звезду</button>
 </div></div>
@@ -1707,7 +1707,7 @@ const CATALOG = {
   ],
   "Питание": [
     {name:"Сбалансированная еда",when:"Ежедневно",dur:"Всегда",desc:"Полезное питание – ключевой элемент здорового образа жизни. Стремитесь к сбалансированному соотношению углеводов, белков и жиров. Слушайте своё тело.",why:"Стабильное питание убирает резкие скачки энергии и голода, из-за которых труднее держать остальные привычки."},
-    {name:"Без сахара",when:"Ежедневно",dur:"Весь день",desc:"Старайся избегать сахара и сладких перекусов в течение дня. Меньше резких скачков энергии – и легче держать остальные привычки марафона.",why:"Резкий подъём сахара в крови даёт короткий всплеск энергии и такой же резкий спад – без него день ровнее."},
+    {name:"Без сахара",when:"Ежедневно",dur:"Весь день",desc:"Старайся избегать сахара и сладких перекусов в течение дня. Меньше резких скачков энергии – и легче держать остальные привычки.",why:"Резкий подъём сахара в крови даёт короткий всплеск энергии и такой же резкий спад – без него день ровнее."},
     {name:"Меньше кофе",when:"Ежедневно",dur:"Весь день",desc:"Ограничь кофе 1-2 чашками в день, особенно во второй половине дня. Меньше тревожности и лучше сон.",why:"Кофеин во второй половине дня может мешать засыпанию, даже если ты этого не замечаешь."}
   ],
   "Уход и красота": [
@@ -1860,11 +1860,11 @@ document.getElementById("diamondInfoBtn").addEventListener("click", ()=>{
       <div class="info-rule">+1 за день со 100% привычек · максимум 21</div>
       <div class="info-rule">+3 за мастермайнд по кодовому слову · 2 эфира</div>
     </div>
-    <p class="info-desc" style="font-style:italic;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">Будь честна с собой: цель марафона не в розыгрыше, а в том, чтобы изменить свою жизнь.</p>`);
+    <p class="info-desc" style="font-style:italic;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">Будь честна с собой: цель клуба не в розыгрыше, а в том, чтобы изменить свою жизнь.</p>`);
 });
 document.getElementById("achInfoBtn").addEventListener("click", ()=>{
   playPopSound();
-  showInfoSimple("Достижения", "Три звезды открываются по неделям марафона – на 7-й, 14-й и 21-й день. Просто дойди до этого дня, и звезда станет твоей.<br><br>Две галочки «ММ» – за мастермайнды. Нажми на галочку и впиши кодовое слово, которое Мила назовёт на эфире – получишь +3 бриллианта.");
+  showInfoSimple("Достижения", "Три звезды открываются по неделям – на 7-й, 14-й и 21-й день. Просто дойди до этого дня, и звезда станет твоей.<br><br>Две галочки «ММ» – за мастермайнды. Нажми на галочку и впиши кодовое слово, которое Мила назовёт на эфире – получишь +3 бриллианта.");
 });
 document.getElementById("heatmapInfoBtn").addEventListener("click", ()=>{
   playPopSound();
@@ -2228,11 +2228,11 @@ function initCabinetUI(){
 
 const STAR_SHOWN_KEY = "serenityStarShown";
 const STAR_TEXT = {
-  7: "Поздравляю, ты прошла неделю марафона – и за это получаешь звезду",
-  14: "Поздравляю, ты прошла две недели марафона – и за это получаешь звезду",
-  21: "Поздравляю, ты прошла марафон полностью – и за это получаешь звезду"
+  7: "Поздравляю, ты прошла первую неделю в клубе – и за это получаешь звезду",
+  14: "Поздравляю, ты прошла две недели в клубе – и за это получаешь звезду",
+  21: "Поздравляю, ты прошла все 21 день – и за это получаешь звезду"
 };
-const STAR_EYEBROW = {7:"неделя 1 пройдена", 14:"неделя 2 пройдена", 21:"марафон завершён"};
+const STAR_EYEBROW = {7:"неделя 1 пройдена", 14:"неделя 2 пройдена", 21:"21 день пройден"};
 function checkStarCelebration(){
   let shown = {};
   try{ shown = JSON.parse(localStorage.getItem(STAR_SHOWN_KEY) || "{}"); }catch(e){}
@@ -2272,7 +2272,7 @@ async function bootCabinet(){
 let authMode = "login";
 function authErrText(code, mode){
   const map = {
-    not_paid: "не нашли оплату на этот email – напиши организатору марафона",
+    not_paid: "не нашли оплату на этот email – напиши организатору клуба",
     user_already_exists: "такой email уже зарегистрирован – попробуй войти",
     invalid_login_credentials: "неверный email или пароль",
     bad_request: "проверь email и пароль",
@@ -2461,14 +2461,14 @@ function renderHeat(){
   document.getElementById("dayPillFill").style.width = marathonPct+"%";
   document.getElementById("daySub").textContent =
     TODAY<=1 ? "Только начинаешь путь – вперёд, шаг за шагом" :
-    marathonPct<33 ? "Ты в начале пути марафона – продолжай в своём темпе" :
-    marathonPct<66 ? "Ты уже прошла треть пути марафона – продолжай в своём темпе" :
-    marathonPct<100 ? "Ты уже прошла больше половины пути марафона – продолжай в своём темпе" :
-    "Ты прошла весь марафон – поздравляю!";
+    marathonPct<33 ? "Ты в начале пути – продолжай в своём темпе" :
+    marathonPct<66 ? "Ты уже прошла треть пути – продолжай в своём темпе" :
+    marathonPct<100 ? "Ты уже прошла больше половины пути – продолжай в своём темпе" :
+    "Ты прошла все 21 день – поздравляю!";
 }
 
 function openDay(d){
-  openOverlay("День "+d+(d===TODAY?" (сегодня)":""), "21-дневный марафон");
+  openOverlay("День "+d+(d===TODAY?" (сегодня)":""), "21-дневная программа клуба");
   if(d > TODAY){
     document.getElementById("overlayBody").innerHTML =
       `<p class="note" style="margin:0">Этот день ещё не наступил – загляни сюда, когда он начнётся.</p>`;
@@ -2696,7 +2696,7 @@ function renderPicker(){
     </div>
     <p class="note" id="pickWarn" hidden style="margin:0 0 10px">Выбери хотя бы одну привычку, чтобы сохранить</p>
     <p class="pick-total" id="pickTotal"></p>
-    <button class="savepick" id="savePick">${onboarding ? "Начать марафон 🌙" : "Сохранить"}</button>`;
+    <button class="savepick" id="savePick">${onboarding ? "Начать 🌙" : "Сохранить"}</button>`;
   document.getElementById("overlayBody").innerHTML = html;
   renderPickTotal();
   document.getElementById("overlayBody").querySelectorAll(".habchip").forEach(chip=>{
@@ -3108,7 +3108,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
       const file = new File([blob], "day-"+TODAY+".png", {type:"image/png"});
       if(navigator.canShare && navigator.canShare({files:[file]})){
         try{
-          await navigator.share({files:[file], title:"Serenity Moon", text:"Мой день "+TODAY+" марафона «Начни сегодня!»"});
+          await navigator.share({files:[file], title:"Serenity Moon", text:"Мой день "+TODAY+" в клубе «Начни сегодня!»"});
           return;
         }catch(e){ /* отменено или не удалось — переходим к запасному варианту */ }
       }
@@ -3435,7 +3435,7 @@ document.getElementById("matFeatureBtn").addEventListener("click", ()=>{
   playPopSound();
   const key = STATE.intro_folder_id;
   if(key && AUTHORS[key]){ openMaterial(key); return; }
-  openOverlay("Перед началом марафона");
+  openOverlay("Перед началом клуба");
   document.getElementById("overlayBody").innerHTML = `<p class="note" style="margin:0">Текст скоро добавим.</p>`;
 });
 const searchBox=document.getElementById("searchBox"), searchDrop=document.getElementById("searchDrop");
@@ -3949,7 +3949,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 
   <div id="t-calendar" style="display:none">
     <div class="card">
-      <h2>Дата начала марафона</h2>
+      <h2>Дата начала клуба</h2>
       <div class="hint">день 1 отсчитывается от этой даты; меняй только до запуска или по согласованию</div>
       <div class="field">
         <label>Дата начала</label>
@@ -3959,7 +3959,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       <div class="hint" id="marathonStartStatus"></div>
     </div>
     <div class="card">
-      <h2>Текущие эфиры марафона</h2>
+      <h2>Текущие эфиры клуба</h2>
       <div class="evlist" id="evList"></div>
     </div>
     <div class="card">
@@ -4037,7 +4037,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
   <div id="t-participants" style="display:none">
     <div class="crm-wrap">
       <div class="crm-top">
-        <h1>Заявки марафона</h1>
+        <h1>Заявки клуба</h1>
         <button class="crm-add-btn" id="crmAddOpen" title="добавить вручную">+</button>
       </div>
       <div class="crm-stats">
