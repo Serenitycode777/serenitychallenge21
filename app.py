@@ -940,7 +940,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .chip.folder{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;font-size:13px;
   font-weight:600;border-radius:14px;padding:14px 10px;min-height:46px}
 .chip.folder.active{background:linear-gradient(135deg,var(--lav),var(--sage));border-color:transparent;color:#fff}
-.chip.folder[data-f="__fav__"] svg{width:14px;height:14px;flex-shrink:0}
+.chip.folder[data-f="__fav__"] svg{width:15px;height:15px;flex-shrink:0;color:#D9707A}
+.chip.folder.active[data-f="__fav__"] svg{color:#fff}
 .mgrid{display:flex;flex-direction:column;gap:10px;background:var(--surface);border-radius:18px;padding:12px;box-shadow:var(--shadow)}
 .mcard{background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;padding:16px;cursor:pointer;
   display:flex;gap:14px;align-items:flex-start}
@@ -1090,7 +1091,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mitem.is-locked{opacity:.55;cursor:default}
 .mitem-fav{position:absolute;top:8px;right:8px;width:30px;height:30px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);cursor:pointer;z-index:1}
 .mitem-fav svg{width:18px;height:18px}
-.mitem-fav.on{color:var(--lav-ink)}
+.mitem-fav.on{color:#E0525F}
 .mitem-thumb{width:58px;height:58px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative}
 .mitem-play{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center}
 .mitem-play svg{width:12px;height:12px;color:var(--ink);margin-left:1px}
@@ -3150,8 +3151,8 @@ function loadFavorites(){ try{ FAVORITES = JSON.parse(localStorage.getItem(FAV_K
 function saveFavorites(){ try{ localStorage.setItem(FAV_KEY, JSON.stringify(FAVORITES)); }catch(e){} }
 function isFavorite(id){ return !!FAVORITES[String(id)]; }
 function toggleFavorite(id){ id=String(id); if(FAVORITES[id]) delete FAVORITES[id]; else FAVORITES[id]=true; saveFavorites(); }
-const BOOKMARK_SVG_OUTLINE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4.5a1.5 1.5 0 0 1 1.5-1.5h9A1.5 1.5 0 0 1 18 4.5V20l-6-4-6 4Z"/></svg>`;
-const BOOKMARK_SVG_FILLED = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 4.5a1.5 1.5 0 0 1 1.5-1.5h9A1.5 1.5 0 0 1 18 4.5V20l-6-4-6 4Z"/></svg>`;
+const BOOKMARK_SVG_OUTLINE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20.5s-7.5-4.6-9.8-9.3C.7 7.8 2.4 4.5 5.7 4c2-.3 3.8.7 4.8 2.3C11.5 4.7 13.3 3.7 15.3 4c3.3.5 5 3.8 3.5 7.2C16.5 15.9 12 20.5 12 20.5Z"/></svg>`;
+const BOOKMARK_SVG_FILLED = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20.5s-7.5-4.6-9.8-9.3C.7 7.8 2.4 4.5 5.7 4c2-.3 3.8.7 4.8 2.3C11.5 4.7 13.3 3.7 15.3 4c3.3.5 5 3.8 3.5 7.2C16.5 15.9 12 20.5 12 20.5Z"/></svg>`;
 function mItemHtml(m,i){
   const unlocked = m.day===null||m.day<=TODAY;
   const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
