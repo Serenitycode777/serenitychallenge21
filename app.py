@@ -4315,10 +4315,27 @@ function renderNfColorPicker(){
 }
 renderNfColorPicker();
 function readFileAsDataUrl(file){
+  // photos are shrunk to max 1200px and saved as JPEG so they stay small
+  // (big phone photos used to fail with error 413 – request too large)
   return new Promise((resolve,reject)=>{
     const r = new FileReader();
-    r.onload = ()=>resolve(r.result);
     r.onerror = reject;
+    r.onload = ()=>{
+      const src = r.result;
+      if(!/^image\//.test(file.type) || /svg|gif/.test(file.type)){ resolve(src); return; }
+      const img = new Image();
+      img.onload = ()=>{
+        const MAX = 1200, k = Math.min(1, MAX/Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#fff"; ctx.fillRect(0,0,c.width,c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = ()=>resolve(src);
+      img.src = src;
+    };
     r.readAsDataURL(file);
   });
 }
@@ -6371,7 +6388,7 @@ def make_app():
         raise SystemExit("Нет PLATFORM_SECRET в .env – см. .env.example")
     if not ADMIN_PASSWORD:
         print("[ПРЕДУПРЕЖДЕНИЕ] ADMIN_PASSWORD не задан – вход в /admin не сработает, см. .env.example")
-    app = web.Application(middlewares=[cors_middleware])
+    app = web.Application(middlewares=[cors_middleware], client_max_size=15 * 1024 * 1024)
     app.on_startup.append(init_db)
     app.on_cleanup.append(close_db)
     app.add_routes([
