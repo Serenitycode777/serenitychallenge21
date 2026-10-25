@@ -1501,19 +1501,19 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="habits-card-status"><span class="hcs-pill" id="dayStatusPill" hidden></span><span id="dayStatus"></span></div>
         <div class="checklist" id="checklist"></div>
       </div>
-      <div class="evening-rem" id="eveningRem" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        <div>
-          <div class="lead">вечер – хорошее время заглянуть к себе</div>
-          <div class="txt"><span id="socialOpener"></span> <span id="socialCloser"></span></div>
-        </div>
-      </div>
       <div class="actions">
         <button class="btn primary" id="closeDayBtn"></button>
         <button class="btn ghost" id="shareBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="2.3"/><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="19" r="2.3"/><path d="M8 10.8 16 6.2M8 13.2l8 4.6"/></svg>
           Поделиться
         </button>
+      </div>
+      <div class="evening-rem" id="eveningRem" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <div>
+          <div class="lead">вечер – хорошее время заглянуть к себе</div>
+          <div class="txt"><span id="socialOpener"></span> <span id="socialCloser"></span></div>
+        </div>
       </div>
       <button class="fav-card" id="favMaterialsBtn" type="button">
         <span class="fav-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20.5s-7.5-4.6-9.8-9.3C.7 7.8 2.4 4.5 5.7 4c2-.3 3.8.7 4.8 2.3C11.5 4.7 13.3 3.7 15.3 4c3.3.5 5 3.8 3.5 7.2C16.5 15.9 12 20.5 12 20.5Z"/></svg></span>
