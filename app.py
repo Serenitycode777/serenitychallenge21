@@ -1186,6 +1186,15 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .nt-edit{flex:1;min-width:0}
 .nt-edit .nt-area{margin-top:0;min-height:54px}
 .nt-edit .nt-row{justify-content:flex-end}
+.nt-strip{display:flex;gap:6px;margin-top:12px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nt-strip::-webkit-scrollbar{display:none}
+.nt-strip:empty{display:none}
+.nt-chip{flex-shrink:0;width:34px;height:34px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-family:var(--sys);font-size:12.5px;font-weight:600;background:var(--surface-2);color:var(--ink-soft);position:relative;cursor:pointer;padding:0}
+.nt-chip.has::after{content:"";position:absolute;bottom:3px;left:50%;margin-left:-2.5px;width:5px;height:5px;border-radius:50%;background:var(--sage)}
+.nt-chip.today{box-shadow:inset 0 0 0 1.5px rgba(106,153,147,.6);color:var(--sage-ink)}
+.nt-chip.on{background:linear-gradient(135deg,var(--lav),var(--sage));color:#fff;box-shadow:none}
+.nt-chip.on::after{background:#fff}
+.nt-chip:disabled{opacity:.4;cursor:default}
 .mitem{position:relative;display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0;cursor:pointer}
 .mitem.is-locked{cursor:pointer}
 .mitem.is-locked .mitem-thumb,.mitem.is-locked .mitem-title,.mitem.is-locked .mitem-author,.mitem.is-locked .mitem-meta{opacity:.55}
@@ -1568,6 +1577,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
       </button>
       <div class="nt-card" id="notesCard">
         <div class="nt-head"><span class="nt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="m14.5 7.5 3 3"/></svg></span><span class="nt-title">Мои заметки</span><span class="nt-day" id="noteTodayLbl"></span></div>
+        <div class="nt-strip" id="noteStrip"></div>
         <textarea class="nt-area" id="noteToday" maxlength="2000" rows="2" placeholder="Как прошёл день? Что заметила, что помогло…"></textarea>
         <div class="nt-row"><span class="nt-hint" id="noteTodayHint">Заметка дня – только для тебя</span><button class="nt-save" id="noteTodaySave" type="button">Сохранить</button></div>
         <div class="nt-prev" id="notesPrev" hidden>
@@ -2693,16 +2703,40 @@ async function saveNote(iso, text){
   if(!r.ok) throw new Error("save");
   const t = (text||"").trim();
   if(t) NOTES[iso] = t; else delete NOTES[iso];
+  try{
+    renderNoteStrip();
+    const ta = document.getElementById("noteToday");
+    if(iso === noteSel && document.activeElement !== ta){ ta.value = NOTES[iso] || ""; autoGrow(ta); }
+  }catch(e){}
 }
 function setNoteHint(cls, txt){ const h=document.getElementById("noteTodayHint"); h.className="nt-hint"+(cls?" "+cls:""); h.textContent=_T(txt); }
+let noteSel = null;
+function renderNoteStrip(){
+  const strip = document.getElementById("noteStrip");
+  if(TODAY_RAW < 1){ strip.innerHTML = ""; return; }
+  let h = "";
+  for(let d=1; d<=21; d++){
+    const iso = dateForDay(d), fut = d > TODAY_RAW;
+    h += `<button type="button" class="nt-chip${NOTES[iso]?' has':''}${iso===noteSel?' on':''}${iso===TODAY_DATE_ISO?' today':''}" data-nday="${iso}" ${fut?'disabled':''}>${d}</button>`;
+  }
+  strip.innerHTML = h;
+  strip.querySelectorAll("[data-nday]").forEach(b=>b.addEventListener("click", ()=>{
+    if(b.disabled || b.dataset.nday===noteSel) return;
+    noteSel = b.dataset.nday; playPopSound(); renderNotes();
+  }));
+  const on = strip.querySelector(".nt-chip.on");
+  if(on) strip.scrollLeft = Math.max(0, on.offsetLeft - strip.clientWidth/2 + 17);
+}
 function renderNotes(){
-  const iso = TODAY_DATE_ISO;
+  if(!noteSel) noteSel = TODAY_DATE_ISO;
+  const iso = noteSel;
   const b = noteBadge(iso);
   document.getElementById("noteTodayLbl").textContent = b.small===_T("день") ? (b.small+" "+b.big) : (b.big+" "+b.small);
   const ta = document.getElementById("noteToday");
   ta.value = NOTES[iso] || "";
   autoGrow(ta);
   setNoteHint(NOTES[iso] ? "ok" : "", NOTES[iso] ? "сохранено ✓" : "Заметка дня – только для тебя");
+  renderNoteStrip();
   renderPrevNotes();
 }
 function renderPrevNotes(){
@@ -2741,13 +2775,13 @@ function initNotes(){
   const ta = document.getElementById("noteToday");
   if(!ta.dataset.bound){
     ta.dataset.bound = "1";
-    ta.addEventListener("input", ()=>{ autoGrow(ta); const same = (ta.value.trim() === (NOTES[TODAY_DATE_ISO]||"")); setNoteHint(same ? (NOTES[TODAY_DATE_ISO]?"ok":"") : "warn", same ? (NOTES[TODAY_DATE_ISO]?"сохранено ✓":"Заметка дня – только для тебя") : "не сохранено"); });
+    ta.addEventListener("input", ()=>{ autoGrow(ta); const same = (ta.value.trim() === (NOTES[noteSel]||"")); setNoteHint(same ? (NOTES[noteSel]?"ok":"") : "warn", same ? (NOTES[noteSel]?"сохранено ✓":"Заметка дня – только для тебя") : "не сохранено"); });
     const doSave = async (silent)=>{
-      const v = ta.value.trim();
-      if(v === (NOTES[TODAY_DATE_ISO]||"")) return;
+      const v = ta.value.trim(), iso = noteSel;
+      if(v === (NOTES[iso]||"")) return;
       const btn = document.getElementById("noteTodaySave");
       btn.disabled = true; setNoteHint("", "сохраняю…");
-      try{ await saveNote(TODAY_DATE_ISO, v); if(!silent) playPopSound(); setNoteHint(v?"ok":"", v?"сохранено ✓":"Заметка дня – только для тебя"); }
+      try{ await saveNote(iso, v); if(!silent) playPopSound(); renderPrevNotes(); if(iso===noteSel) setNoteHint(v?"ok":"", v?"сохранено ✓":"Заметка дня – только для тебя"); }
       catch(_){ setNoteHint("warn", "не получилось сохранить – попробуй ещё раз"); }
       btn.disabled = false;
     };
