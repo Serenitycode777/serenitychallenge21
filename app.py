@@ -130,6 +130,7 @@ async def init_db(app):
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS topics TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS close_day INTEGER")
     await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS lang TEXT DEFAULT ''")
+    await DB_POOL.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_seen DOUBLE PRECISION")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS photo_url TEXT")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS dot_color TEXT DEFAULT ''")
     # описание мероприятия Милы — добавлено позже исходной таблицы mila_events
@@ -4259,13 +4260,26 @@ function fmtLastActive(iso){
   if(days === 1) return "вчера";
   return days+" дн. назад";
 }
-function isQuiet(iso){
+function isQuiet(iso, seen){
+  if(seen) return (Date.now() - seen*1000) >= 3*86400000;
   if(!iso) return true;
   const days = Math.floor((Date.now() - new Date(iso+"T00:00:00Z").getTime()) / 86400000);
   return days >= 3;
 }
+function fmtLastSeen(p){
+  if(!p.last_seen) return fmtLastActive(p.last_active);
+  const d = new Date(p.last_seen*1000), now = new Date();
+  const hm = d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+  const diffMin = Math.floor((now - d)/60000);
+  if(diffMin < 5) return "сейчас в кабинете";
+  if(diffMin < 60) return diffMin+" мин назад";
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if(d.getTime() >= startToday) return "сегодня в "+hm;
+  if(d.getTime() >= startToday - 86400000) return "вчера в "+hm;
+  return d.toLocaleDateString("ru-RU",{day:"numeric",month:"short"})+", "+hm;
+}
 function renderProgress(){
-  const quiet = PARTICIPANT_PROGRESS.filter(p=>isQuiet(p.last_active));
+  const quiet = PARTICIPANT_PROGRESS.filter(p=>isQuiet(p.last_active, p.last_seen));
   const rows = progressFilter === "quiet" ? quiet : PARTICIPANT_PROGRESS;
   document.getElementById("progBody").innerHTML = rows.length ? rows.map((p,i)=>`<tr>
     <td>${i+1}</td>
@@ -4276,7 +4290,7 @@ function renderProgress(){
     <td>${p.avg_pct}%</td>
     <td>${p.perfect_days + p.mastermind_count*3}</td>
     <td>${p.mastermind_count}/2</td>
-    <td${isQuiet(p.last_active)?' style="color:#B3415A;font-weight:600"':''}>${fmtLastActive(p.last_active)}</td>
+    <td${isQuiet(p.last_active, p.last_seen)?' style="color:#B3415A;font-weight:600"':(p.last_seen && Date.now()-p.last_seen*1000 < 300000 ? ' style="color:#4F7A75;font-weight:600"' : '')}>${fmtLastSeen(p)}</td>
     <td><button class="crm-del" data-pdel="${p.id}" title="удалить участницу">✕</button></td>
   </tr>`).join("") : `<tr><td colspan="9" style="text-align:center;color:#999">пока никто не зарегистрировался в кабинете</td></tr>`;
   document.querySelectorAll("[data-pdel]").forEach(btn=>{
@@ -5571,7 +5585,18 @@ async def require_cabinet_user(request):
     """Возвращает supabase-пользователя (dict с id/email) по Bearer-токену, либо None."""
     auth_header = request.headers.get("Authorization", "")
     token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
-    return await _supabase_user_from_token(token)
+    user = await _supabase_user_from_token(token)
+    if user and user.get("id"):
+        # отметка «была в кабинете» – при каждом обращении кабинета (не чаще раза в минуту)
+        try:
+            now_ts = time.time()
+            await DB_POOL.execute(
+                "UPDATE profiles SET last_seen=$1 WHERE id=$2 AND (last_seen IS NULL OR last_seen < $1 - 60)",
+                now_ts, user["id"],
+            )
+        except Exception:
+            pass
+    return user
 
 
 async def _ensure_profile_row(user):
@@ -5916,7 +5941,7 @@ async def admin_export(request):
 async def admin_export_progress(request):
     if not authed(request):
         raise web.HTTPFound("/admin/login")
-    profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind FROM profiles ORDER BY created DESC")
+    profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind, last_seen FROM profiles ORDER BY created DESC")
     signup_rows = await DB_POOL.fetch("SELECT email_norm, instagram FROM signups WHERE instagram IS NOT NULL AND instagram <> ''")
     telegram_by_email = {r["email_norm"]: r["instagram"] for r in signup_rows}
     headers = ["#", "имя", "email", "телеграм", "привычек", "% выполнения", "бриллиантов", "мастермайндов", "была в кабинете"]
@@ -5945,7 +5970,10 @@ async def admin_export_progress(request):
         mm_count = sum(1 for v in mm.values() if v) if isinstance(mm, dict) else 0
         telegram = telegram_by_email.get(normalize_email(p["email"] or ""), "")
         diamonds = perfect_days + mm_count * 3
-        last_active = last_date.isoformat() if last_date else "ни разу"
+        if p["last_seen"]:
+            last_active = datetime.fromtimestamp(p["last_seen"], ZoneInfo(MARATHON_TZ)).strftime("%Y-%m-%d %H:%M")
+        else:
+            last_active = last_date.isoformat() if last_date else "ни разу"
         writer.writerow([i, p["name"] or "", p["email"] or "", telegram, habit_count,
                           f"{avg_pct}%", diamonds, f"{mm_count}/2", last_active])
     resp = web.Response(text="﻿" + buf.getvalue(), content_type="text/csv", charset="utf-8")
@@ -5986,7 +6014,7 @@ async def api_admin_participants(request):
     «Участницы» в админке (кто отстаёт/пропал, кому написать лично)."""
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
-    profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind FROM profiles ORDER BY created DESC")
+    profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind, last_seen FROM profiles ORDER BY created DESC")
     signup_rows = await DB_POOL.fetch("SELECT email_norm, instagram FROM signups WHERE instagram IS NOT NULL AND instagram <> ''")
     telegram_by_email = {r["email_norm"]: r["instagram"] for r in signup_rows}
     result = []
@@ -6015,6 +6043,7 @@ async def api_admin_participants(request):
             "id": str(uid), "name": p["name"] or "", "email": p["email"] or "", "telegram": telegram,
             "habit_count": habit_count, "avg_pct": avg_pct, "perfect_days": perfect_days,
             "mastermind_count": mm_count, "last_active": last_date.isoformat() if last_date else None,
+            "last_seen": p["last_seen"],
         })
     return web.json_response(result)
 
