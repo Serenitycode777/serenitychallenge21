@@ -856,6 +856,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   background:rgba(106,153,147,.14);border-radius:999px;padding:5px 10px;flex-shrink:0;white-space:nowrap}
 .hab-badge svg{width:11px;height:11px;flex-shrink:0}
 .hab-badge.sleep{color:var(--lav-ink);background:rgba(170,157,184,.16)}
+.hab-badge.off{color:var(--ink-soft);background:var(--surface-2);font-weight:500}
 .hcs-pill{font-size:12px;font-weight:700;color:var(--sage-ink);background:rgba(106,153,147,.13);
   border-radius:999px;padding:3px 10px;flex-shrink:0;margin-top:1px}
 .editlink{background:none;border:none;color:var(--lav-ink);font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--sys)}
@@ -2146,8 +2147,8 @@ function defaultHabitConfigFor(name){
   cfg.minutes = (meta && meta.noTime) ? 0 : (meta ? parseDurToMinutes(meta.dur) : 5);
   return cfg;
 }
-const MIN_UNITS = ["мин","мин.","минут","минута","минуты","минуту"];
-const HOUR_UNITS = ["час","часа","часов","ч","ч."];
+const MIN_UNITS = ["мин","мин.","минут","минута","минуты","минуту","min","mins","minute","minutes"];
+const HOUR_UNITS = ["час","часа","часов","ч","ч.","h","hr","hrs","hour","hours"];
 function unitMinuteMultiplier(u){
   if(!u) return 0;
   const s = u.trim().toLowerCase();
@@ -2161,8 +2162,9 @@ function habitMinutes(name){
   if(meta && meta.noTime) return 0;
   const cfg = habitConfig[name] || defaultHabitConfig();
   const mult = unitMinuteMultiplier(cfg.unit);
-  if(cfg.qtyOn && mult > 0) return (Number(cfg.target) || 0) * mult;
+  // the minutes she types in "сколько минут занимает" always win
   if(Number(cfg.minutes) > 0) return Number(cfg.minutes);
+  if(cfg.qtyOn && mult > 0) return (Number(cfg.target) || 0) * mult;
   return meta ? parseDurToMinutes(meta.dur) : 5;
 }
 function formatMinutesRu(mins){
@@ -2180,7 +2182,14 @@ function formatMinutesShort(mins){
 }
 const ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
 const ICON_MOON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>';
+function habitScheduledToday(name){
+  const cfg = habitConfig[name];
+  if(!cfg || !cfg.days) return true;
+  const dow = (dayToDate(TODAY).getUTCDay()+6)%7;
+  return cfg.days.includes(dow);
+}
 function habitBadgeHtml(name){
+  if(!habitScheduledToday(name)) return `<span class="hab-badge off">не сегодня</span>`;
   const mins = habitMinutes(name);
   if(mins > 0) return `<span class="hab-badge">${ICON_CLOCK}${formatMinutesShort(mins)}</span>`;
   const meta = findHabitMeta(name);
