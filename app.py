@@ -1331,7 +1331,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   <main><div class="maininner">
     <section class="screen" id="tab-home" hidden>
       <h1 class="page-title">Мой прогресс</h1>
-      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <div class="hcard dayhero heatcard">
         <div class="dh-top"><span class="dh-title">День <span id="bigDayTxt">8</span> из 21</span><span class="dh-pct" id="dayPct">38%</span></div>
         <div class="dh-pill"><i id="dayPillFill"></i></div>
@@ -1406,7 +1406,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
     <section class="screen" id="tab-today">
       <h1 class="page-title">Сегодня</h1>
-      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <div class="affirm-card">
         <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
         <div class="affirm-divider"></div>
@@ -1467,7 +1467,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
     <section class="screen" id="tab-materials" hidden>
       <h1 class="page-title">Материалы</h1>
-      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <div class="mat-layout">
         <div class="mat-main">
           <div class="search-filter-row">
@@ -1525,7 +1525,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
     <section class="screen" id="tab-schedule" hidden>
       <h1 class="page-title">Расписание</h1>
-      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <div class="heatcard cal-card">
         <div class="cal-head">
           <h3 id="calMonthLabel"></h3>
@@ -1543,7 +1543,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
     <section class="screen" id="tab-profile" hidden>
       <h1 class="page-title">Профиль</h1>
-      <div class="marathon-eyebrow"><span>Клуб «Начни сегодня!»</span></div>
+      <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <input type="file" id="avatarFileInput" accept="image/*" hidden>
       <div class="avatar-row">
         <div class="avatar" id="mainAvatar">
