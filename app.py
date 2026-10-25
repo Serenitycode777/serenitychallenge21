@@ -1613,10 +1613,10 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="v3-txt">Ника Кузнецова<small>34 · Durham · редактировать</small></div>
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
       </div>
+      <div class="lang-card"><span class="lang-lbl">Язык · Language</span><div class="lang-sw" id="langSwitch"><button type="button" data-lang="ru">Русский</button><button type="button" data-lang="en">English</button></div></div>
 
       <div class="sectitle">мероприятия</div>
       <div id="profileMilaEvents"></div>
-      <div class="lang-card"><span class="lang-lbl">Язык · Language</span><div class="lang-sw" id="langSwitch"><button type="button" data-lang="ru">Русский</button><button type="button" data-lang="en">English</button></div></div>
       <button class="editlink" id="logoutBtn" type="button" style="display:block;margin:18px auto 0">Выйти из кабинета</button>
     </section>
   </div></main>
@@ -3637,7 +3637,7 @@ function askConfirm(msg, yesLabel){
   });
 }
 </script>
-<style>.lang-card{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:12px 14px;margin:14px 0 0}.lang-lbl{font-family:var(--sys);font-size:13.5px;font-weight:600;color:var(--ink)}.lang-sw{display:flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px}.lang-sw button{border:none;background:transparent;font-family:var(--sys);font-size:12.5px;font-weight:600;color:var(--ink-soft);padding:7px 14px;border-radius:999px;cursor:pointer}.lang-sw button.on{background:linear-gradient(135deg,var(--lav),var(--sage));color:#fff}</style><script>(function(){var sw=document.getElementById("langSwitch"); if(!sw) return;var cur=window.SM_LANG||"ru"; sw.querySelectorAll("button").forEach(function(b){ b.classList.toggle("on", b.dataset.lang===cur); b.addEventListener("click",function(){ if(b.dataset.lang===cur) return; try{localStorage.setItem("sm_lang",b.dataset.lang);}catch(e){} location.reload(); }); });})();</script>
+<style>.lang-card{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:12px 14px;margin:10px 0 0}.lang-lbl{font-family:var(--sys);font-size:13.5px;font-weight:600;color:var(--ink)}.lang-sw{display:flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px}.lang-sw button{border:none;background:transparent;font-family:var(--sys);font-size:12.5px;font-weight:600;color:var(--ink-soft);padding:7px 14px;border-radius:999px;cursor:pointer}.lang-sw button.on{background:linear-gradient(135deg,var(--lav),var(--sage));color:#fff}</style><script>(function(){var sw=document.getElementById("langSwitch"); if(!sw) return;var cur=window.SM_LANG||"ru"; sw.querySelectorAll("button").forEach(function(b){ b.classList.toggle("on", b.dataset.lang===cur); b.addEventListener("click",function(){ if(b.dataset.lang===cur) return; try{localStorage.setItem("sm_lang",b.dataset.lang);}catch(e){} location.reload(); }); });})();</script>
 </body></html>"""
 
 
