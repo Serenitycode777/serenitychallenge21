@@ -129,6 +129,7 @@ async def init_db(app):
     # поля для карточки автора (topics/photo) — добавлены позже исходной таблицы folders
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS topics TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS close_day INTEGER")
+    await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS lang TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS photo_url TEXT")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS dot_color TEXT DEFAULT ''")
     # описание мероприятия Милы — добавлено позже исходной таблицы mila_events
@@ -230,7 +231,8 @@ async def load_materials_from_db() -> dict:
     mats = [
         {"id": str(m["id"]), "author": m["folder_id"], "title": m["title"],
          "type": m["format"] or "link", "tags": _jsonb(m["tags"]) or [], "day": m["day"],
-         "close_day": m["close_day"] if "close_day" in m.keys() else None, "url": m["url"] or "#"}
+         "close_day": m["close_day"] if "close_day" in m.keys() else None,
+         "lang": (m["lang"] or "") if "lang" in m.keys() else "", "url": m["url"] or "#"}
         for m in materials
     ]
     return {"marathon_start": await get_marathon_start(), "timezone": MARATHON_TZ, "authors": authors, "materials": mats}
@@ -2231,7 +2233,8 @@ function applyState(data){
 
 function buildMaterialsState(){
   AUTHORS = Object.assign({}, STATE.authors||{});
-  MATERIALS = (STATE.materials||[]).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
+  const _lang = window.SM_LANG || "ru";
+  MATERIALS = (STATE.materials||[]).filter(m=>!m.lang || m.lang===_lang).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
   THEMES = [...new Set(MATERIALS.flatMap(m=>m.tags||[]))];
   loadFavorites();
   activeTheme = "all"; activeFolder = "all"; activeType = "all"; query = "";
@@ -4016,7 +4019,11 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
           <div class="field">
             <label>Дата закрытия <a href="#" class="dclear" data-clear="mClose">× убрать</a></label>
             <div class="dpicker" id="mCloseWrap"></div>
-            <div class="hint" style="margin:6px 0 0">без дат материал доступен всегда; после даты закрытия он пропадёт из кабинета</div>
+            <div class="hint" style="margin:6px 0 0">без дат материал доступен всегда; после даты закрытия он остаётся в кабинете под замком</div>
+          </div>
+          <div class="field">
+            <label>Кому показывать</label>
+            <div class="chipgrid" id="mLangChips"><div class="tchip on" data-lang="">всем</div><div class="tchip" data-lang="ru">только в русской версии</div><div class="tchip" data-lang="en">только в English</div></div>
           </div>
           <div class="field">
             <label>Тема <span class="req">*</span></label>
@@ -4419,6 +4426,9 @@ function buildDatePicker(baseId, startMonth, onChange){
 document.addEventListener("click", ()=>{ document.querySelectorAll(".dpicker-pop").forEach(p=>p.style.display="none"); });
 const mDayPicker = buildDatePicker("mDay", "2026-11-01", ()=>updateMStepSummaries());
 const mClosePicker = buildDatePicker("mClose", "2026-11-01", ()=>updateMStepSummaries());
+let selectedMatLang = "";
+function setMatLang(v){ selectedMatLang = v||""; document.querySelectorAll("#mLangChips .tchip").forEach(c=>c.classList.toggle("on", c.dataset.lang===selectedMatLang)); }
+document.querySelectorAll("#mLangChips .tchip").forEach(c=>c.addEventListener("click", ()=>{ setMatLang(c.dataset.lang); updateMStepSummaries(); }));
 document.querySelectorAll(".dclear").forEach(a=>a.addEventListener("click", e=>{
   e.preventDefault(); (a.dataset.clear==="mClose" ? mClosePicker : mDayPicker).reset(); updateMStepSummaries();
 }));
@@ -4575,7 +4585,7 @@ function renderMaterialsList(){
     const matsHtml = mats.length ? mats.map(m=>{
       const fmt = FORMATS.find(x=>x.v===m.format);
       return `<div class="evrow">
-        <div class="evbody"><div class="evttl">${m.title}</div><div class="evmeta">${fmt?fmt.l:(m.format||"")}${m.day?` · день ${m.day}`:''}${m.close_day?` · до дня ${m.close_day}`:''}</div></div>
+        <div class="evbody"><div class="evttl">${m.title}</div><div class="evmeta">${fmt?fmt.l:(m.format||"")}${m.day?` · день ${m.day}`:''}${m.close_day?` · до дня ${m.close_day}`:''}${m.lang?` · ${m.lang==="en"?"English":"RU"}`:''}</div></div>
         <button class="evbtn" data-matedit="${m.id}" aria-label="редактировать">✎</button>
         <button class="evbtn" data-matdel="${m.id}">✕</button>
       </div>`;
@@ -4789,6 +4799,7 @@ function startEditMaterial(m){
   selectedFormat = m.format || FORMATS[0].v; renderFormatPicker();
   if(m.day) mDayPicker.setValue(dayToIso(m.day)); else mDayPicker.reset();
   if(m.close_day) mClosePicker.setValue(dayToIso(m.close_day)); else mClosePicker.reset();
+  setMatLang(m.lang||"");
   renderMaterialThemes();
   (m.tags||[]).forEach(t=>{
     const chip = document.querySelector(`#mThemes .tchip[data-t="${t}"]`);
@@ -4811,7 +4822,7 @@ function cancelEditMaterial(){
   document.getElementById("mLink").value = "";
   document.getElementById("mFile").value = "";
   document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
-  mDayPicker.reset(); mClosePicker.reset();
+  mDayPicker.reset(); mClosePicker.reset(); setMatLang("");
   document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
   evtToggle.classList.remove("on");
   document.getElementById("evtPickWrap").style.display = "none";
@@ -4832,6 +4843,7 @@ document.getElementById("saveMaterial").addEventListener("click", async ()=>{
     folder_id: selectedFolder, title, format: selectedFormat,
     day: isoDateToMarathonDay(document.getElementById("mDay").value),
     close_day: isoDateToMarathonDay(document.getElementById("mClose").value),
+    lang: selectedMatLang,
     tags: themeIds, url: document.getElementById("mLink").value.trim() || "#",
     calendar_event_id: evOn ? (document.getElementById("evtPick").value || null) : null,
   });
@@ -6069,6 +6081,7 @@ def _material_json(r) -> dict:
     return {"id": r["id"], "folder_id": r["folder_id"], "title": r["title"], "format": r["format"],
             "tags": _jsonb(r["tags"]) or [], "day": r["day"], "url": r["url"],
             "close_day": r["close_day"] if "close_day" in r.keys() else None,
+            "lang": (r["lang"] or "") if "lang" in r.keys() else "",
             "calendar_event_id": r["calendar_event_id"]}
 
 
@@ -6202,12 +6215,15 @@ async def api_materials_add(request):
         close_day = int(close_raw) if close_raw not in (None, "") else None
     except (TypeError, ValueError):
         close_day = None
+    lang = str(data.get("lang") or "").strip().lower()
+    if lang not in ("", "ru", "en"):
+        lang = ""
     row_id = await DB_POOL.fetchval(
-        "INSERT INTO materials (folder_id, title, format, tags, day, url, calendar_event_id, created, close_day) "
-        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",
+        "INSERT INTO materials (folder_id, title, format, tags, day, url, calendar_event_id, created, close_day, lang) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
         folder_id, title, str(data.get("format", "link")).strip(),
         json.dumps(data.get("tags", []), ensure_ascii=False), day,
-        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"), time.time(), close_day,
+        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"), time.time(), close_day, lang,
     )
     row = await DB_POOL.fetchrow("SELECT * FROM materials WHERE id=$1", row_id)
     return web.json_response(_material_json(row), status=201)
@@ -6232,11 +6248,14 @@ async def api_materials_update(request):
         close_day = int(close_raw) if close_raw not in (None, "") else None
     except (TypeError, ValueError):
         close_day = None
+    lang = str(data.get("lang") or "").strip().lower()
+    if lang not in ("", "ru", "en"):
+        lang = ""
     await DB_POOL.execute(
-        "UPDATE materials SET folder_id=$2, title=$3, format=$4, tags=$5, day=$6, url=$7, calendar_event_id=$8, close_day=$9 WHERE id=$1",
+        "UPDATE materials SET folder_id=$2, title=$3, format=$4, tags=$5, day=$6, url=$7, calendar_event_id=$8, close_day=$9, lang=$10 WHERE id=$1",
         mat_id, folder_id, title, str(data.get("format", "link")).strip(),
         json.dumps(data.get("tags", []), ensure_ascii=False), day,
-        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"), close_day,
+        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"), close_day, lang,
     )
     row = await DB_POOL.fetchrow("SELECT * FROM materials WHERE id=$1", mat_id)
     if row is None:
