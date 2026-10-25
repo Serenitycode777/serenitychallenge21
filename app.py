@@ -128,6 +128,7 @@ async def init_db(app):
     )""")
     # поля для карточки автора (topics/photo) — добавлены позже исходной таблицы folders
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS topics TEXT DEFAULT ''")
+    await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS close_day INTEGER")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS photo_url TEXT")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS dot_color TEXT DEFAULT ''")
     # описание мероприятия Милы — добавлено позже исходной таблицы mila_events
@@ -228,7 +229,8 @@ async def load_materials_from_db() -> dict:
     }
     mats = [
         {"id": str(m["id"]), "author": m["folder_id"], "title": m["title"],
-         "type": m["format"] or "link", "tags": _jsonb(m["tags"]) or [], "day": m["day"], "url": m["url"] or "#"}
+         "type": m["format"] or "link", "tags": _jsonb(m["tags"]) or [], "day": m["day"],
+         "close_day": m["close_day"] if "close_day" in m.keys() else None, "url": m["url"] or "#"}
         for m in materials
     ]
     return {"marathon_start": await get_marathon_start(), "timezone": MARATHON_TZ, "authors": authors, "materials": mats}
@@ -503,6 +505,7 @@ function T(s){
   for(var i=0;i<R.length;i++){ if(R[i][0].test(k)) return k.replace(R[i][0],R[i][1]); }
   var nums=k.match(/\\d+/g);
   if(nums){ var tk=k.replace(/\\d+/g,'#'), e=NT[tk]; if(e){ var out=e[1], map={}; e[0].forEach(function(o,ix){ if(nums[ix]!=null) map[o]=nums[ix]; }); return out.replace(/\\d+/g,function(x){ return map[x]!=null?map[x]:x; }); } }
+  var op=k.match(/^🔒 Откроется (.+)$/); if(op) return '🔒 Opens on '+op[1];
   var mm=k.match(/^(.+) · скачать$/); if(mm) return T(mm[1])+' · download';
   if(k.indexOf(', ')>0){ var parts=k.split(', '), ok=true, tr=parts.map(function(x){ var t=D[x]; if(t==null) ok=false; return t; }); if(ok) return tr.join(', '); }
   return s;
@@ -1145,7 +1148,11 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   padding:9px 16px;font-family:var(--sys);font-size:13px;font-weight:600;color:var(--lav-ink)}
 .fav-card-btn svg{width:14px;height:14px}
 .mitem{position:relative;display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0;cursor:pointer}
-.mitem.is-locked{opacity:.55;cursor:default}
+.mitem.is-locked{cursor:pointer}
+.mitem.is-locked .mitem-thumb,.mitem.is-locked .mitem-title,.mitem.is-locked .mitem-author,.mitem.is-locked .mitem-meta{opacity:.55}
+.mitem-lock{position:absolute;top:8px;right:8px;width:30px;height:30px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--lav-ink);cursor:pointer;z-index:1}
+.mitem-lock svg{width:17px;height:17px}
+.mlock-note{margin-top:6px;font-size:12.5px;font-weight:600;color:var(--lav-ink);background:rgba(170,157,184,.16);border-radius:10px;padding:6px 10px;display:inline-block}
 .mitem-fav{position:absolute;top:8px;right:8px;width:30px;height:30px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);cursor:pointer;z-index:1}
 .mitem-fav svg{width:18px;height:18px}
 .mitem-fav.on{color:#E0525F}
@@ -2085,7 +2092,7 @@ const TG_CHANNEL_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
 const TG_CHAT_URL = "https://t.me/+b1UKYlrCL5o5YWY0";
 document.getElementById("chanLinkBtn").href = TG_CHANNEL_URL;
 document.getElementById("chatLinkBtn").href = TG_CHAT_URL;
-let TODAY = 1;
+let TODAY = 1, TODAY_RAW = 1;
 let HABITS = [];
 let HABIT_IDS = [];
 let habitConfig = {};
@@ -2208,6 +2215,7 @@ function applyState(data){
   MARATHON_START_ISO = data.marathon_start || MARATHON_START_ISO;
   TODAY_DATE_ISO = data.today_date || TODAY_DATE_ISO;
   TODAY = Math.min(21, Math.max(1, data.today));
+  TODAY_RAW = data.today;
   HABIT_IDS = (data.habits||[]).map(h=>h.id);
   HABITS = (data.habits||[]).map(h=>h.name);
   habitConfig = {};
@@ -2221,7 +2229,7 @@ function applyState(data){
 
 function buildMaterialsState(){
   AUTHORS = Object.assign({}, STATE.authors||{});
-  MATERIALS = (STATE.materials||[]).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
+  MATERIALS = (STATE.materials||[]).filter(m=>!(m.close_day!=null && m.close_day < TODAY_RAW)).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
   THEMES = [...new Set(MATERIALS.flatMap(m=>m.tags||[]))];
   loadFavorites();
   activeTheme = "all"; activeFolder = "all"; activeType = "all"; query = "";
@@ -3232,12 +3240,14 @@ function mItemHtml(m,i){
     ? `${ICONS[m.type]||ICONS.pdf}<span>${typeLbl}${m.type==="pdf"?" · скачать":""}</span>`
     : `${ICONS.lock}<span>с ${fmtDateRu(dayToDate(m.day))}</span>`;
   const fav = isFavorite(m.id);
-  const favBtn = unlocked ? `<button class="mitem-fav${fav?' on':''}" data-favid="${m.id}" type="button" aria-label="в избранное">${fav?BOOKMARK_SVG_FILLED:BOOKMARK_SVG_OUTLINE}</button>` : "";
+  const favBtn = unlocked ? `<button class="mitem-fav${fav?' on':''}" data-favid="${m.id}" type="button" aria-label="в избранное">${fav?BOOKMARK_SVG_FILLED:BOOKMARK_SVG_OUTLINE}</button>`
+    : `<button class="mitem-lock" type="button" aria-label="закрыто">${ICONS.lock}</button>`;
+  const lockNote = unlocked ? "" : `<div class="mlock-note" hidden>🔒 Откроется ${fmtDateRu(dayToDate(m.day))}</div>`;
   return `<div class="mitem ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}>
     ${favBtn}
     ${matThumbHtml(m)}
     <div class="mitem-body">
-      <div class="mitem-title">${m.title}${newBadge}</div>
+      <div class="mitem-title">${m.title}${newBadge}</div>${lockNote}
       <div class="mitem-author">${(AUTHORS[m.author]||{}).name||''}</div>
       <div class="mitem-meta">${metaHtml}</div>
     </div>
@@ -3360,6 +3370,9 @@ function renderMaterials(){
   if(backBtn) backBtn.addEventListener("click", ()=>setActiveFolder("all"));
   const moreBtn = document.getElementById("matMoreBtn");
   if(moreBtn) moreBtn.addEventListener("click", ()=>{ matVisibleCount += MAT_PAGE_SIZE; renderMaterials(); });
+  flat.querySelectorAll(".mitem.is-locked").forEach(row=>{
+    row.addEventListener("click", ()=>{ const n = row.querySelector(".mlock-note"); if(n){ n.hidden = !n.hidden; playPopSound(); } });
+  });
   flat.querySelectorAll(".mitem[data-i]").forEach(row=>{
     const m = items[Number(row.dataset.i)];
     row.addEventListener("click", ()=>openMaterialDetailFor(m, (AUTHORS[m.author]||{}).name||"", "← назад", ()=>{
@@ -3703,6 +3716,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .tchip{font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface-2);border:1.5px solid var(--line);
   border-radius:999px;padding:7px 13px;cursor:pointer;user-select:none}
 .tchip.on{background:var(--sage);border-color:var(--sage);color:#fff}
+.dclear{font-size:11px;font-weight:500;color:var(--ink-soft);text-transform:none;letter-spacing:0;margin-left:8px;text-decoration:none}
 .tchip.tmanage{display:inline-flex;align-items:center;gap:6px;cursor:default;padding:5px 6px 5px 13px}
 .tchip .tact{border:none;background:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;line-height:1;cursor:pointer;color:var(--ink-soft);display:inline-flex;align-items:center;justify-content:center}
 .tchip .tact:hover{color:#B3415A}
@@ -3987,8 +4001,13 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
         </div>
         <div class="mstep-body">
           <div class="field">
-            <label>Дата открытия</label>
+            <label>Дата открытия <a href="#" class="dclear" data-clear="mDay">× убрать</a></label>
             <div class="dpicker" id="mDayWrap"></div>
+          </div>
+          <div class="field">
+            <label>Дата закрытия <a href="#" class="dclear" data-clear="mClose">× убрать</a></label>
+            <div class="dpicker" id="mCloseWrap"></div>
+            <div class="hint" style="margin:6px 0 0">без дат материал доступен всегда; после даты закрытия он пропадёт из кабинета</div>
           </div>
           <div class="field">
             <label>Тема <span class="req">*</span></label>
@@ -4390,6 +4409,10 @@ function buildDatePicker(baseId, startMonth, onChange){
 }
 document.addEventListener("click", ()=>{ document.querySelectorAll(".dpicker-pop").forEach(p=>p.style.display="none"); });
 const mDayPicker = buildDatePicker("mDay", "2026-11-01", ()=>updateMStepSummaries());
+const mClosePicker = buildDatePicker("mClose", "2026-11-01", ()=>updateMStepSummaries());
+document.querySelectorAll(".dclear").forEach(a=>a.addEventListener("click", e=>{
+  e.preventDefault(); (a.dataset.clear==="mClose" ? mClosePicker : mDayPicker).reset(); updateMStepSummaries();
+}));
 const eDayPicker = buildDatePicker("eDay", "2026-11-01");
 
 const FORMATS = [{v:"video",l:"Видео"},{v:"audio",l:"Аудио"},{v:"pdf",l:"PDF"},{v:"link",l:"Ссылка"},{v:"photo",l:"Фото"}];
@@ -4543,7 +4566,7 @@ function renderMaterialsList(){
     const matsHtml = mats.length ? mats.map(m=>{
       const fmt = FORMATS.find(x=>x.v===m.format);
       return `<div class="evrow">
-        <div class="evbody"><div class="evttl">${m.title}</div><div class="evmeta">${fmt?fmt.l:(m.format||"")}${m.day?` · день ${m.day}`:''}</div></div>
+        <div class="evbody"><div class="evttl">${m.title}</div><div class="evmeta">${fmt?fmt.l:(m.format||"")}${m.day?` · день ${m.day}`:''}${m.close_day?` · до дня ${m.close_day}`:''}</div></div>
         <button class="evbtn" data-matedit="${m.id}" aria-label="редактировать">✎</button>
         <button class="evbtn" data-matdel="${m.id}">✕</button>
       </div>`;
@@ -4648,6 +4671,11 @@ function updateMStepSummaries(){
     const dt = new Date(dayVal+"T00:00:00");
     whenParts.push(dt.toLocaleDateString("ru-RU",{day:"numeric",month:"short"}));
   }
+  const closeVal = document.getElementById("mClose") ? document.getElementById("mClose").value : "";
+  if(closeVal){
+    const dt2 = new Date(closeVal+"T00:00:00");
+    whenParts.push("до "+dt2.toLocaleDateString("ru-RU",{day:"numeric",month:"short"}));
+  }
   if(themeCount) whenParts.push(themeCount+(themeCount===1?" тема":" темы"));
   document.getElementById("mstepValWhen").textContent = whenParts.join(" · ");
   document.getElementById("mstepWhen").classList.toggle("done", themeCount>0);
@@ -4751,6 +4779,7 @@ function startEditMaterial(m){
   document.getElementById("mTitle").value = m.title || "";
   selectedFormat = m.format || FORMATS[0].v; renderFormatPicker();
   if(m.day) mDayPicker.setValue(dayToIso(m.day)); else mDayPicker.reset();
+  if(m.close_day) mClosePicker.setValue(dayToIso(m.close_day)); else mClosePicker.reset();
   renderMaterialThemes();
   (m.tags||[]).forEach(t=>{
     const chip = document.querySelector(`#mThemes .tchip[data-t="${t}"]`);
@@ -4773,7 +4802,7 @@ function cancelEditMaterial(){
   document.getElementById("mLink").value = "";
   document.getElementById("mFile").value = "";
   document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
-  mDayPicker.reset();
+  mDayPicker.reset(); mClosePicker.reset();
   document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
   evtToggle.classList.remove("on");
   document.getElementById("evtPickWrap").style.display = "none";
@@ -4793,6 +4822,7 @@ document.getElementById("saveMaterial").addEventListener("click", async ()=>{
   const body = JSON.stringify({
     folder_id: selectedFolder, title, format: selectedFormat,
     day: isoDateToMarathonDay(document.getElementById("mDay").value),
+    close_day: isoDateToMarathonDay(document.getElementById("mClose").value),
     tags: themeIds, url: document.getElementById("mLink").value.trim() || "#",
     calendar_event_id: evOn ? (document.getElementById("evtPick").value || null) : null,
   });
@@ -6029,6 +6059,7 @@ def _folder_json(r) -> dict:
 def _material_json(r) -> dict:
     return {"id": r["id"], "folder_id": r["folder_id"], "title": r["title"], "format": r["format"],
             "tags": _jsonb(r["tags"]) or [], "day": r["day"], "url": r["url"],
+            "close_day": r["close_day"] if "close_day" in r.keys() else None,
             "calendar_event_id": r["calendar_event_id"]}
 
 
@@ -6157,12 +6188,17 @@ async def api_materials_add(request):
         day = int(day_raw) if day_raw not in (None, "") else None
     except (TypeError, ValueError):
         day = None
+    close_raw = data.get("close_day")
+    try:
+        close_day = int(close_raw) if close_raw not in (None, "") else None
+    except (TypeError, ValueError):
+        close_day = None
     row_id = await DB_POOL.fetchval(
-        "INSERT INTO materials (folder_id, title, format, tags, day, url, calendar_event_id, created) "
-        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id",
+        "INSERT INTO materials (folder_id, title, format, tags, day, url, calendar_event_id, created, close_day) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id",
         folder_id, title, str(data.get("format", "link")).strip(),
         json.dumps(data.get("tags", []), ensure_ascii=False), day,
-        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"), time.time(),
+        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"), time.time(), close_day,
     )
     row = await DB_POOL.fetchrow("SELECT * FROM materials WHERE id=$1", row_id)
     return web.json_response(_material_json(row), status=201)
@@ -6182,11 +6218,16 @@ async def api_materials_update(request):
         day = int(day_raw) if day_raw not in (None, "") else None
     except (TypeError, ValueError):
         day = None
+    close_raw = data.get("close_day")
+    try:
+        close_day = int(close_raw) if close_raw not in (None, "") else None
+    except (TypeError, ValueError):
+        close_day = None
     await DB_POOL.execute(
-        "UPDATE materials SET folder_id=$2, title=$3, format=$4, tags=$5, day=$6, url=$7, calendar_event_id=$8 WHERE id=$1",
+        "UPDATE materials SET folder_id=$2, title=$3, format=$4, tags=$5, day=$6, url=$7, calendar_event_id=$8, close_day=$9 WHERE id=$1",
         mat_id, folder_id, title, str(data.get("format", "link")).strip(),
         json.dumps(data.get("tags", []), ensure_ascii=False), day,
-        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"),
+        str(data.get("url", "")).strip() or "#", data.get("calendar_event_id"), close_day,
     )
     row = await DB_POOL.fetchrow("SELECT * FROM materials WHERE id=$1", mat_id)
     if row is None:
@@ -6263,6 +6304,8 @@ async def api_cabinet_material_link(request):
     today = marathon_day_today(await get_marathon_start(), MARATHON_TZ)
     if row["day"] is not None and row["day"] > today:
         return web.json_response({"ok": False, "error": "locked"}, status=403)
+    if row.get("close_day") is not None and row["close_day"] < today:
+        return web.json_response({"ok": False, "error": "closed"}, status=403)
     url = row["url"] or ""
     if not url.startswith("storage:materials/"):
         return web.json_response({"ok": True, "url": url})
