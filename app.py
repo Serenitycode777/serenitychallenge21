@@ -815,6 +815,15 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .affirm-date .num{font-family:var(--font-head);font-size:38px;font-weight:600;line-height:1}
 .affirm-date .mon{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;opacity:.85;margin-top:3px}
 .affirm-divider{flex:0 0 auto;width:1px;align-self:stretch;background:rgba(255,255,255,.4)}
+.affirm-date .dr{position:relative;width:70px;height:70px;margin:0 auto}
+.affirm-date .dr svg{position:absolute;inset:0;width:100%;height:100%}
+.affirm-date .dr-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.affirm-date:not(.noring) .num{font-size:30px}
+.affirm-date .dr-cap{display:inline-block;margin-top:7px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);border-radius:999px;padding:3px 9px;font-family:var(--sys);font-size:10px;font-weight:700;letter-spacing:.07em;color:#fff;white-space:nowrap}
+.affirm-date .dr-cap b{color:#F3D58E;font-weight:800}
+.affirm-date.noring .dr{width:auto;height:auto}
+.affirm-date.noring .dr svg,.affirm-date.noring .dr-cap{display:none}
+.affirm-date.noring .dr-in{position:static}
 .affirm-body{flex:1;min-width:0;position:relative;z-index:1;text-align:center}
 .affirm-body .txt{font-family:var(--font-head);font-style:italic;font-size:19px;font-weight:600;line-height:1.3}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
@@ -1520,7 +1529,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
       <h1 class="page-title">Сегодня</h1>
       <div class="marathon-eyebrow"><span>Марафон «Начни сегодня!»</span></div>
       <div class="affirm-card">
-        <div class="affirm-date"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div>
+        <div class="affirm-date noring" id="affirmDateBox"><div class="dr"><svg viewBox="0 0 70 70" aria-hidden="true"><circle cx="35" cy="35" r="31" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.25)" stroke-width="3.5"/><circle id="affirmArc" cx="35" cy="35" r="31" fill="none" stroke="#F3D58E" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="0 999" transform="rotate(-90 35 35)"/><circle id="affirmDot" cx="35" cy="4" r="4.2" fill="#fff" stroke="#F3D58E" stroke-width="2"/></svg><div class="dr-in"><div class="num" id="affirmDateNum"></div><div class="mon" id="affirmDateMon"></div></div></div><div class="dr-cap" id="affirmDayCap"></div></div>
         <div class="affirm-divider"></div>
         <div class="affirm-body"><div class="txt" id="affirmText"></div></div>
       </div>
@@ -2810,6 +2819,18 @@ function renderChecklist(){
   const affirmDt = dayToDate(TODAY);
   document.getElementById("affirmDateNum").textContent = affirmDt.getUTCDate();
   document.getElementById("affirmDateMon").textContent = RU_MONTHS_SHORT[affirmDt.getUTCMonth()];
+  try{
+    const _box = document.getElementById("affirmDateBox"), _dn = TODAY_RAW;
+    const _in = _dn >= 1 && _dn <= 21;
+    _box.classList.toggle("noring", !_in);
+    if(_in){
+      const _r = 31, _L = 2*Math.PI*_r, _f = _L*_dn/21, _a = (_dn/21)*2*Math.PI - Math.PI/2;
+      document.getElementById("affirmArc").setAttribute("stroke-dasharray", _f.toFixed(2)+" "+_L.toFixed(2));
+      document.getElementById("affirmDot").setAttribute("cx", (35+_r*Math.cos(_a)).toFixed(2));
+      document.getElementById("affirmDot").setAttribute("cy", (35+_r*Math.sin(_a)).toFixed(2));
+      document.getElementById("affirmDayCap").innerHTML = window.SM_LANG==="en" ? `DAY <b>${_dn}</b> OF 21` : `ДЕНЬ <b>${_dn}</b> ИЗ 21`;
+    }
+  }catch(e){}
   const openerText = SOCIAL_OPENERS[(TODAY-1)%SOCIAL_OPENERS.length].replace(/15/, String(todayCount()));
   document.getElementById("socialOpener").textContent = openerText;
   document.getElementById("socialCloser").textContent = SOCIAL_CLOSERS[(TODAY-1+2)%SOCIAL_CLOSERS.length];
