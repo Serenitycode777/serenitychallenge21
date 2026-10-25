@@ -3703,6 +3703,10 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .tchip{font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface-2);border:1.5px solid var(--line);
   border-radius:999px;padding:7px 13px;cursor:pointer;user-select:none}
 .tchip.on{background:var(--sage);border-color:var(--sage);color:#fff}
+.tchip.tmanage{display:inline-flex;align-items:center;gap:6px;cursor:default;padding:5px 6px 5px 13px}
+.tchip .tact{border:none;background:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;line-height:1;cursor:pointer;color:var(--ink-soft);display:inline-flex;align-items:center;justify-content:center}
+.tchip .tact:hover{color:#B3415A}
+.tchip.tmanage-toggle{background:transparent;border-style:dashed;color:var(--ink-soft)}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface-2);border-radius:12px;padding:11px 13px}
 .toggle-row .l{font-size:13px}
 .sw{position:relative;width:40px;height:23px;border-radius:999px;background:var(--line);border:none;cursor:pointer;flex-shrink:0}
@@ -4246,14 +4250,45 @@ function showToast(msg){
 }
 
 let THEMES = []; // [{id,label}] – грузится с сервера, см. loadThemes()
+let themeManage = false;
 function renderMaterialThemes(){
   const wrap = document.getElementById("mThemes");
-  wrap.innerHTML = THEMES.map(t=>`<div class="tchip" data-t="${t.id}">${t.label}</div>`).join("")
-    + `<div class="tchip" id="themePlusChip">+ своя тема</div>`;
-  wrap.querySelectorAll(".tchip").forEach(c=>{
-    if(c.id === "themePlusChip") return;
-    c.addEventListener("click", ()=>{ c.classList.toggle("on"); document.getElementById("themeErr").style.display="none"; updateMStepSummaries(); });
-  });
+  const selected = new Set([...wrap.querySelectorAll(".tchip.on[data-t]")].map(c=>c.dataset.t));
+  wrap.innerHTML = THEMES.map(t=>themeManage
+      ? `<div class="tchip tmanage" data-t="${t.id}"><span>${t.label}</span><button type="button" class="tact" data-ted="${t.id}" title="переименовать">✎</button><button type="button" class="tact" data-tdel="${t.id}" title="удалить">✕</button></div>`
+      : `<div class="tchip${selected.has(t.id)?" on":""}" data-t="${t.id}">${t.label}</div>`).join("")
+    + (themeManage ? "" : `<div class="tchip" id="themePlusChip">+ своя тема</div>`)
+    + `<div class="tchip tmanage-toggle" id="themeManageChip">${themeManage ? "✓ готово" : "✎ изменить темы"}</div>`;
+  if(!themeManage){
+    wrap.querySelectorAll(".tchip[data-t]").forEach(c=>{
+      c.addEventListener("click", ()=>{ c.classList.toggle("on"); document.getElementById("themeErr").style.display="none"; updateMStepSummaries(); });
+    });
+  }
+  wrap.querySelectorAll("[data-ted]").forEach(b=>b.addEventListener("click", async e=>{
+    e.stopPropagation();
+    const t = THEMES.find(x=>x.id===b.dataset.ted); if(!t) return;
+    const v = ((await askText("Новое название темы", t.label))||"").trim().toLowerCase();
+    if(!v || v===t.id) return;
+    try{
+      const nt = await apiFetch(`/api/admin/themes/${encodeURIComponent(t.id)}`, {method:"PUT", body: JSON.stringify({label: v})});
+      THEMES = THEMES.filter(x=>x.id!==t.id && x.id!==nt.id).concat([nt]).sort((a,b)=>a.label.localeCompare(b.label));
+      if(typeof loadMaterials==="function") loadMaterials();
+      renderMaterialThemes(); showToast("Тема переименована: «"+v+"» ✓");
+    }catch(err){}
+  }));
+  wrap.querySelectorAll("[data-tdel]").forEach(b=>b.addEventListener("click", async e=>{
+    e.stopPropagation();
+    const t = THEMES.find(x=>x.id===b.dataset.tdel); if(!t) return;
+    if(!(await askConfirm("Удалить тему «"+t.label+"»? Она уберётся и из всех материалов."))) return;
+    try{
+      await apiFetch(`/api/admin/themes/${encodeURIComponent(t.id)}`, {method:"DELETE"});
+      THEMES = THEMES.filter(x=>x.id!==t.id);
+      if(typeof loadMaterials==="function") loadMaterials();
+      renderMaterialThemes(); showToast("Тема удалена");
+    }catch(err){}
+  }));
+  document.getElementById("themeManageChip").addEventListener("click", ()=>{ themeManage = !themeManage; renderMaterialThemes(); });
+  if(themeManage) return;
   document.getElementById("themePlusChip").addEventListener("click", ()=>{
     const f = document.getElementById("newThemeForm");
     f.style.display = (f.style.display==="none") ? "flex" : "none";
@@ -5216,6 +5251,30 @@ function askConfirm(msg){
   });
 }
 </script>
+<div id="askTextBox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(40,34,48,.45);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:18px;max-width:360px;width:100%;padding:20px;box-shadow:0 24px 60px -20px rgba(0,0,0,.45)">
+    <div id="askTextMsg" style="font-size:15px;font-weight:600;color:#3D3646;margin-bottom:12px"></div>
+    <input id="askTextInput" type="text" style="width:100%;box-sizing:border-box;border:1.3px solid #6A9993;border-radius:12px;padding:11px 13px;font:inherit;font-size:15px;margin-bottom:16px">
+    <div style="display:flex;gap:10px">
+      <button type="button" id="askTextNo" style="flex:1;padding:11px;border-radius:999px;border:1px solid #E6DED6;background:#fff;font:inherit;font-weight:600;cursor:pointer">Отмена</button>
+      <button type="button" id="askTextYes" style="flex:1;padding:11px;border-radius:999px;border:none;background:#6A9993;color:#fff;font:inherit;font-weight:600;cursor:pointer">Сохранить</button>
+    </div>
+  </div>
+</div>
+<script>
+function askText(msg, value){
+  return new Promise(resolve=>{
+    const box=document.getElementById("askTextBox"), inp=document.getElementById("askTextInput");
+    document.getElementById("askTextMsg").textContent=msg; inp.value=value||""; box.style.display="flex";
+    setTimeout(()=>{inp.focus();inp.select();},30);
+    const done=v=>{box.style.display="none";yes.onclick=no.onclick=inp.onkeydown=box.onclick=null;resolve(v);};
+    const yes=document.getElementById("askTextYes"), no=document.getElementById("askTextNo");
+    yes.onclick=()=>done(inp.value); no.onclick=()=>done(null);
+    inp.onkeydown=e=>{ if(e.key==="Enter") done(inp.value); if(e.key==="Escape") done(null); };
+    box.onclick=e=>{ if(e.target===box) done(null); };
+  });
+}
+</script>
 </body></html>"""
 
 
@@ -6045,8 +6104,37 @@ async def api_themes_add(request):
 async def api_themes_delete(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
-    await DB_POOL.execute("DELETE FROM themes WHERE id=$1", request.match_info["id"])
+    tid = request.match_info["id"]
+    async with DB_POOL.acquire() as conn:
+        async with conn.transaction():
+            await conn.execute(
+                "UPDATE materials SET tags = COALESCE((SELECT jsonb_agg(x) FROM jsonb_array_elements_text(tags) x WHERE x <> $1), '[]'::jsonb) "
+                "WHERE tags ? $1", tid)
+            await conn.execute("DELETE FROM themes WHERE id=$1", tid)
     return web.json_response({"ok": True})
+
+
+async def api_themes_update(request):
+    """Переименовать тему: меняет и саму тему, и тег во всех материалах, где она стоит."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    old_id = request.match_info["id"]
+    data = await request.json()
+    label = str(data.get("label", "")).strip()
+    if not label:
+        return web.json_response({"error": "label required"}, status=400)
+    new_id = label.lower()
+    async with DB_POOL.acquire() as conn:
+        async with conn.transaction():
+            await conn.execute(
+                "INSERT INTO themes (id, label, created) VALUES ($1,$2,$3) ON CONFLICT (id) DO UPDATE SET label=EXCLUDED.label",
+                new_id, label, time.time())
+            if new_id != old_id:
+                await conn.execute(
+                    "UPDATE materials SET tags = (SELECT COALESCE(jsonb_agg(DISTINCT CASE WHEN x = $1 THEN $2 ELSE x END), '[]'::jsonb) "
+                    "FROM jsonb_array_elements_text(tags) x) WHERE tags ? $1", old_id, new_id)
+                await conn.execute("DELETE FROM themes WHERE id=$1", old_id)
+    return web.json_response({"id": new_id, "label": label})
 
 
 async def api_materials_list(request):
@@ -6514,6 +6602,7 @@ def make_app():
         web.get("/api/admin/themes", api_themes_list),
         web.post("/api/admin/themes", api_themes_add),
         web.delete("/api/admin/themes/{id}", api_themes_delete),
+        web.put("/api/admin/themes/{id}", api_themes_update),
         web.get("/api/admin/materials", api_materials_list),
         web.post("/api/admin/materials", api_materials_add),
         web.put("/api/admin/materials/{id}", api_materials_update),
