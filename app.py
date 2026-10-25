@@ -814,6 +814,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
 .hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none;background:var(--surface-2)}
 .hab.done{background:rgba(170,157,184,.14)}
+.hab.hab-off{cursor:default;opacity:.55}
+.hab.hab-off .hab-text{color:var(--ink-soft)}
 .habits-card .checklist{background:none;border:none;box-shadow:none;padding:12px 0 0;margin-bottom:0}
 .markvisual{width:24px;height:24px;border-radius:50%;border:1.3px solid var(--ink-soft);background:var(--surface);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;overflow:hidden}
@@ -2128,8 +2130,14 @@ function fmtIsoDateRu(iso){
   return fmtDateRu(new Date(Date.UTC(y, m-1, dd)));
 }
 function logForDate(dateStr){ return STATE.logsByDate[dateStr] || {habits_done:{}, closed:false}; }
+function habitScheduledOn(name, d){
+  const cfg = habitConfig[name];
+  if(!cfg || !cfg.days) return true;
+  return cfg.days.includes((dayToDate(d).getUTCDay()+6)%7);
+}
+function scheduledCountForDay(d){ return HABITS.filter(h=>habitScheduledOn(h,d)).length; }
 function doneCountForDay(d){
-  if(d === TODAY) return liveChecked.filter(Boolean).length;
+  if(d === TODAY) return HABITS.filter((h,i)=>liveChecked[i] && habitScheduledOn(h,TODAY)).length;
   const hd = logForDate(dateForDay(d)).habits_done || {};
   return Object.values(hd).filter(Boolean).length;
 }
@@ -2524,7 +2532,7 @@ function renderHeat(){
   for(let d=1; d<=21; d++){
     let cls;
     if(d > TODAY) cls = "future";
-    else cls = heatClass(dayPct(doneCountForDay(d), HABITS.length));
+    else cls = heatClass(dayPct(doneCountForDay(d), scheduledCountForDay(d)));
     const isClosed = d===TODAY ? dayClosed : !!logForDate(dateForDay(d)).closed;
     const cell = document.createElement("div");
     cell.className = "hday "+cls+(d===TODAY?" istoday":"");
@@ -2608,7 +2616,9 @@ document.getElementById("overlay").addEventListener("click",e=>{if(e.target.id==
 function computeStreak(){
   let s=0;
   for(let d=TODAY-1; d>=1; d--){
-    if(HABITS.length>0 && doneCountForDay(d)===HABITS.length) s++;
+    const tot = scheduledCountForDay(d);
+    if(HABITS.length>0 && tot===0) continue;
+    if(HABITS.length>0 && doneCountForDay(d)>=tot) s++;
     else break;
   }
   return s;
@@ -2636,17 +2646,18 @@ function renderChecklist(){
   document.getElementById("socialOpener").textContent = openerText;
   document.getElementById("socialCloser").textContent = SOCIAL_CLOSERS[(TODAY-1+2)%SOCIAL_CLOSERS.length];
   document.getElementById("eveningRem").hidden = new Date().getHours() < 18;
-  const doneCount = liveChecked.filter(Boolean).length;
-  const remaining = HABITS.length - doneCount;
+  const doneCount = doneCountForDay(TODAY);
+  const totalToday = scheduledCountForDay(TODAY);
+  const remaining = totalToday - doneCount;
   const todayDow = (dayToDate(TODAY).getUTCDay()+6)%7;
   const todayHabits = HABITS.filter(h=>{ const cfg=habitConfig[h]; return !cfg || !cfg.days || cfg.days.includes(todayDow); });
   const todayMins = totalMinutes(todayHabits);
   const hcSummary = document.getElementById("hcSummary");
   hcSummary.hidden = HABITS.length === 0;
   if(HABITS.length > 0){
-    const pct = Math.round(doneCount / HABITS.length * 100);
+    const pct = totalToday ? Math.round(doneCount / totalToday * 100) : 0;
     document.getElementById("hcDoneNum").textContent = doneCount;
-    document.getElementById("hcTotalNum").textContent = HABITS.length;
+    document.getElementById("hcTotalNum").textContent = totalToday;
     document.getElementById("hcBarFill").style.width = pct + "%";
     document.getElementById("hcBarPct").textContent = pct + "%";
     const timeRow = document.getElementById("hcTimeRow");
@@ -2666,6 +2677,9 @@ function renderChecklist(){
   if(HABITS.length === 0){
     pillEl.hidden = true;
     statusEl.textContent = "Пока не выбраны привычки – нажми «Изменить».";
+  } else if(totalToday === 0){
+    pillEl.hidden = true;
+    statusEl.textContent = "Сегодня нет запланированных привычек – день отдыха 🌙";
   } else if(remaining === 0){
     pillEl.hidden = true;
     statusEl.textContent = "Все привычки на сегодня отмечены ✨";
@@ -2677,7 +2691,15 @@ function renderChecklist(){
     statusEl.textContent = "осталось сегодня 💗";
   }
   const box = document.getElementById("checklist");
-  box.innerHTML = HABITS.map((h,i)=>{
+  const _order = HABITS.map((h,i)=>i).filter(i=>habitScheduledToday(HABITS[i])).concat(HABITS.map((h,i)=>i).filter(i=>!habitScheduledToday(HABITS[i])));
+  box.innerHTML = _order.map(i=>{
+    const h = HABITS[i];
+    if(!habitScheduledToday(h)){
+      return `<div class="hab hab-off"><span class="markwrap"></span>
+    <span class="hab-text">${h}</span>
+    ${habitBadgeHtml(h)}
+    </div>`;
+    }
     return `<label class="hab ${liveChecked[i]?'done':''}" for="hb${i}">
     <span class="markwrap"><input type="checkbox" id="hb${i}" ${liveChecked[i]?'checked':''} ${dayClosed?'disabled':''}>
     <span class="markvisual">${ICONS_CHECK}</span></span>
@@ -2685,10 +2707,10 @@ function renderChecklist(){
     ${habitBadgeHtml(h)}
     </label>`;
   }).join("");
-  HABITS.forEach((_,i)=>document.getElementById("hb"+i).addEventListener("change",e=>{
+  HABITS.forEach((_,i)=>{ const _el=document.getElementById("hb"+i); if(_el) _el.addEventListener("change",e=>{
     liveChecked[i]=e.target.checked; playPopSound(); renderChecklist(); renderHeat(); renderProgress();
     saveTodayLog();
-  }));
+  }); });
   const btn = document.getElementById("closeDayBtn");
   btn.disabled = HABITS.length === 0;
   btn.classList.toggle("is-closed", dayClosed);
@@ -2703,12 +2725,12 @@ document.getElementById("closeDayBtn").addEventListener("click", ()=>{
     return;
   }
   dayClosed = true; renderChecklist(); renderHeat();
-  const done = liveChecked.filter(Boolean).length;
+  const done = doneCountForDay(TODAY), fdTot = scheduledCountForDay(TODAY);
   document.getElementById("fdDay").textContent = TODAY;
   document.getElementById("fdDone").textContent = done;
-  document.getElementById("fdTotal").textContent = HABITS.length;
-  document.getElementById("fdPraise").textContent = done===HABITS.length?"Ты держишь ритм ✨":done===0?"Ура! Ты справилась! 💗":"Ты в процессе, и этого достаточно";
-  document.getElementById("fdCloseText").textContent = done===HABITS.length?"Ура! 🎉 Ты это сделала!":done===0?"Хорошо, до встречи":"Отлично, увидимся завтра";
+  document.getElementById("fdTotal").textContent = fdTot;
+  document.getElementById("fdPraise").textContent = done>=fdTot?"Ты держишь ритм ✨":done===0?"Ура! Ты справилась! 💗":"Ты в процессе, и этого достаточно";
+  document.getElementById("fdCloseText").textContent = done>=fdTot?"Ура! 🎉 Ты это сделала!":done===0?"Хорошо, до встречи":"Отлично, увидимся завтра";
   document.getElementById("fdOverlay").classList.add("open");
   saveTodayLog(true);
   renderProgress();
@@ -2836,8 +2858,7 @@ function habitScheduleLabel(name){
 function renderProgress(){
   let perfectDays = 0;
   if(HABITS.length){
-    for(let d=1; d<TODAY; d++){ if(doneCountForDay(d) === HABITS.length) perfectDays++; }
-    if(liveChecked.filter(Boolean).length === HABITS.length) perfectDays++;
+    for(let d=1; d<=TODAY; d++){ const _t = scheduledCountForDay(d); if(_t>0 && doneCountForDay(d) >= _t) perfectDays++; }
   }
 
   document.getElementById("diamondVal").textContent = perfectDays + mastermindBonus();
@@ -3105,8 +3126,8 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.font="600 18px "+SYS+", sans-serif";
   ctx.fillText("МАРАФОН «НАЧНИ СЕГОДНЯ!»", contentX, eyebrowY);
 
-  const done=liveChecked.filter(Boolean).length;
-  const heroText=done+" из "+HABITS.length;
+  const done=doneCountForDay(TODAY);
+  const heroText=done+" из "+scheduledCountForDay(TODAY);
   ctx.fillStyle="#fff";
   ctx.font="600 112px "+HEAD+", Georgia, serif";
   const heroOk = await drawHeroStat(ctx, heroText, contentX, heroBaseline, 112, cardWidth-80);
