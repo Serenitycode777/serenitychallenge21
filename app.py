@@ -3749,6 +3749,11 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .tchip{font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface-2);border:1.5px solid var(--line);
   border-radius:999px;padding:7px 13px;cursor:pointer;user-select:none}
 .tchip.on{background:var(--sage);border-color:var(--sage);color:#fff}
+.tchip.lchk{display:inline-flex;align-items:center;gap:7px}
+.tchip.lchk .lbox{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--ink-soft);background:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.tchip.lchk.on .lbox{border-color:#fff}
+.tchip.lchk.on .lbox::after{content:"";width:4px;height:8px;border:solid var(--sage);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+#langErr{display:none}
 .dclear{font-size:11px;font-weight:500;color:var(--ink-soft);text-transform:none;letter-spacing:0;margin-left:8px;text-decoration:none}
 .tchip.tmanage{display:inline-flex;align-items:center;gap:6px;cursor:default;padding:5px 6px 5px 13px}
 .tchip .tact{border:none;background:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;line-height:1;cursor:pointer;color:var(--ink-soft);display:inline-flex;align-items:center;justify-content:center}
@@ -4043,8 +4048,10 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
             <div class="hint" style="margin:6px 0 0">без дат материал доступен всегда; после даты закрытия он остаётся в кабинете под замком</div>
           </div>
           <div class="field">
-            <label>Кому показывать</label>
-            <div class="chipgrid" id="mLangChips"><div class="tchip on" data-lang="">всем</div><div class="tchip" data-lang="ru">только в русской версии</div><div class="tchip" data-lang="en">только в English</div></div>
+            <label>Язык материала <span class="req">*</span></label>
+            <div class="chipgrid" id="mLangChips"><div class="tchip lchk" data-lang="en"><span class="lbox"></span>English</div><div class="tchip lchk" data-lang="ru"><span class="lbox"></span>Русский</div></div>
+            <div class="hint" style="margin:6px 0 0">материал появится в кабинете на выбранном языке; можно отметить оба</div>
+            <div class="err" id="langErr">отметь хотя бы один язык – English или Русский</div>
           </div>
           <div class="field">
             <label>Тема <span class="req">*</span></label>
@@ -4448,8 +4455,10 @@ document.addEventListener("click", ()=>{ document.querySelectorAll(".dpicker-pop
 const mDayPicker = buildDatePicker("mDay", "2026-11-01", ()=>updateMStepSummaries());
 const mClosePicker = buildDatePicker("mClose", "2026-11-01", ()=>updateMStepSummaries());
 let selectedMatLang = "";
-function setMatLang(v){ selectedMatLang = v||""; document.querySelectorAll("#mLangChips .tchip").forEach(c=>c.classList.toggle("on", c.dataset.lang===selectedMatLang)); }
-document.querySelectorAll("#mLangChips .tchip").forEach(c=>c.addEventListener("click", ()=>{ setMatLang(c.dataset.lang); updateMStepSummaries(); }));
+function matLangsOn(){ return [...document.querySelectorAll("#mLangChips .tchip.on")].map(c=>c.dataset.lang); }
+function syncMatLang(){ const on = matLangsOn(); selectedMatLang = on.length===1 ? on[0] : ""; }
+function setMatLang(v, isNew){ document.querySelectorAll("#mLangChips .tchip").forEach(c=>c.classList.toggle("on", isNew ? false : (!v || c.dataset.lang===v))); syncMatLang(); const e=document.getElementById("langErr"); if(e) e.style.display="none"; }
+document.querySelectorAll("#mLangChips .tchip").forEach(c=>c.addEventListener("click", ()=>{ c.classList.toggle("on"); syncMatLang(); if(matLangsOn().length) document.getElementById("langErr").style.display="none"; updateMStepSummaries(); }));
 document.querySelectorAll(".dclear").forEach(a=>a.addEventListener("click", e=>{
   e.preventDefault(); (a.dataset.clear==="mClose" ? mClosePicker : mDayPicker).reset(); updateMStepSummaries();
 }));
@@ -4606,7 +4615,7 @@ function renderMaterialsList(){
     const matsHtml = mats.length ? mats.map(m=>{
       const fmt = FORMATS.find(x=>x.v===m.format);
       return `<div class="evrow">
-        <div class="evbody"><div class="evttl">${m.title}</div><div class="evmeta">${fmt?fmt.l:(m.format||"")}${m.day?` · день ${m.day}`:''}${m.close_day?` · до дня ${m.close_day}`:''}${m.lang?` · ${m.lang==="en"?"English":"RU"}`:''}</div></div>
+        <div class="evbody"><div class="evttl">${m.title}</div><div class="evmeta">${fmt?fmt.l:(m.format||"")}${m.day?` · день ${m.day}`:''}${m.close_day?` · до дня ${m.close_day}`:''}${m.lang==="en"?" · EN":m.lang==="ru"?" · RU":" · EN + RU"}</div></div>
         <button class="evbtn" data-matedit="${m.id}" aria-label="редактировать">✎</button>
         <button class="evbtn" data-matdel="${m.id}">✕</button>
       </div>`;
@@ -4716,9 +4725,10 @@ function updateMStepSummaries(){
     const dt2 = new Date(closeVal+"T00:00:00");
     whenParts.push("до "+dt2.toLocaleDateString("ru-RU",{day:"numeric",month:"short"}));
   }
+  { const _l = matLangsOn(); if(_l.length) whenParts.push(_l.length===2 ? "EN + RU" : _l[0].toUpperCase()); }
   if(themeCount) whenParts.push(themeCount+(themeCount===1?" тема":" темы"));
   document.getElementById("mstepValWhen").textContent = whenParts.join(" · ");
-  document.getElementById("mstepWhen").classList.toggle("done", themeCount>0);
+  document.getElementById("mstepWhen").classList.toggle("done", themeCount>0 && matLangsOn().length>0);
 }
 function openMaterialForm(show){
   document.getElementById("materialFormBody").style.display = show ? "" : "none";
@@ -4843,7 +4853,7 @@ function cancelEditMaterial(){
   document.getElementById("mLink").value = "";
   document.getElementById("mFile").value = "";
   document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
-  mDayPicker.reset(); mClosePicker.reset(); setMatLang("");
+  mDayPicker.reset(); mClosePicker.reset(); setMatLang("", true);
   document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
   evtToggle.classList.remove("on");
   document.getElementById("evtPickWrap").style.display = "none";
@@ -4858,6 +4868,8 @@ document.getElementById("saveMaterial").addEventListener("click", async ()=>{
   const themeIds = [...document.querySelectorAll("#mThemes .tchip.on")].map(c=>c.dataset.t);
   if(!selectedFolder){ setMStepOpen("folder"); document.getElementById("folderPicker").scrollIntoView({block:"center"}); return; }
   if(!title){ setMStepOpen("what"); document.getElementById("mTitle").focus(); return; }
+  if(!matLangsOn().length){ setMStepOpen("when"); document.getElementById("langErr").style.display = "block"; document.getElementById("langErr").scrollIntoView({block:"center"}); return; }
+  syncMatLang();
   if(!themeIds.length){ setMStepOpen("when"); document.getElementById("themeErr").style.display = "block"; document.getElementById("themeErr").scrollIntoView({block:"center"}); return; }
   const evOn = evtToggle.classList.contains("on");
   const body = JSON.stringify({
