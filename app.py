@@ -506,6 +506,8 @@ function T(s){
   var nums=k.match(/\\d+/g);
   if(nums){ var tk=k.replace(/\\d+/g,'#'), e=NT[tk]; if(e){ var out=e[1], map={}; e[0].forEach(function(o,ix){ if(nums[ix]!=null) map[o]=nums[ix]; }); return out.replace(/\\d+/g,function(x){ return map[x]!=null?map[x]:x; }); } }
   var op=k.match(/^🔒 Откроется (.+)$/); if(op) return '🔒 Opens on '+op[1];
+  var cl=k.match(/^🔒 Доступ закрыт после (.+)$/); if(cl) return '🔒 Access closed after '+cl[1];
+  if(k==='закрыто') return 'closed';
   var mm=k.match(/^(.+) · скачать$/); if(mm) return T(mm[1])+' · download';
   if(k.indexOf(', ')>0){ var parts=k.split(', '), ok=true, tr=parts.map(function(x){ var t=D[x]; if(t==null) ok=false; return t; }); if(ok) return tr.join(', '); }
   return s;
@@ -2229,7 +2231,7 @@ function applyState(data){
 
 function buildMaterialsState(){
   AUTHORS = Object.assign({}, STATE.authors||{});
-  MATERIALS = (STATE.materials||[]).filter(m=>!(m.close_day!=null && m.close_day < TODAY_RAW)).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
+  MATERIALS = (STATE.materials||[]).map(m=>Object.assign({}, m, {tags: m.tags||[]}));
   THEMES = [...new Set(MATERIALS.flatMap(m=>m.tags||[]))];
   loadFavorites();
   activeTheme = "all"; activeFolder = "all"; activeType = "all"; query = "";
@@ -3232,17 +3234,22 @@ function isFavorite(id){ return !!FAVORITES[String(id)]; }
 function toggleFavorite(id){ id=String(id); if(FAVORITES[id]) delete FAVORITES[id]; else FAVORITES[id]=true; saveFavorites(); }
 const BOOKMARK_SVG_OUTLINE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20.5s-7.5-4.6-9.8-9.3C.7 7.8 2.4 4.5 5.7 4c2-.3 3.8.7 4.8 2.3C11.5 4.7 13.3 3.7 15.3 4c3.3.5 5 3.8 3.5 7.2C16.5 15.9 12 20.5 12 20.5Z"/></svg>`;
 const BOOKMARK_SVG_FILLED = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20.5s-7.5-4.6-9.8-9.3C.7 7.8 2.4 4.5 5.7 4c2-.3 3.8.7 4.8 2.3C11.5 4.7 13.3 3.7 15.3 4c3.3.5 5 3.8 3.5 7.2C16.5 15.9 12 20.5 12 20.5Z"/></svg>`;
+function matClosed(m){ return m.close_day!=null && m.close_day < TODAY_RAW; }
 function mItemHtml(m,i){
-  const unlocked = m.day===null||m.day<=TODAY;
+  const closed = matClosed(m);
+  const unlocked = !closed && (m.day===null||m.day<=TODAY);
   const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
   const typeLbl = TYPE_LABEL[m.type]||TYPE_LABEL.link;
   const metaHtml = unlocked
     ? `${ICONS[m.type]||ICONS.pdf}<span>${typeLbl}${m.type==="pdf"?" · скачать":""}</span>`
+    : closed ? `${ICONS.lock}<span>${typeLbl}</span>`
     : `${ICONS.lock}<span>с ${fmtDateRu(dayToDate(m.day))}</span>`;
   const fav = isFavorite(m.id);
   const favBtn = unlocked ? `<button class="mitem-fav${fav?' on':''}" data-favid="${m.id}" type="button" aria-label="в избранное">${fav?BOOKMARK_SVG_FILLED:BOOKMARK_SVG_OUTLINE}</button>`
     : `<button class="mitem-lock" type="button" aria-label="закрыто">${ICONS.lock}</button>`;
-  const lockNote = unlocked ? "" : `<div class="mlock-note" hidden>🔒 Откроется ${fmtDateRu(dayToDate(m.day))}</div>`;
+  const lockNote = unlocked ? "" : closed
+    ? `<div class="mlock-note" hidden>🔒 Доступ закрыт после ${fmtDateRu(dayToDate(m.close_day))}</div>`
+    : `<div class="mlock-note" hidden>🔒 Откроется ${fmtDateRu(dayToDate(m.day))}</div>`;
   return `<div class="mitem ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}>
     ${favBtn}
     ${matThumbHtml(m)}
@@ -3394,14 +3401,16 @@ function openMaterial(key){
   openOverlay(a.name, a.topics);
   const items = MATERIALS.filter(m=>m.author===key);
   const rows = items.map((m,i)=>{
-    const unlocked = m.day===null||m.day<=TODAY;
-    const status = m.day===null ? `<span class="mat-status open">Открыто</span>`
+    const closed = matClosed(m);
+    const unlocked = !closed && (m.day===null||m.day<=TODAY);
+    const status = closed ? `<span class="mat-status locked">${ICONS.lock} закрыто</span>`
+      : m.day===null ? `<span class="mat-status open">Открыто</span>`
       : unlocked ? `<span class="mat-status open">Открыто ${fmtDateRu(dayToDate(m.day))}</span>` : `<span class="mat-status locked">${ICONS.lock} с ${fmtDateRu(dayToDate(m.day))}</span>`;
     const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
     return `<div class="mat ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
       <div class="mat-body"><div class="mat-title">${m.title}${newBadge}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div>${status}</div>`;
   }).join("");
-  const anyLocked = items.some(m=>!(m.day===null||m.day<=TODAY));
+  const anyLocked = items.some(m=>!matClosed(m) && !(m.day===null||m.day<=TODAY));
   document.getElementById("overlayBody").innerHTML =
     `${rows}${anyLocked?'<p class="note">Доступ к файлу открывается в день разблокировки.</p>':''}`;
   document.getElementById("overlayBody").querySelectorAll(".mat[data-i]").forEach(row=>{
