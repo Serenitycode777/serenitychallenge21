@@ -131,6 +131,7 @@ async def init_db(app):
         status TEXT NOT NULL DEFAULT 'scheduled', sent_count INTEGER DEFAULT 0, failed_count INTEGER DEFAULT 0,
         total_count INTEGER DEFAULT 0, sent_at DOUBLE PRECISION, created DOUBLE PRECISION, error TEXT
     )""")
+    await DB_POOL.execute("ALTER TABLE scheduled_emails ADD COLUMN IF NOT EXISTS recipients TEXT")
     await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS day_notes (
         id SERIAL PRIMARY KEY, user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
         note_date DATE NOT NULL, text TEXT NOT NULL DEFAULT '', updated DOUBLE PRECISION,
@@ -146,6 +147,7 @@ async def init_db(app):
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS topics TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS close_day INTEGER")
     await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS lang TEXT DEFAULT ''")
+    await DB_POOL.execute("ALTER TABLE signups ADD COLUMN IF NOT EXISTS free BOOLEAN DEFAULT FALSE")
     await DB_POOL.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_seen DOUBLE PRECISION")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS photo_url TEXT")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS dot_color TEXT DEFAULT ''")
@@ -304,6 +306,7 @@ EMAIL_AUDIENCES = {
     "paid": "оплатившие",
     "waiting": "ждут оплату",
     "all": "все из CRM",
+    "free": "Free",
 }
 
 
@@ -374,8 +377,14 @@ async def send_access_email(to_email: str, name: str):
     await resend_send(to_email, fill_email(subject, values), fill_email(body, values))
 
 
-async def _email_audience_rows(audience: str):
+async def _email_audience_rows(audience: str, recipients=None):
     base = "SELECT DISTINCT ON (email_norm) name, email FROM signups WHERE COALESCE(email,'') <> '' "
+    if audience == "free":
+        rows = await DB_POOL.fetch(base + "AND free=TRUE ORDER BY email_norm, id DESC")
+        if recipients is not None:
+            chosen = {normalize_email(e) for e in recipients}
+            rows = [r for r in rows if normalize_email(r["email"]) in chosen]
+        return rows
     if audience == "paid":
         q = base + "AND status='оплачено' ORDER BY email_norm, id DESC"
     elif audience == "waiting":
@@ -393,7 +402,11 @@ async def process_due_emails():
         time.time(),
     )
     for row in rows:
-        recipients = await _email_audience_rows(row["audience"])
+        try:
+            chosen = json.loads(row["recipients"]) if row["recipients"] else None
+        except Exception:
+            chosen = None
+        recipients = await _email_audience_rows(row["audience"], chosen)
         ok_n, fail_n, last_err = 0, 0, ""
         await DB_POOL.execute("UPDATE scheduled_emails SET total_count=$2 WHERE id=$1", row["id"], len(recipients))
         for r in recipients:
@@ -4140,7 +4153,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 
 .evlist{display:flex;flex-direction:column;gap:8px;margin-top:4px}
 .em-h{font-size:13px;font-weight:700;color:var(--sage-ink);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 10px}
-#emCancel[hidden],.em-warn[hidden]{display:none}
+#emCancel[hidden],.em-warn[hidden],#emFreeBox[hidden]{display:none}
 .em-warn{font-size:12px;color:#B3415A;background:rgba(224,82,95,.08);border-radius:10px;padding:9px 12px;margin-bottom:10px}
 .em-sys{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;background:var(--surface-2)}
 .em-sys-head{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
@@ -4228,6 +4241,14 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .crm-badge{padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
 .crm-badge.paid{background:var(--ok-bg);color:var(--ok)}
 .crm-badge.wait{background:var(--warn-bg);color:var(--warn)}
+.crm-free{width:17px;height:17px;accent-color:var(--sage);cursor:pointer}
+.em-free{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:10px 12px;max-height:260px;overflow:auto}
+.em-free-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-soft);margin-bottom:6px}
+.em-free-head button{border:none;background:none;color:var(--sage-ink);font-weight:600;font-size:12px;cursor:pointer;padding:0}
+.em-free label{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13px;cursor:pointer;border-bottom:1px dashed var(--line)}
+.em-free label:last-child{border-bottom:none}
+.em-free input{width:16px;height:16px;accent-color:var(--sage);flex-shrink:0}
+.em-free .em-fe{color:var(--ink-soft);font-size:12px}
 .crm-note,.crm-amt{border:1.3px solid var(--sage);background:var(--surface);border-radius:8px;padding:5px 7px;font-size:12px;font-family:inherit;width:100%;min-width:90px}
 .crm-amt{min-width:60px;font-variant-numeric:tabular-nums}
 .crm-confirm{background:var(--lav);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11.5px;cursor:pointer;white-space:nowrap}
@@ -4533,6 +4554,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       <div class="field">
         <label>Кому</label>
         <div class="chipgrid" id="emAudChips"></div>
+        <div class="em-free" id="emFreeBox" hidden></div>
       </div>
       <div class="field">
         <label>Дата и время отправки <span class="req">*</span></label>
@@ -4622,7 +4644,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       </div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Сумма</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Сумма</th><th>Статус</th><th>Free</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
           <tbody id="crmBody"></tbody>
         </table>
       </div>
@@ -4661,7 +4683,7 @@ document.addEventListener("keydown", e=>{
 
 /* ---------- письма участницам ---------- */
 let EMAILS = {system:[], scheduled:[], counts:{}, audiences:{}, test_to:""};
-let emAudience = "paid", emEditingId = null;
+let emAudience = "paid", emEditingId = null, emRecipients = null;
 const EM_MON = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
 function emEsc(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 async function loadEmails(){
@@ -4674,7 +4696,27 @@ async function loadEmails(){
 function renderEmAud(){
   document.getElementById("emAudChips").innerHTML = Object.entries(EMAILS.audiences||{}).map(([k,l])=>
     `<div class="tchip${k===emAudience?' on':''}" data-aud="${k}">${l} · ${(EMAILS.counts||{})[k]||0}</div>`).join("");
-  document.querySelectorAll("#emAudChips [data-aud]").forEach(c=>c.addEventListener("click", ()=>{ emAudience = c.dataset.aud; renderEmAud(); }));
+  document.querySelectorAll("#emAudChips [data-aud]").forEach(c=>c.addEventListener("click", ()=>{
+    emAudience = c.dataset.aud;
+    if(emAudience === "free" && !emRecipients) emRecipients = (EMAILS.free_list||[]).map(x=>x.email);
+    renderEmAud();
+  }));
+  renderEmFree();
+}
+function renderEmFree(){
+  const box = document.getElementById("emFreeBox");
+  box.hidden = emAudience !== "free";
+  if(box.hidden) return;
+  const list = EMAILS.free_list || [];
+  if(!list.length){ box.innerHTML = `<div class="em-fe">в CRM пока никто не отмечен как Free – поставь галочку в колонке Free</div>`; return; }
+  const sel = new Set((emRecipients||[]).map(e=>e.toLowerCase()));
+  box.innerHTML = `<div class="em-free-head"><span>выбрано ${list.filter(x=>sel.has(x.email.toLowerCase())).length} из ${list.length}</span><span><button type="button" id="emFreeAll">выбрать всех</button> · <button type="button" id="emFreeNone">снять всех</button></span></div>`
+    + list.map(x=>`<label><input type="checkbox" data-fe="${emEsc(x.email)}" ${sel.has(x.email.toLowerCase())?'checked':''}><span>${emEsc(x.name||"–")} <span class="em-fe">${emEsc(x.email)}</span></span></label>`).join("");
+  box.querySelectorAll("[data-fe]").forEach(cb=>cb.addEventListener("change", ()=>{
+    emRecipients = [...box.querySelectorAll("[data-fe]")].filter(c=>c.checked).map(c=>c.dataset.fe); renderEmFree();
+  }));
+  document.getElementById("emFreeAll").addEventListener("click", ()=>{ emRecipients = list.map(x=>x.email); renderEmFree(); });
+  document.getElementById("emFreeNone").addEventListener("click", ()=>{ emRecipients = []; renderEmFree(); });
 }
 function renderEmails(){
   const sys = document.getElementById("emSystem");
@@ -4706,7 +4748,7 @@ function renderEmails(){
   list.innerHTML = rows.length ? rows.map(m=>{
     const [d,t] = m.send_local.split("T"); const [y,mo,dd] = d.split("-").map(Number);
     const st = m.status==="sent" ? `отправлено ${m.sent_count} из ${m.total_count}` : m.status==="sending" ? "отправляется…" : m.status==="failed" ? "ошибка" : "запланировано";
-    const aud = (EMAILS.audiences||{})[m.audience] || m.audience;
+    const aud = ((EMAILS.audiences||{})[m.audience] || m.audience) + (m.audience==="free" && m.recipients ? ` (${m.recipients.length})` : "");
     return `<div class="evrow${m.status==='sent'?' past':''}">
       <div class="evday">${dd}<span style="font-size:9.5px;font-weight:600">${EM_MON[mo-1]}</span></div>
       <div class="evbody"><div class="evttl">${emEsc(m.subject)}</div><div class="evmeta">${t} · ${emEsc(aud)}${m.failed_count?` · не ушло: ${m.failed_count}`:''}</div></div>
@@ -4721,7 +4763,7 @@ function renderEmails(){
   }));
   list.querySelectorAll("[data-emnow]").forEach(b=>b.addEventListener("click", async ()=>{
     const m = rows.find(x=>x.id===+b.dataset.emnow);
-    const n = (EMAILS.counts||{})[m.audience]||0;
+    const n = m.audience==="free" && m.recipients ? m.recipients.length : ((EMAILS.counts||{})[m.audience]||0);
     if(!(await askConfirm(`Отправить письмо «${m.subject}» сейчас? Получательниц: ${n}`))) return;
     try{ await apiFetch("/api/admin/emails/scheduled/"+m.id+"/send", {method:"POST"}); showToast("Отправка началась"); setTimeout(loadEmails, 2500); }catch(_){}
   }));
@@ -4737,7 +4779,7 @@ async function emSendTest(subject, body){
   }catch(_){}
 }
 function emResetForm(){
-  emEditingId = null; emAudience = "paid";
+  emEditingId = null; emAudience = "paid"; emRecipients = null;
   document.getElementById("emSubject").value = ""; document.getElementById("emBody").value = "";
   document.getElementById("emDate").value = ""; document.getElementById("emTime").value = "09:00";
   document.getElementById("emFormTitle").textContent = "Новое письмо";
@@ -4747,7 +4789,7 @@ function emResetForm(){
 }
 function emStartEdit(id){
   const m = (EMAILS.scheduled||[]).find(x=>x.id===id); if(!m) return;
-  emEditingId = id; emAudience = m.audience;
+  emEditingId = id; emAudience = m.audience; emRecipients = m.recipients ? m.recipients.slice() : null;
   const [d,t] = m.send_local.split("T");
   document.getElementById("emSubject").value = m.subject; document.getElementById("emBody").value = m.body;
   document.getElementById("emDate").value = d; document.getElementById("emTime").value = t;
@@ -4765,7 +4807,8 @@ document.getElementById("emSave").addEventListener("click", async ()=>{
   if(!d){ showToast("выбери дату отправки"); return; }
   if(!subject){ showToast("напиши тему письма"); return; }
   if(!body){ showToast("напиши текст письма"); return; }
-  const payload = JSON.stringify({subject, body, audience: emAudience, send_local: d+"T"+t});
+  if(emAudience === "free" && !(emRecipients||[]).length){ showToast("отметь, кому из Free отправить письмо"); return; }
+  const payload = JSON.stringify({subject, body, audience: emAudience, send_local: d+"T"+t, recipients: emAudience==="free" ? emRecipients : null});
   try{
     if(emEditingId) await apiFetch("/api/admin/emails/scheduled/"+emEditingId, {method:"PUT", body: payload});
     else await apiFetch("/api/admin/emails/scheduled", {method:"POST", body: payload});
@@ -5770,11 +5813,12 @@ function renderParticipants(){
       <td>${p.method||"–"}</td>
       <td><input class="crm-amt" data-amount="${p.id}" value="${p.amount!=null?p.amount:""}" placeholder="–" inputmode="decimal"></td>
       <td>${badge}</td>
+      <td style="text-align:center"><input type="checkbox" class="crm-free" data-free="${p.id}" ${p.free?'checked':''} title="Free"></td>
       <td>${fmtDT(p.confirmed || p.created)}</td>
       <td><input class="crm-note" data-note="${p.id}" value="${(p.note||"").replace(/"/g,"&quot;")}" placeholder="заметка…"></td>
       <td style="text-align:right;white-space:nowrap">${confirmBtn} <button class="crm-del" data-del="${p.id}">удалить</button></td>
     </tr>`;
-  }).join("") : `<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--ink-soft)">ничего не нашлось</td></tr>`;
+  }).join("") : `<tr><td colspan="11" style="padding:24px;text-align:center;color:var(--ink-soft)">ничего не нашлось</td></tr>`;
 
   body.querySelectorAll("[data-pay]").forEach(b=>{
     b.addEventListener("click", async ()=>{
@@ -5796,6 +5840,16 @@ function renderParticipants(){
         PARTICIPANTS = PARTICIPANTS.filter(p=>String(p.id)!==b.dataset.del);
         renderParticipants();
       }catch(e){}
+    });
+  });
+  body.querySelectorAll("[data-free]").forEach(cb=>{
+    cb.addEventListener("change", async ()=>{
+      try{
+        await apiFetch(`/api/admin/signups/${cb.dataset.free}/note`, {method:"POST", body: JSON.stringify({free: cb.checked})});
+        const p = PARTICIPANTS.find(p=>String(p.id)===cb.dataset.free);
+        if(p) p.free = cb.checked;
+        showToast(cb.checked ? "Отмечено как Free" : "Отметка Free снята");
+      }catch(e){ cb.checked = !cb.checked; }
     });
   });
   body.querySelectorAll("[data-note]").forEach(inp=>{
@@ -6594,6 +6648,7 @@ def _sched_json(r):
         "send_local": _ts_to_local(r["send_at"]), "status": r["status"],
         "sent_count": r["sent_count"] or 0, "failed_count": r["failed_count"] or 0, "total_count": r["total_count"] or 0,
         "sent_local": _ts_to_local(r["sent_at"]) if r["sent_at"] else None, "error": r["error"] or "",
+        "recipients": json.loads(r["recipients"]) if r["recipients"] else None,
     }
 
 
@@ -6609,8 +6664,9 @@ async def api_emails_list(request):
     counts = {}
     for a in EMAIL_AUDIENCES:
         counts[a] = len(await _email_audience_rows(a))
+    free_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("free")]
     return web.json_response({
-        "system": system, "scheduled": [_sched_json(r) for r in rows], "counts": counts,
+        "system": system, "scheduled": [_sched_json(r) for r in rows], "counts": counts, "free_list": free_list,
         "audiences": EMAIL_AUDIENCES, "test_to": MAIL_REPLY_TO or "", "tz": MARATHON_TZ,
         "mail_ready": bool(RESEND_API_KEY and MAIL_FROM),
     })
@@ -6645,18 +6701,23 @@ def _sched_payload(data):
         send_at = _local_to_ts(str(data.get("send_local", "")))
     except Exception:
         send_at = None
-    return subject, body, audience, send_at
+    recipients = None
+    if audience == "free":
+        recipients = [str(e).strip() for e in (data.get("recipients") or []) if str(e).strip()]
+        if not recipients:
+            send_at = None
+    return subject, body, audience, send_at, recipients
 
 
 async def api_emails_sched_add(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
-    subject, body, audience, send_at = _sched_payload(await request.json())
+    subject, body, audience, send_at, recipients = _sched_payload(await request.json())
     if not subject or not body or send_at is None:
-        return web.json_response({"error": "subject, body and date required"}, status=400)
+        return web.json_response({"error": "subject, body, date and recipients required"}, status=400)
     row = await DB_POOL.fetchrow(
-        "INSERT INTO scheduled_emails (subject, body, send_at, audience, created) VALUES ($1,$2,$3,$4,$5) RETURNING *",
-        subject, body, send_at, audience, time.time(),
+        "INSERT INTO scheduled_emails (subject, body, send_at, audience, created, recipients) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *",
+        subject, body, send_at, audience, time.time(), json.dumps(recipients) if recipients is not None else None,
     )
     return web.json_response(_sched_json(row), status=201)
 
@@ -6665,12 +6726,12 @@ async def api_emails_sched_update(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
     sid = int(request.match_info["id"])
-    subject, body, audience, send_at = _sched_payload(await request.json())
+    subject, body, audience, send_at, recipients = _sched_payload(await request.json())
     if not subject or not body or send_at is None:
-        return web.json_response({"error": "subject, body and date required"}, status=400)
+        return web.json_response({"error": "subject, body, date and recipients required"}, status=400)
     row = await DB_POOL.fetchrow(
-        "UPDATE scheduled_emails SET subject=$2, body=$3, send_at=$4, audience=$5 WHERE id=$1 AND status='scheduled' RETURNING *",
-        sid, subject, body, send_at, audience,
+        "UPDATE scheduled_emails SET subject=$2, body=$3, send_at=$4, audience=$5, recipients=$6 WHERE id=$1 AND status='scheduled' RETURNING *",
+        sid, subject, body, send_at, audience, json.dumps(recipients) if recipients is not None else None,
     )
     if not row:
         return web.json_response({"error": "already sent"}, status=409)
@@ -6789,6 +6850,9 @@ async def api_signup_note(request):
             return web.json_response({"error": "bad amount"}, status=400)
         sets.append(f"amount=${len(vals) + 1}")
         vals.append(amount)
+    if "free" in data:
+        sets.append(f"free=${len(vals) + 1}")
+        vals.append(bool(data.get("free")))
     if not sets:
         return web.json_response({"ok": True})
     vals.append(row_id)
