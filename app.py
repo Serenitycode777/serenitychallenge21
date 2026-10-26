@@ -946,18 +946,25 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-row{display:flex;align-items:center;gap:10px;padding:13px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;margin:10px 0}
 .evt-row:first-of-type{border-top:none}
-.evt-date{width:48px;flex-shrink:0;text-align:center;border-radius:12px;padding:8px 4px;color:#fff}
-.evt-date .d{font-family:var(--font-head);font-size:23px;font-weight:600;line-height:1;color:#fff}
-.evt-date .l{font-size:9px;text-transform:lowercase;color:#fff;opacity:.85;margin-top:2px}
+.evt-date{width:58px;flex-shrink:0;text-align:center;border-radius:12px;padding:9px 4px;color:#fff}
+.evt-date .d{font-family:var(--font-head);font-size:32px;font-weight:600;line-height:1;color:#fff}
+.evt-date .l{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#fff;opacity:.9;margin-top:2px}
 .evt-date.c-sage{background:var(--sage)}
 .evt-date.c-lav{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
-.evt-icon{width:32px;height:32px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.evt-icon svg{width:15px;height:15px;color:var(--ink-soft)}
+.evt-icon{width:32px;height:32px;border-radius:50%;background:rgba(170,157,184,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.evt-icon svg{width:15px;height:15px;color:#6E4FA0}
 .evt-body{flex:1;min-width:0}
 .evt-tag{display:block;font-size:10.5px;color:var(--ink-soft);margin-bottom:1px}
 .evt-ttl{font-size:13.5px;font-weight:600}
 .evt-meta{font-size:11px;color:var(--ink-soft);margin-top:1px}
-.evt-go{color:#fff;font-size:12px;font-weight:600;border-radius:999px;padding:9px 15px;flex-shrink:0;white-space:nowrap}
+.evt-go{color:#fff;font-size:12px;font-weight:600;border-radius:999px;padding:9px 15px;flex-shrink:0;white-space:nowrap;background:linear-gradient(135deg,var(--lav),var(--sage))}
+.evt-date.c-e0,.cal-day.ev.c-e0 span,.cal-dot.c-e0{background:linear-gradient(135deg,#6A9993,#AA9DB8)}
+.evt-date.c-e1,.cal-day.ev.c-e1 span,.cal-dot.c-e1{background:linear-gradient(135deg,#AA9DB8,#8E7AA6)}
+.evt-date.c-e2,.cal-day.ev.c-e2 span,.cal-dot.c-e2{background:linear-gradient(135deg,#CBBAA8,#C9A458)}
+.evt-date.c-e3,.cal-day.ev.c-e3 span,.cal-dot.c-e3{background:linear-gradient(135deg,#6A9993,#3F6660)}
+.evt-date.c-e4,.cal-day.ev.c-e4 span,.cal-dot.c-e4{background:linear-gradient(135deg,#8E7AA6,#6E4FA0)}
+.evt-date.c-e5,.cal-day.ev.c-e5 span,.cal-dot.c-e5{background:linear-gradient(135deg,#6A9993,#6E4FA0)}
+.evt-date.c-e6,.cal-day.ev.c-e6 span,.cal-dot.c-e6{background:linear-gradient(135deg,#3F6660,#C9A458)}
 .evt-go.c-sage{background:var(--sage)}
 .evt-go.c-lav{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
 .evt-row.past{opacity:.5}
@@ -3502,7 +3509,7 @@ function mskToEt(raw){
   if(m[3]!==undefined) out += "–"+shift(Number(m[3]), Number(m[4]));
   return out;
 }
-function evtColor(i){ return i%2===0 ? "sage" : "lav"; }
+function evtColor(i){ return "e"+(i%7); }
 function renderCalendar(){
   const events = STATE.events || [];
   if(calViewYear===null){
