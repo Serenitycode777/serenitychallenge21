@@ -3340,7 +3340,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.fillText("МАРАФОН «НАЧНИ СЕГОДНЯ!»", contentX, eyebrowY);
 
   const done=doneCountForDay(TODAY);
-  const heroText=done+" из "+scheduledCountForDay(TODAY);
+  const heroText=done+(window.SM_LANG==="en"?" of ":" из ")+scheduledCountForDay(TODAY);
   ctx.fillStyle="#fff";
   ctx.font="600 112px "+HEAD+", Georgia, serif";
   const heroOk = await drawHeroStat(ctx, heroText, contentX, heroBaseline, 112, cardWidth-80);
