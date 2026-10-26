@@ -877,6 +877,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .hc-time-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px}
 .hc-time-num{min-width:58px;height:54px;padding:0 8px;border-radius:14px;background:var(--sage);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 14px -6px rgba(63,102,96,.55)}
 .hc-time-num b{font-family:var(--font-head);font-weight:700;font-size:24px;line-height:1}
+.hc-time-num.missed{background:linear-gradient(135deg,#E2C47E,#C9A458);box-shadow:0 6px 14px -6px rgba(185,140,58,.6)}
 .hc-time-num b.long{font-size:20px}
 .hc-time-num span{font-family:var(--sys);font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:.9;margin-top:3px}
 .habits-card-status{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding-top:10px;
@@ -2875,11 +2876,15 @@ function renderChecklist(){
     const timeRow = document.getElementById("hcTimeRow");
     timeRow.hidden = !(todayHabits.length && todayMins > 0);
     if(!timeRow.hidden){
-      const _h = Math.floor(todayMins/60), _mm = todayMins % 60;
-      const _big = todayMins < 60 ? String(todayMins) : (_mm ? `${_h}:${String(_mm).padStart(2,"0")}` : String(_h));
+      // closed day: missed (unticked) habits are not counted, badge turns gold
+      const _missed = dayClosed ? todayHabits.filter(h=>!liveChecked[HABITS.indexOf(h)]) : [];
+      const _mins = dayClosed ? totalMinutes(todayHabits.filter(h=>liveChecked[HABITS.indexOf(h)])) : todayMins;
+      document.getElementById("hcTimeNum").parentElement.classList.toggle("missed", _missed.length > 0);
+      const _h = Math.floor(_mins/60), _mm = _mins % 60;
+      const _big = _mins < 60 ? String(_mins) : (_mm ? `${_h}:${String(_mm).padStart(2,"0")}` : String(_h));
       document.getElementById("hcTimeNum").textContent = _big;
       document.getElementById("hcTimeNum").classList.toggle("long", _big.length >= 3);
-      document.getElementById("hcTimeUnit").textContent = todayMins < 60 ? "всего мин" : "всего ч";
+      document.getElementById("hcTimeUnit").textContent = _mins < 60 ? "всего мин" : "всего ч";
       const hasSleepHabit = todayHabits.some(h=>{ const meta = findHabitMeta(h); return meta && meta.noTime; });
       document.getElementById("hcTimeSub").hidden = !hasSleepHabit;
     }
