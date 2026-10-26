@@ -957,7 +957,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-tag{display:block;font-size:10.5px;color:var(--ink-soft);margin-bottom:1px}
 .evt-ttl{font-size:13.5px;font-weight:600}
 .evt-meta{font-size:11px;color:var(--ink-soft);margin-top:1px}
-.evt-go{color:#fff;font-size:12px;font-weight:600;border-radius:999px;padding:9px 15px;flex-shrink:0;white-space:nowrap;background:linear-gradient(135deg,var(--lav),var(--sage))}
+.evt-go{color:#fff;font-size:12px;font-weight:600;border-radius:999px;padding:9px 15px;flex-shrink:0;white-space:nowrap;background:var(--sage)}
 .evt-date.c-e0,.cal-day.ev.c-e0 span,.cal-dot.c-e0{background:linear-gradient(135deg,#6A9993,#AA9DB8)}
 .evt-date.c-e1,.cal-day.ev.c-e1 span,.cal-dot.c-e1{background:linear-gradient(135deg,#AA9DB8,#8E7AA6)}
 .evt-date.c-e2,.cal-day.ev.c-e2 span,.cal-dot.c-e2{background:linear-gradient(135deg,#CBBAA8,#C9A458)}
@@ -965,8 +965,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-date.c-e4,.cal-day.ev.c-e4 span,.cal-dot.c-e4{background:linear-gradient(135deg,#B3A0C9,#7D62AE)}
 .evt-date.c-e5,.cal-day.ev.c-e5 span,.cal-dot.c-e5{background:linear-gradient(135deg,#86B0A9,#9A86B4)}
 .evt-date.c-e6,.cal-day.ev.c-e6 span,.cal-dot.c-e6{background:linear-gradient(135deg,#7FA8A1,#D2B57A)}
-.evt-go.c-sage{background:var(--sage)}
-.evt-go.c-lav{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
 .evt-row.past{opacity:.5}
 .evt-alert{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:12px;
   padding:9px 12px;margin:0 0 14px;box-shadow:var(--shadow)}
