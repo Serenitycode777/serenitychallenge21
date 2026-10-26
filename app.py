@@ -8,6 +8,7 @@
 Настройки: .env (см. .env.example). Без реальных ключей Stripe/Resend
 всё работает в тестовом режиме – только без реальной отправки.
 """
+import asyncio
 import base64
 import csv
 import hashlib
@@ -120,6 +121,16 @@ async def init_db(app):
         UNIQUE(user_id, log_date)
     )""")
     await DB_POOL.execute("CREATE INDEX IF NOT EXISTS idx_daily_logs_user ON daily_logs(user_id)")
+    # ---- письма: тексты автоматических писем (правятся в админке) и запланированные рассылки ----
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS email_templates (
+        key TEXT PRIMARY KEY, subject TEXT NOT NULL, body TEXT NOT NULL, updated DOUBLE PRECISION
+    )""")
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS scheduled_emails (
+        id SERIAL PRIMARY KEY, subject TEXT NOT NULL, body TEXT NOT NULL,
+        send_at DOUBLE PRECISION NOT NULL, audience TEXT NOT NULL DEFAULT 'paid',
+        status TEXT NOT NULL DEFAULT 'scheduled', sent_count INTEGER DEFAULT 0, failed_count INTEGER DEFAULT 0,
+        total_count INTEGER DEFAULT 0, sent_at DOUBLE PRECISION, created DOUBLE PRECISION, error TEXT
+    )""")
     await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS day_notes (
         id SERIAL PRIMARY KEY, user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
         note_date DATE NOT NULL, text TEXT NOT NULL DEFAULT '', updated DOUBLE PRECISION,
@@ -257,81 +268,168 @@ def marathon_day_today(marathon_start: str, tz_name: str) -> int:
 QR_PATHS = {"venmo": HERE / "qr-venmo.jpg", "zelle": HERE / "qr-zelle.jpg"}
 
 
+SYSTEM_EMAILS = {
+    "qr": {
+        "title": "QR-код для оплаты (Venmo / Zelle)",
+        "when": "сразу после заявки на сайте, если выбрана оплата Venmo или Zelle (QR-код прикладывается автоматически)",
+        "placeholders": "{имя}, {способ}",
+        "subject": "Serenity Moon – QR-код для оплаты ({способ})",
+        "body": ("Привет, {имя}! \n\n"
+                 "Спасибо за заявку на марафон «Начни сегодня» 💗 \n\n"
+                 "Высылаю код оплаты через {способ}. QR-код во вложении. \n"
+                 "После оплаты пришли, пожалуйста, чек в личные сообщения Миле @milaserenity в Телеграм.\n\n"
+                 "До скорой встречи! ✨\n"
+                 "Мила и команда Serenity Moon"),
+    },
+    "access": {
+        "title": "Доступ к марафону",
+        "when": "сразу после подтверждения оплаты: Stripe – автоматически, Venmo/Zelle – когда нажимаешь «Отметить оплаченным» в CRM",
+        "placeholders": "{имя}, {ссылка} – ссылка на Telegram-канал",
+        "subject": "Serenity Moon – доступ к марафону",
+        "body": ("Привет, {имя}! \n\n"
+                 "Как здорово, что ты решила присоединиться к нашему 21-дневному марафону «Начни сегодня»!\n\n"
+                 "🟣 Вход в наш закрытый Telegram-канал, где будет проходить марафон по ссылке:\n\n"
+                 "{ссылка}\n\n"
+                 "🌿 Что дальше?\n\n"
+                 "Наш марафон стартует 9 ноября!\n\n"
+                 "1 ноября ты получишь на эту же почту ссылку для доступа к онлайн-платформе со всеми материалами и практиками. "
+                 "Ссылка также будет опубликована в нашем Telegram-канале.\n\n"
+                 "Очень рада, что ты с нами! 💗\n\n"
+                 "До скорой встречи!\n"
+                 "Мила и команда Serenity Moon"),
+    },
+}
+
+EMAIL_AUDIENCES = {
+    "paid": "оплатившие",
+    "waiting": "ждут оплату",
+    "all": "все из CRM",
+}
+
+
+async def get_email_template(key: str):
+    d = SYSTEM_EMAILS[key]
+    row = None
+    try:
+        row = await DB_POOL.fetchrow("SELECT subject, body FROM email_templates WHERE key=$1", key)
+    except Exception:
+        row = None
+    if row:
+        return row["subject"], row["body"]
+    return d["subject"], d["body"]
+
+
+def fill_email(text: str, values: dict) -> str:
+    for k, v in values.items():
+        text = text.replace("{" + k + "}", v or "")
+    return text
+
+
+async def resend_send(to_email: str, subject: str, body: str, attachments=None):
+    """Отправка одного письма через Resend. Возвращает (ok, текст ошибки)."""
+    if not (RESEND_API_KEY and MAIL_FROM):
+        print(f"[DEV] письмо для {to_email} не отправлено (нет RESEND_API_KEY/MAIL_FROM): {subject}")
+        return False, "no_mail_config"
+    payload = {"from": MAIL_FROM, "to": [to_email], "subject": subject, "text": body}
+    if attachments:
+        payload["attachments"] = attachments
+    if MAIL_REPLY_TO:
+        payload["reply_to"] = MAIL_REPLY_TO
+    try:
+        async with ClientSession() as s:
+            async with s.post(
+                "https://api.resend.com/emails",
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {RESEND_API_KEY}"},
+                data=json.dumps(payload),
+            ) as resp:
+                if resp.status >= 300:
+                    data = await resp.text()
+                    print(f"[ПРЕДУПРЕЖДЕНИЕ] письмо не ушло ({resp.status}): {data}")
+                    return False, f"{resp.status}: {data[:200]}"
+    except Exception as e:
+        return False, str(e)[:200]
+    return True, ""
+
+
 async def send_payment_qr_email(to_email: str, name: str, method: str):
     """Дублирует QR-код на почту сразу после заявки (venmo/zelle) – на случай если
     человек закроет страницу до оплаты и потеряет код."""
-    greet_name = name if name else "дорогая участница"
     method_title = "Venmo" if method == "venmo" else "Zelle"
-    body = (f"Привет, {greet_name}! \n\n"
-            f"Спасибо за заявку на марафон «Начни сегодня» 💗 \n\n"
-            f"Высылаю код оплаты через {method_title}. QR-код во вложении. \n"
-            f"После оплаты пришли, пожалуйста, чек в личные сообщения Миле @milaserenity в Телеграм.\n\n"
-            f"До скорой встречи! ✨\n"
-            f"Мила и команда Serenity Moon")
-    if not (RESEND_API_KEY and MAIL_FROM):
-        print(f"[DEV] письмо с qr для {to_email} не отправлено (нет RESEND_API_KEY/MAIL_FROM)")
-        return
-    qr_path = QR_PATHS.get(method)
+    subject, body = await get_email_template("qr")
+    values = {"имя": name if name else "дорогая участница", "способ": method_title}
     attachments = []
+    qr_path = QR_PATHS.get(method)
     if qr_path and qr_path.exists():
         attachments.append({
             "filename": f"{method}-qr.jpg",
             "content": base64.b64encode(qr_path.read_bytes()).decode(),
         })
-    payload = {
-        "from": MAIL_FROM,
-        "to": [to_email],
-        "subject": f"Serenity Moon – QR-код для оплаты ({method_title})",
-        "text": body,
-        "attachments": attachments,
-    }
-    if MAIL_REPLY_TO:
-        payload["reply_to"] = MAIL_REPLY_TO
-    async with ClientSession() as s:
-        async with s.post(
-            "https://api.resend.com/emails",
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {RESEND_API_KEY}"},
-            data=json.dumps(payload),
-        ) as resp:
-            if resp.status >= 300:
-                data = await resp.text()
-                print(f"[ПРЕДУПРЕЖДЕНИЕ] письмо с qr не ушло ({resp.status}): {data}")
+    await resend_send(to_email, fill_email(subject, values), fill_email(body, values), attachments)
 
 
 async def send_access_email(to_email: str, name: str):
     invite = CHANNEL_INVITE_LINK or "[DEV] ссылка появится, как только настроим CHANNEL_INVITE_LINK"
-    greet_name = name if name else "дорогая участница"
-    body = (f"Привет, {greet_name}! \n\n"
-            f"Как здорово, что ты решила присоединиться к нашему 21-дневному марафону «Начни сегодня»!\n\n"
-            f"🟣 Вход в наш закрытый Telegram-канал, где будет проходить марафон по ссылке:\n\n"
-            f"{invite}\n\n"
-            f"🌿 Что дальше?\n\n"
-            f"Наш марафон стартует 9 ноября!\n\n"
-            f"1 ноября ты получишь на эту же почту ссылку для доступа к онлайн-платформе со всеми материалами и практиками. "
-            f"Ссылка также будет опубликована в нашем Telegram-канале.\n\n"
-            f"Очень рада, что ты с нами! 💗\n\n"
-            f"До скорой встречи!\n"
-            f"Мила и команда Serenity Moon")
-    if not (RESEND_API_KEY and MAIL_FROM):
-        print(f"[DEV] письмо для {to_email} не отправлено (нет RESEND_API_KEY/MAIL_FROM):\n{body}")
-        return
-    payload = {
-        "from": MAIL_FROM,
-        "to": [to_email],
-        "subject": "Serenity Moon – доступ к марафону",
-        "text": body,
-    }
-    if MAIL_REPLY_TO:
-        payload["reply_to"] = MAIL_REPLY_TO
-    async with ClientSession() as s:
-        async with s.post(
-            "https://api.resend.com/emails",
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {RESEND_API_KEY}"},
-            data=json.dumps(payload),
-        ) as resp:
-            if resp.status >= 300:
-                data = await resp.text()
-                print(f"[ПРЕДУПРЕЖДЕНИЕ] письмо не ушло ({resp.status}): {data}")
+    subject, body = await get_email_template("access")
+    values = {"имя": name if name else "дорогая участница", "ссылка": invite}
+    await resend_send(to_email, fill_email(subject, values), fill_email(body, values))
+
+
+async def _email_audience_rows(audience: str):
+    base = "SELECT DISTINCT ON (email_norm) name, email FROM signups WHERE COALESCE(email,'') <> '' "
+    if audience == "paid":
+        q = base + "AND status='оплачено' ORDER BY email_norm, id DESC"
+    elif audience == "waiting":
+        q = base + ("AND email_norm NOT IN (SELECT email_norm FROM signups WHERE status='оплачено' AND email_norm IS NOT NULL) "
+                    "ORDER BY email_norm, id DESC")
+    else:
+        q = base + "ORDER BY email_norm, id DESC"
+    return await DB_POOL.fetch(q)
+
+
+async def process_due_emails():
+    rows = await DB_POOL.fetch(
+        "UPDATE scheduled_emails SET status='sending' WHERE id IN "
+        "(SELECT id FROM scheduled_emails WHERE status='scheduled' AND send_at <= $1) RETURNING *",
+        time.time(),
+    )
+    for row in rows:
+        recipients = await _email_audience_rows(row["audience"])
+        ok_n, fail_n, last_err = 0, 0, ""
+        await DB_POOL.execute("UPDATE scheduled_emails SET total_count=$2 WHERE id=$1", row["id"], len(recipients))
+        for r in recipients:
+            values = {"имя": (r["name"] or "").strip() or "дорогая участница", "ссылка": CHANNEL_INVITE_LINK or ""}
+            ok, err = await resend_send(r["email"], fill_email(row["subject"], values), fill_email(row["body"], values))
+            if ok:
+                ok_n += 1
+            else:
+                fail_n += 1
+                last_err = err
+            await asyncio.sleep(0.6)  # лимит Resend – не больше 2 писем в секунду
+        await DB_POOL.execute(
+            "UPDATE scheduled_emails SET status=$2, sent_count=$3, failed_count=$4, sent_at=$5, error=$6 WHERE id=$1",
+            row["id"], "sent" if ok_n or not fail_n else "failed", ok_n, fail_n, time.time(), last_err or None,
+        )
+
+
+async def email_scheduler_loop():
+    while True:
+        try:
+            await process_due_emails()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            print(f"[ПРЕДУПРЕЖДЕНИЕ] рассылка: {e}")
+        await asyncio.sleep(60)
+
+
+async def start_email_scheduler(app):
+    app["email_task"] = asyncio.create_task(email_scheduler_loop())
+
+
+async def stop_email_scheduler(app):
+    t = app.get("email_task")
+    if t:
+        t.cancel()
 
 
 # ---------- сессия админа ----------
@@ -4041,6 +4139,31 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .note{font-size:11.5px;color:var(--ink-soft);background:var(--surface-2);border-radius:10px;padding:10px 13px;line-height:1.5;margin-top:4px}
 
 .evlist{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.em-h{font-size:13px;font-weight:700;color:var(--sage-ink);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 10px}
+#emCancel[hidden],.em-warn[hidden]{display:none}
+.em-warn{font-size:12px;color:#B3415A;background:rgba(224,82,95,.08);border-radius:10px;padding:9px 12px;margin-bottom:10px}
+.em-sys{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;background:var(--surface-2)}
+.em-sys-head{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.em-sys-ttl{font-size:14px;font-weight:700}
+.em-sys-when{font-size:12px;color:var(--ink-soft);margin-top:3px;line-height:1.4}
+.em-sys-tgl{font-size:12px;font-weight:600;color:var(--sage-ink);white-space:nowrap}
+.em-sys-body{margin-top:12px}
+.em-sys-body input,.em-sys-body textarea{width:100%;box-sizing:border-box;font-family:var(--sys);font-size:13.5px;color:var(--ink);background:var(--surface);border:1.3px solid var(--sage);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.em-sys-body textarea{min-height:220px;resize:vertical;line-height:1.45}
+.em-ph{font-size:11.5px;color:var(--ink-soft);margin-bottom:10px}
+.em-btns{display:flex;gap:8px;flex-wrap:wrap}
+.em-btns button,.em-test button{border:none;border-radius:999px;padding:9px 16px;font-family:var(--sys);font-size:12.5px;font-weight:600;cursor:pointer;background:var(--sage);color:#fff}
+.em-btns button.ghost,.em-test button{background:var(--surface);color:var(--sage-ink);border:1.3px solid var(--sage)}
+.em-dt{display:flex;gap:8px}
+.em-dt input,.em-test input{flex:1;min-width:0;font-family:var(--sys);font-size:14px;color:var(--ink);background:var(--surface);border:1.3px solid var(--sage);border-radius:12px;padding:10px 12px;box-sizing:border-box}
+.em-test{display:flex;gap:8px}
+.em-test button{flex-shrink:0}
+.evrow .em-st{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.em-st.scheduled{background:rgba(170,157,184,.25);color:#6E4FA0}
+.em-st.sent{background:rgba(106,153,147,.18);color:var(--sage-ink)}
+.em-st.sending{background:rgba(212,169,76,.2);color:#8A6F55}
+.em-st.failed{background:rgba(224,82,95,.12);color:#B3415A}
+.em-now{border:1px solid var(--sage);background:var(--surface);color:var(--sage-ink);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0}
 .evrow{display:flex;align-items:center;gap:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .evrow.past{background:var(--ok-bg);border-color:var(--ok)}
 .evrow.past .evday{background:var(--ok);border-color:var(--ok);color:#fff}
@@ -4393,6 +4516,43 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       <button class="save" id="saveEvent">Добавить в календарь</button>
       <button class="editlink" id="cancelEditEvent" type="button" hidden style="margin-top:8px">Отменить редактирование</button>
     </div>
+
+    <div class="card" id="emailsCard">
+      <h2>Письма участницам</h2>
+      <div class="hint">письма уходят участницам из CRM с почты платформы; время – по Нью-Йорку</div>
+      <div class="em-warn" id="emMailWarn" hidden>почта платформы не настроена (нет RESEND_API_KEY / MAIL_FROM) – письма не будут отправляться</div>
+      <h3 class="em-h">Автоматические письма</h3>
+      <div id="emSystem"></div>
+      <h3 class="em-h">Запланированные письма</h3>
+      <div class="evlist" id="emSchedList"></div>
+    </div>
+
+    <div class="card">
+      <h2 id="emFormTitle">Новое письмо</h2>
+      <div class="hint">в тексте можно писать {имя} – подставится имя участницы, {ссылка} – ссылка на Telegram-канал</div>
+      <div class="field">
+        <label>Кому</label>
+        <div class="chipgrid" id="emAudChips"></div>
+      </div>
+      <div class="field">
+        <label>Дата и время отправки <span class="req">*</span></label>
+        <div class="em-dt"><input type="date" id="emDate"><input type="time" id="emTime" value="09:00"></div>
+      </div>
+      <div class="field">
+        <label>Тема <span class="req">*</span></label>
+        <input type="text" id="emSubject" placeholder="Например: Serenity Moon – доступ к платформе открыт">
+      </div>
+      <div class="field">
+        <label>Текст письма <span class="req">*</span></label>
+        <textarea id="emBody" rows="10" placeholder="Привет, {имя}!"></textarea>
+      </div>
+      <div class="field">
+        <label>Тест на почту</label>
+        <div class="em-test"><input type="text" id="emTestTo" placeholder="email для теста"><button type="button" id="emTestBtn">Отправить тест</button></div>
+      </div>
+      <button class="save" id="emSave">Запланировать письмо</button>
+      <button class="editlink" id="emCancel" type="button" hidden style="margin-top:8px">Отменить редактирование</button>
+    </div>
   </div>
 
   <div id="t-events" style="display:none">
@@ -4499,6 +4659,121 @@ document.addEventListener("keydown", e=>{
   if((e.ctrlKey||e.metaKey) && ["+","-","=","0"].includes(e.key)) e.preventDefault();
 });
 
+/* ---------- письма участницам ---------- */
+let EMAILS = {system:[], scheduled:[], counts:{}, audiences:{}, test_to:""};
+let emAudience = "paid", emEditingId = null;
+const EM_MON = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+function emEsc(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+async function loadEmails(){
+  try{ EMAILS = await apiFetch("/api/admin/emails"); }catch(e){ return; }
+  document.getElementById("emMailWarn").hidden = !!EMAILS.mail_ready;
+  const tt = document.getElementById("emTestTo");
+  if(!tt.value) tt.value = EMAILS.test_to || "";
+  renderEmails();
+}
+function renderEmAud(){
+  document.getElementById("emAudChips").innerHTML = Object.entries(EMAILS.audiences||{}).map(([k,l])=>
+    `<div class="tchip${k===emAudience?' on':''}" data-aud="${k}">${l} · ${(EMAILS.counts||{})[k]||0}</div>`).join("");
+  document.querySelectorAll("#emAudChips [data-aud]").forEach(c=>c.addEventListener("click", ()=>{ emAudience = c.dataset.aud; renderEmAud(); }));
+}
+function renderEmails(){
+  const sys = document.getElementById("emSystem");
+  sys.innerHTML = (EMAILS.system||[]).map(e=>`<div class="em-sys" data-key="${e.key}">
+      <div class="em-sys-head"><div><div class="em-sys-ttl">${emEsc(e.title)}</div><div class="em-sys-when">Когда: ${emEsc(e.when)}</div></div><span class="em-sys-tgl">изменить ▾</span></div>
+      <div class="em-sys-body" hidden>
+        <input type="text" class="em-sys-subj">
+        <textarea class="em-sys-text"></textarea>
+        <div class="em-ph">можно использовать: ${emEsc(e.placeholders)}</div>
+        <div class="em-btns"><button type="button" class="em-sys-save">Сохранить</button><button type="button" class="ghost em-sys-test">Отправить тест</button></div>
+      </div></div>`).join("");
+  sys.querySelectorAll(".em-sys").forEach(box=>{
+    const e = EMAILS.system.find(x=>x.key===box.dataset.key);
+    box.querySelector(".em-sys-subj").value = e.subject;
+    box.querySelector(".em-sys-text").value = e.body;
+    box.querySelector(".em-sys-head").addEventListener("click", ()=>{
+      const b = box.querySelector(".em-sys-body"); b.hidden = !b.hidden;
+      box.querySelector(".em-sys-tgl").textContent = b.hidden ? "изменить ▾" : "свернуть ▴";
+    });
+    box.querySelector(".em-sys-save").addEventListener("click", async ()=>{
+      const subject = box.querySelector(".em-sys-subj").value.trim(), body = box.querySelector(".em-sys-text").value.trim();
+      if(!subject || !body){ showToast("тема и текст не могут быть пустыми"); return; }
+      try{ await apiFetch("/api/admin/emails/system/"+e.key, {method:"PUT", body: JSON.stringify({subject, body})}); e.subject=subject; e.body=body; showToast("Письмо сохранено ✓"); }catch(_){}
+    });
+    box.querySelector(".em-sys-test").addEventListener("click", ()=>emSendTest(box.querySelector(".em-sys-subj").value, box.querySelector(".em-sys-text").value));
+  });
+  const list = document.getElementById("emSchedList");
+  const rows = EMAILS.scheduled||[];
+  list.innerHTML = rows.length ? rows.map(m=>{
+    const [d,t] = m.send_local.split("T"); const [y,mo,dd] = d.split("-").map(Number);
+    const st = m.status==="sent" ? `отправлено ${m.sent_count} из ${m.total_count}` : m.status==="sending" ? "отправляется…" : m.status==="failed" ? "ошибка" : "запланировано";
+    const aud = (EMAILS.audiences||{})[m.audience] || m.audience;
+    return `<div class="evrow${m.status==='sent'?' past':''}">
+      <div class="evday">${dd}<span style="font-size:9.5px;font-weight:600">${EM_MON[mo-1]}</span></div>
+      <div class="evbody"><div class="evttl">${emEsc(m.subject)}</div><div class="evmeta">${t} · ${emEsc(aud)}${m.failed_count?` · не ушло: ${m.failed_count}`:''}</div></div>
+      <span class="em-st ${m.status}">${st}</span>
+      ${m.status==='scheduled'?`<button class="em-now" data-emnow="${m.id}" type="button">отправить сейчас</button><button class="evbtn" data-emedit="${m.id}" title="изменить">✎</button>`:''}
+      ${m.status!=='sending'?`<button class="evbtn" data-emdel="${m.id}" title="удалить">✕</button>`:''}
+    </div>`; }).join("") : `<div class="note">пока нет запланированных писем – добавь первое ниже</div>`;
+  list.querySelectorAll("[data-emedit]").forEach(b=>b.addEventListener("click", ()=>emStartEdit(+b.dataset.emedit)));
+  list.querySelectorAll("[data-emdel]").forEach(b=>b.addEventListener("click", async ()=>{
+    if(!(await askConfirm("Удалить это письмо?"))) return;
+    try{ await apiFetch("/api/admin/emails/scheduled/"+b.dataset.emdel, {method:"DELETE"}); if(emEditingId===+b.dataset.emdel) emResetForm(); await loadEmails(); showToast("Письмо удалено"); }catch(_){}
+  }));
+  list.querySelectorAll("[data-emnow]").forEach(b=>b.addEventListener("click", async ()=>{
+    const m = rows.find(x=>x.id===+b.dataset.emnow);
+    const n = (EMAILS.counts||{})[m.audience]||0;
+    if(!(await askConfirm(`Отправить письмо «${m.subject}» сейчас? Получательниц: ${n}`))) return;
+    try{ await apiFetch("/api/admin/emails/scheduled/"+m.id+"/send", {method:"POST"}); showToast("Отправка началась"); setTimeout(loadEmails, 2500); }catch(_){}
+  }));
+  renderEmAud();
+}
+async function emSendTest(subject, body){
+  const to = document.getElementById("emTestTo").value.trim();
+  if(!to || to.indexOf("@")<0){ showToast("укажи email для теста в форме «Новое письмо»"); document.getElementById("emTestTo").focus(); return; }
+  if(!subject.trim() || !body.trim()){ showToast("нужны тема и текст"); return; }
+  try{
+    const r = await apiFetch("/api/admin/emails/test", {method:"POST", body: JSON.stringify({to, subject, body})});
+    showToast(r.ok ? "Тест отправлен на "+to : "не отправилось: "+(r.error||""));
+  }catch(_){}
+}
+function emResetForm(){
+  emEditingId = null; emAudience = "paid";
+  document.getElementById("emSubject").value = ""; document.getElementById("emBody").value = "";
+  document.getElementById("emDate").value = ""; document.getElementById("emTime").value = "09:00";
+  document.getElementById("emFormTitle").textContent = "Новое письмо";
+  document.getElementById("emSave").textContent = "Запланировать письмо";
+  document.getElementById("emCancel").hidden = true;
+  renderEmAud();
+}
+function emStartEdit(id){
+  const m = (EMAILS.scheduled||[]).find(x=>x.id===id); if(!m) return;
+  emEditingId = id; emAudience = m.audience;
+  const [d,t] = m.send_local.split("T");
+  document.getElementById("emSubject").value = m.subject; document.getElementById("emBody").value = m.body;
+  document.getElementById("emDate").value = d; document.getElementById("emTime").value = t;
+  document.getElementById("emFormTitle").textContent = "Изменить письмо";
+  document.getElementById("emSave").textContent = "Сохранить изменения";
+  document.getElementById("emCancel").hidden = false;
+  renderEmAud();
+  document.getElementById("emFormTitle").scrollIntoView({block:"start", behavior:"smooth"});
+}
+document.getElementById("emCancel").addEventListener("click", emResetForm);
+document.getElementById("emTestBtn").addEventListener("click", ()=>emSendTest(document.getElementById("emSubject").value, document.getElementById("emBody").value));
+document.getElementById("emSave").addEventListener("click", async ()=>{
+  const subject = document.getElementById("emSubject").value.trim(), body = document.getElementById("emBody").value.trim();
+  const d = document.getElementById("emDate").value, t = document.getElementById("emTime").value || "09:00";
+  if(!d){ showToast("выбери дату отправки"); return; }
+  if(!subject){ showToast("напиши тему письма"); return; }
+  if(!body){ showToast("напиши текст письма"); return; }
+  const payload = JSON.stringify({subject, body, audience: emAudience, send_local: d+"T"+t});
+  try{
+    if(emEditingId) await apiFetch("/api/admin/emails/scheduled/"+emEditingId, {method:"PUT", body: payload});
+    else await apiFetch("/api/admin/emails/scheduled", {method:"POST", body: payload});
+    showToast(emEditingId ? "Письмо обновлено ✓" : "Письмо запланировано ✓");
+    emResetForm(); await loadEmails();
+  }catch(_){}
+});
+
 const TABS = ["t-progress","t-content","t-calendar","t-events","t-participants"];
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
@@ -4508,6 +4783,7 @@ document.querySelectorAll(".tab").forEach(t=>{
     document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress");
     if(t.dataset.tab==="t-participants") loadParticipants();
     if(t.dataset.tab==="t-progress") loadProgress();
+    if(t.dataset.tab==="t-calendar") loadEmails();
   });
 });
 
@@ -6303,6 +6579,134 @@ async def api_signups_list(request):
     return web.json_response([_signup_json(r) for r in rows])
 
 
+def _local_to_ts(local: str):
+    dt = datetime.strptime(local, "%Y-%m-%dT%H:%M").replace(tzinfo=ZoneInfo(MARATHON_TZ))
+    return dt.timestamp()
+
+
+def _ts_to_local(ts):
+    return datetime.fromtimestamp(ts, ZoneInfo(MARATHON_TZ)).strftime("%Y-%m-%dT%H:%M")
+
+
+def _sched_json(r):
+    return {
+        "id": r["id"], "subject": r["subject"], "body": r["body"], "audience": r["audience"],
+        "send_local": _ts_to_local(r["send_at"]), "status": r["status"],
+        "sent_count": r["sent_count"] or 0, "failed_count": r["failed_count"] or 0, "total_count": r["total_count"] or 0,
+        "sent_local": _ts_to_local(r["sent_at"]) if r["sent_at"] else None, "error": r["error"] or "",
+    }
+
+
+async def api_emails_list(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    system = []
+    for key, d in SYSTEM_EMAILS.items():
+        subject, body = await get_email_template(key)
+        system.append({"key": key, "title": d["title"], "when": d["when"], "placeholders": d["placeholders"],
+                       "subject": subject, "body": body})
+    rows = await DB_POOL.fetch("SELECT * FROM scheduled_emails ORDER BY send_at")
+    counts = {}
+    for a in EMAIL_AUDIENCES:
+        counts[a] = len(await _email_audience_rows(a))
+    return web.json_response({
+        "system": system, "scheduled": [_sched_json(r) for r in rows], "counts": counts,
+        "audiences": EMAIL_AUDIENCES, "test_to": MAIL_REPLY_TO or "", "tz": MARATHON_TZ,
+        "mail_ready": bool(RESEND_API_KEY and MAIL_FROM),
+    })
+
+
+async def api_emails_system_update(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    key = request.match_info["key"]
+    if key not in SYSTEM_EMAILS:
+        return web.json_response({"error": "not found"}, status=404)
+    data = await request.json()
+    subject = str(data.get("subject", "")).strip()
+    body = str(data.get("body", "")).strip()
+    if not subject or not body:
+        return web.json_response({"error": "subject and body required"}, status=400)
+    await DB_POOL.execute(
+        "INSERT INTO email_templates (key, subject, body, updated) VALUES ($1,$2,$3,$4) "
+        "ON CONFLICT (key) DO UPDATE SET subject=EXCLUDED.subject, body=EXCLUDED.body, updated=EXCLUDED.updated",
+        key, subject, body, time.time(),
+    )
+    return web.json_response({"ok": True})
+
+
+def _sched_payload(data):
+    subject = str(data.get("subject", "")).strip()
+    body = str(data.get("body", "")).strip()
+    audience = str(data.get("audience", "paid"))
+    if audience not in EMAIL_AUDIENCES:
+        audience = "paid"
+    try:
+        send_at = _local_to_ts(str(data.get("send_local", "")))
+    except Exception:
+        send_at = None
+    return subject, body, audience, send_at
+
+
+async def api_emails_sched_add(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    subject, body, audience, send_at = _sched_payload(await request.json())
+    if not subject or not body or send_at is None:
+        return web.json_response({"error": "subject, body and date required"}, status=400)
+    row = await DB_POOL.fetchrow(
+        "INSERT INTO scheduled_emails (subject, body, send_at, audience, created) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+        subject, body, send_at, audience, time.time(),
+    )
+    return web.json_response(_sched_json(row), status=201)
+
+
+async def api_emails_sched_update(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    sid = int(request.match_info["id"])
+    subject, body, audience, send_at = _sched_payload(await request.json())
+    if not subject or not body or send_at is None:
+        return web.json_response({"error": "subject, body and date required"}, status=400)
+    row = await DB_POOL.fetchrow(
+        "UPDATE scheduled_emails SET subject=$2, body=$3, send_at=$4, audience=$5 WHERE id=$1 AND status='scheduled' RETURNING *",
+        sid, subject, body, send_at, audience,
+    )
+    if not row:
+        return web.json_response({"error": "already sent"}, status=409)
+    return web.json_response(_sched_json(row))
+
+
+async def api_emails_sched_delete(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    await DB_POOL.execute("DELETE FROM scheduled_emails WHERE id=$1 AND status<>'sending'", int(request.match_info["id"]))
+    return web.json_response({"ok": True})
+
+
+async def api_emails_sched_send_now(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    sid = int(request.match_info["id"])
+    await DB_POOL.execute("UPDATE scheduled_emails SET send_at=$2 WHERE id=$1 AND status='scheduled'", sid, time.time())
+    asyncio.create_task(process_due_emails())
+    return web.json_response({"ok": True})
+
+
+async def api_emails_test(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    to = str(data.get("to", "")).strip()
+    subject = str(data.get("subject", "")).strip()
+    body = str(data.get("body", "")).strip()
+    if not to or "@" not in to or not subject or not body:
+        return web.json_response({"error": "to, subject and body required"}, status=400)
+    values = {"имя": "Мила", "способ": "Venmo", "ссылка": CHANNEL_INVITE_LINK or "https://t.me/..."}
+    ok, err = await resend_send(to, "[ТЕСТ] " + fill_email(subject, values), fill_email(body, values))
+    return web.json_response({"ok": ok, "error": err})
+
+
 async def api_admin_participants(request):
     """Личный прогресс каждой зарегистрированной в кабинете участницы – для вкладки
     «Участницы» в админке (кто отстаёт/пропал, кому написать лично)."""
@@ -6977,6 +7381,8 @@ def make_app():
         print("[ПРЕДУПРЕЖДЕНИЕ] ADMIN_PASSWORD не задан – вход в /admin не сработает, см. .env.example")
     app = web.Application(middlewares=[cors_middleware], client_max_size=15 * 1024 * 1024)
     app.on_startup.append(init_db)
+    app.on_startup.append(start_email_scheduler)
+    app.on_cleanup.append(stop_email_scheduler)
     app.on_cleanup.append(close_db)
     app.add_routes([
         web.options("/register", cors_preflight),
@@ -7015,6 +7421,13 @@ def make_app():
         # заголовке X-Admin-Token вместо cookie-сессии) ----
         web.get("/api/admin/signups", api_signups_list),
         web.get("/api/admin/participants", api_admin_participants),
+        web.get("/api/admin/emails", api_emails_list),
+        web.put("/api/admin/emails/system/{key}", api_emails_system_update),
+        web.post("/api/admin/emails/scheduled", api_emails_sched_add),
+        web.put("/api/admin/emails/scheduled/{id}", api_emails_sched_update),
+        web.delete("/api/admin/emails/scheduled/{id}", api_emails_sched_delete),
+        web.post("/api/admin/emails/scheduled/{id}/send", api_emails_sched_send_now),
+        web.post("/api/admin/emails/test", api_emails_test),
         web.delete("/api/admin/participants/{id}", api_admin_participant_delete),
         web.post("/api/admin/signups", api_signup_add),
         web.post("/api/admin/signups/{id}/confirm", api_signup_confirm),
