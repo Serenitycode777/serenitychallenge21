@@ -962,9 +962,9 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-date.c-e1,.cal-day.ev.c-e1 span,.cal-dot.c-e1{background:linear-gradient(135deg,#AA9DB8,#8E7AA6)}
 .evt-date.c-e2,.cal-day.ev.c-e2 span,.cal-dot.c-e2{background:linear-gradient(135deg,#CBBAA8,#C9A458)}
 .evt-date.c-e3,.cal-day.ev.c-e3 span,.cal-dot.c-e3{background:linear-gradient(135deg,#6A9993,#3F6660)}
-.evt-date.c-e4,.cal-day.ev.c-e4 span,.cal-dot.c-e4{background:linear-gradient(135deg,#8E7AA6,#6E4FA0)}
-.evt-date.c-e5,.cal-day.ev.c-e5 span,.cal-dot.c-e5{background:linear-gradient(135deg,#6A9993,#6E4FA0)}
-.evt-date.c-e6,.cal-day.ev.c-e6 span,.cal-dot.c-e6{background:linear-gradient(135deg,#3F6660,#C9A458)}
+.evt-date.c-e4,.cal-day.ev.c-e4 span,.cal-dot.c-e4{background:linear-gradient(135deg,#B3A0C9,#7D62AE)}
+.evt-date.c-e5,.cal-day.ev.c-e5 span,.cal-dot.c-e5{background:linear-gradient(135deg,#86B0A9,#9A86B4)}
+.evt-date.c-e6,.cal-day.ev.c-e6 span,.cal-dot.c-e6{background:linear-gradient(135deg,#7FA8A1,#D2B57A)}
 .evt-go.c-sage{background:var(--sage)}
 .evt-go.c-lav{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
 .evt-row.past{opacity:.5}
