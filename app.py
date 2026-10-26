@@ -831,7 +831,9 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
 .hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none;background:var(--surface-2)}
 .hab.done{background:rgba(170,157,184,.14)}
-.day-closed .hab:not(.done):not(.hab-off) .markvisual{border:2.5px solid #E0525F}
+.day-closed .hab:not(.done):not(.hab-off) .markvisual{border:none;background:rgba(224,82,95,.12)}
+.day-closed .hab:not(.done):not(.hab-off) .markvisual::before,.day-closed .hab:not(.done):not(.hab-off) .markvisual::after{content:"";position:absolute;left:50%;top:50%;width:13px;height:2.4px;margin:-1.2px 0 0 -6.5px;border-radius:2px;background:#E0525F;transform:rotate(45deg)}
+.day-closed .hab:not(.done):not(.hab-off) .markvisual::after{transform:rotate(-45deg)}
 .hab.hab-off{cursor:default;opacity:.55}
 .hab.hab-off .hab-text{color:var(--ink-soft)}
 .habits-card .checklist{background:none;border:none;box-shadow:none;padding:12px 0 0;margin-bottom:0}
@@ -3324,10 +3326,9 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   const ribbonPadX=18, ribbonW=dateTextW+ribbonPadX*2;
   ctx.save();
   ctx.translate(contentX+ribbonW/2, ribbonTop+ribbonH/2);
-  ctx.rotate(-2*Math.PI/180);
   ctx.fillStyle="rgba(255,255,255,.16)";
   ctx.strokeStyle="rgba(255,255,255,.3)"; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.roundRect(-ribbonW/2,-ribbonH/2,ribbonW,ribbonH,[13,13,13,4]); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(-ribbonW/2,-ribbonH/2,ribbonW,ribbonH,13); ctx.fill(); ctx.stroke();
   ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle";
   ctx.font="600 19px "+SYS+", sans-serif";
   ctx.fillText(dateText,0,1);
@@ -3362,7 +3363,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
 
   ctx.save();
   ctx.fillStyle="#D9BD8A";
-  const starCx=badgeCx, starCy=badgeCy-21, starR=9;
+  const starCx=contentX+ribbonW+22, starCy=ribbonTop+ribbonH/2+1, starR=13;
   ctx.beginPath();
   for(let i=0;i<5;i++){
     const a=-Math.PI/2+i*(Math.PI*2/5), a2=a+Math.PI/5;
@@ -3374,11 +3375,11 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.restore();
 
   ctx.fillStyle="#3F6660"; ctx.textAlign="center";
-  ctx.font="600 34px "+HEAD+", Georgia, serif";
-  ctx.fillText(String(TODAY), badgeCx, badgeCy+15);
+  ctx.font="600 54px "+HEAD+", Georgia, serif";
+  ctx.fillText(String(TODAY), badgeCx, badgeCy+11);
   ctx.fillStyle="#6B6475";
   ctx.font="600 12px "+SYS+", sans-serif";
-  ctx.fillText("ДЕНЬ", badgeCx, badgeCy+29);
+  ctx.fillText("ДЕНЬ", badgeCx, badgeCy+31);
 
   ctx.save();
   ctx.shadowColor="rgba(51,46,61,.32)"; ctx.shadowBlur=40; ctx.shadowOffsetY=18;
@@ -3399,11 +3400,17 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
       ctx.strokeStyle="#3F6660"; ctx.lineWidth=3; ctx.lineCap="round"; ctx.lineJoin="round";
       ctx.beginPath(); ctx.moveTo(cx-8,cy+1); ctx.lineTo(cx-2,cy+7); ctx.lineTo(cx+9,cy-8); ctx.stroke();
       ctx.restore();
+    } else if(dayClosed){
+      ctx.save();
+      ctx.fillStyle="rgba(224,82,95,.12)";
+      ctx.strokeStyle="rgba(224,82,95,.25)"; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(chipX,chipY,iconSize,iconSize,11); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle="#E0525F"; ctx.lineWidth=3.2; ctx.lineCap="round";
+      ctx.beginPath(); ctx.moveTo(cx-7,cy-7); ctx.lineTo(cx+7,cy+7); ctx.moveTo(cx+7,cy-7); ctx.lineTo(cx-7,cy+7); ctx.stroke();
+      ctx.restore();
     } else {
       ctx.save();
-      ctx.fillStyle="#fff";
-      ctx.strokeStyle = dayClosed ? "#E0525F" : "rgba(107,100,117,.55)";
-      ctx.lineWidth = dayClosed ? 4 : 2;
+      ctx.fillStyle="#fff"; ctx.strokeStyle="rgba(107,100,117,.55)"; ctx.lineWidth=2;
       ctx.beginPath(); ctx.arc(cx,cy,iconSize/2-3,0,Math.PI*2); ctx.fill(); ctx.stroke();
       ctx.restore();
     }
