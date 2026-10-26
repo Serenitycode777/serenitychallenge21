@@ -831,6 +831,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .checklist{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow);margin-bottom:16px}
 .hab{display:flex;align-items:center;gap:12px;padding:11px 10px;border-radius:12px;margin:2px 0;transition:.15s;cursor:pointer;-webkit-user-select:none;user-select:none;background:var(--surface-2)}
 .hab.done{background:rgba(170,157,184,.14)}
+.day-closed .hab:not(.done):not(.hab-off) .markvisual{border:2.5px solid #E0525F}
 .hab.hab-off{cursor:default;opacity:.55}
 .hab.hab-off .hab-text{color:var(--ink-soft)}
 .habits-card .checklist{background:none;border:none;box-shadow:none;padding:12px 0 0;margin-bottom:0}
@@ -2679,7 +2680,7 @@ function openDay(d){
         <span class="hab-text">${h}</span></label>`;
     }).join("");
     document.getElementById("overlayBody").innerHTML =
-      `<div class="checklist" style="padding:4px 10px;box-shadow:none">${rows}</div>
+      `<div class="checklist${closed?' day-closed':''}" style="padding:4px 10px;box-shadow:none">${rows}</div>
        <button class="btn primary${closed?' is-closed':''}" id="pdCloseBtn" style="width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5 9.5 17 19 7"/></svg>
          ${closed?'День закрыт':'Закрыть день'}
@@ -2900,6 +2901,7 @@ function renderChecklist(){
     statusEl.textContent = "осталось сегодня 💗";
   }
   const box = document.getElementById("checklist");
+  box.classList.toggle("day-closed", !!dayClosed);
   const _order = HABITS.map((h,i)=>i).filter(i=>habitScheduledToday(HABITS[i])).concat(HABITS.map((h,i)=>i).filter(i=>!habitScheduledToday(HABITS[i])));
   box.innerHTML = _order.map(i=>{
     const h = HABITS[i];
@@ -3271,7 +3273,8 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   const panelPadX=26, iconSize=38, iconGap=18, rowGap=22;
   measure.font="500 20px "+SYS+", sans-serif";
   const habitWrapW = cardWidth-28 - panelPadX*2 - iconSize - iconGap;
-  const habitLines=HABITS.map(h=>wrapLines(measure,h,habitWrapW));
+  const SHARE_IDX=HABITS.map((h,i)=>i).filter(i=>habitScheduledOn(HABITS[i], TODAY));
+  const habitLines=SHARE_IDX.map(i=>wrapLines(measure,HABITS[i],habitWrapW));
 
   const quoteLines=["Маленькие шаги каждый день —","путь к большим переменам"];
 
@@ -3385,16 +3388,25 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
 
   let y=panelTop+panelPadTop;
   ctx.textAlign="left";
-  HABITS.forEach((h,i)=>{
+  SHARE_IDX.forEach((hi,i)=>{
     const chipX=panelLeft+panelPadX, chipY=y;
-    ctx.fillStyle="rgba(106,153,147,.12)";
-    ctx.strokeStyle="rgba(106,153,147,.22)"; ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.roundRect(chipX,chipY,iconSize,iconSize,11); ctx.fill(); ctx.stroke();
-    ctx.save();
-    ctx.strokeStyle="#3F6660"; ctx.lineWidth=3; ctx.lineCap="round"; ctx.lineJoin="round";
     const cx=chipX+iconSize/2, cy=chipY+iconSize/2;
-    ctx.beginPath(); ctx.moveTo(cx-8,cy+1); ctx.lineTo(cx-2,cy+7); ctx.lineTo(cx+9,cy-8); ctx.stroke();
-    ctx.restore();
+    if(liveChecked[hi]){
+      ctx.fillStyle="rgba(106,153,147,.12)";
+      ctx.strokeStyle="rgba(106,153,147,.22)"; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.roundRect(chipX,chipY,iconSize,iconSize,11); ctx.fill(); ctx.stroke();
+      ctx.save();
+      ctx.strokeStyle="#3F6660"; ctx.lineWidth=3; ctx.lineCap="round"; ctx.lineJoin="round";
+      ctx.beginPath(); ctx.moveTo(cx-8,cy+1); ctx.lineTo(cx-2,cy+7); ctx.lineTo(cx+9,cy-8); ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.fillStyle="#fff";
+      ctx.strokeStyle = dayClosed ? "#E0525F" : "rgba(107,100,117,.55)";
+      ctx.lineWidth = dayClosed ? 4 : 2;
+      ctx.beginPath(); ctx.arc(cx,cy,iconSize/2-3,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
     ctx.fillStyle="#332E3D"; ctx.font="500 20px "+SYS+", sans-serif";
     habitLines[i].forEach((ln,li)=>{ ctx.fillText(ln, chipX+iconSize+iconGap, chipY+18+li*26); });
     y += Math.max(iconSize, habitLines[i].length*26) + rowGap;
