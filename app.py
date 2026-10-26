@@ -815,7 +815,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .affirm-date .num{font-family:var(--font-head);font-size:38px;font-weight:600;line-height:1}
 .affirm-date .mon{font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;opacity:.85;margin-top:3px}
 .affirm-divider{flex:0 0 auto;width:1px;align-self:stretch;background:rgba(255,255,255,.4)}
-.mat-feature-icon.pin{color:#6E4FA0;border:1px solid #6E4FA0;box-sizing:border-box}
+.mat-feature-icon.pin{background:transparent;border:none}
+.mat-feature-icon.pin svg{width:36px;height:36px}
 .affirm-date .dr{position:relative;width:70px;height:70px;margin:0 auto}
 .affirm-date .dr svg{position:absolute;inset:0;width:100%;height:100%}
 .affirm-date .dr-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -1654,7 +1655,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           </div>
           <div class="filter-row"><span class="flabel">по папке</span><div class="chipset" id="folderChips"></div></div>
           <button class="mat-feature" id="matFeatureBtn" type="button">
-            <div class="mat-feature-icon pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5 20.5 9.5"/><path d="M15.8 4.8 11.4 9.2 7.6 8.9 6 10.5l7.5 7.5 1.6-1.6-.3-3.8 4.4-4.4"/><path d="M9.7 14.3 4 20"/></svg></div>
+            <div class="mat-feature-icon pin"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><path d="M12.6 11.4 4.5 19.5" stroke="#6E4FA0" stroke-width="1.6"/><circle cx="15.5" cy="8.5" r="5" fill="#E0525F"/><circle cx="14" cy="7" r="1.4" fill="#fff" fill-opacity=".55"/></svg></div>
             <div class="mat-feature-body">
               <div class="mat-feature-title">Перед началом марафона</div>
               <div class="mat-feature-desc">Важная информация, как получить максимальную пользу от материалов</div>
