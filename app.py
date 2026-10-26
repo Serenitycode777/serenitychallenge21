@@ -1508,6 +1508,14 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           <svg class="hc-row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
         </button>
       </div>
+      <div class="chanchat-row">
+        <a class="chanchat-btn" data-tg="channel" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.5 4.2 2.9 11.4c-.9.4-.9 1.6.1 1.9l4.6 1.5 1.8 5.4c.3.8 1.3 1 1.9.4l2.6-2.5 4.7 3.5c.7.5 1.7.1 1.9-.7L23 5.6c.2-1-.7-1.8-1.5-1.4Z"/></svg>
+          Канал</a>
+        <a class="chanchat-btn" data-tg="chat" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12c0-4.4 3.8-8 8.5-8s8.5 3.6 8.5 8-3.8 8-8.5 8c-1.1 0-2.2-.2-3.1-.6L4 20l1.1-4.3C4.4 14.6 4 13.3 4 12Z"/></svg>
+          Чат</a>
+      </div>
 
       <button class="btn primary grad" id="progressContinueBtn" type="button" style="width:100%;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
         Продолжить
@@ -1534,10 +1542,10 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="affirm-body"><div class="txt" id="affirmText"></div></div>
       </div>
       <div class="chanchat-row">
-        <a class="chanchat-btn" id="chanLinkBtn" target="_blank" rel="noopener">
+        <a class="chanchat-btn" id="chanLinkBtn" data-tg="channel" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.5 4.2 2.9 11.4c-.9.4-.9 1.6.1 1.9l4.6 1.5 1.8 5.4c.3.8 1.3 1 1.9.4l2.6-2.5 4.7 3.5c.7.5 1.7.1 1.9-.7L23 5.6c.2-1-.7-1.8-1.5-1.4Z"/></svg>
           Канал</a>
-        <a class="chanchat-btn" id="chatLinkBtn" target="_blank" rel="noopener">
+        <a class="chanchat-btn" id="chatLinkBtn" data-tg="chat" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12c0-4.4 3.8-8 8.5-8s8.5 3.6 8.5 8-3.8 8-8.5 8c-1.1 0-2.2-.2-3.1-.6L4 20l1.1-4.3C4.4 14.6 4 13.3 4 12Z"/></svg>
           Чат</a>
       </div>
@@ -2157,8 +2165,9 @@ if(window.SM_LANG==="en"){ RU_MONTHS_SHORT=["Jan","Feb","Mar","Apr","May","Jun",
 let calViewYear = null, calViewMonth = null;
 const TG_CHANNEL_URL = "https://t.me/+CS6fkx9D7ns5Njk0";
 const TG_CHAT_URL = "https://t.me/+b1UKYlrCL5o5YWY0";
-document.getElementById("chanLinkBtn").href = TG_CHANNEL_URL;
-document.getElementById("chatLinkBtn").href = TG_CHAT_URL;
+// Telegram links: one source for all «Канал»/«Чат» buttons (Today + Progress) – change only TG_CHANNEL_URL / TG_CHAT_URL
+document.querySelectorAll('[data-tg="channel"]').forEach(a=>a.href = TG_CHANNEL_URL);
+document.querySelectorAll('[data-tg="chat"]').forEach(a=>a.href = TG_CHAT_URL);
 let TODAY = 1, TODAY_RAW = 1;
 let HABITS = [];
 let HABIT_IDS = [];
