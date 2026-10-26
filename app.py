@@ -2427,6 +2427,35 @@ document.getElementById("starClose").addEventListener("click", ()=>{
   playPopSound();
 });
 
+/* new day while the cabinet stays open (phone app in background, tab left open overnight):
+   reload today's data as soon as the calendar date changes */
+let _dayRefreshing = false;
+function _tzTodayIso(){
+  try{ return new Intl.DateTimeFormat("en-CA",{timeZone:(STATE && STATE.tz) || "America/New_York",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()); }
+  catch(e){ return null; }
+}
+async function refreshIfNewDay(){
+  if(_dayRefreshing || document.getElementById("mainApp").hidden) return;
+  const d = _tzTodayIso();
+  if(!d || d === TODAY_DATE_ISO) return;
+  _dayRefreshing = true;
+  try{
+    const resp = await apiFetch("/api/cabinet/bootstrap");
+    const data = resp.ok ? await resp.json() : null;
+    if(data && data.ok){
+      applyState(data);
+      try{ noteSel = null; }catch(e){}
+      renderHeat(); renderChecklist(); renderProgress(); renderEvents(); renderMaterials();
+      try{ initNotes(); }catch(e){}
+    }
+  }catch(e){}
+  _dayRefreshing = false;
+}
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState === "visible") refreshIfNewDay(); });
+window.addEventListener("focus", refreshIfNewDay);
+window.addEventListener("pageshow", refreshIfNewDay);
+setInterval(refreshIfNewDay, 60000);
+
 async function bootCabinet(){
   document.getElementById("authScreen").hidden = true;
   document.getElementById("authLoading").hidden = false;
@@ -6051,7 +6080,7 @@ async def api_cabinet_bootstrap(request):
 
     return web.json_response({
         "ok": True, "profile": profile, "habits": habits, "logs": logs, "today": today,
-        "today_date": datetime.now(ZoneInfo(MARATHON_TZ)).date().isoformat(),
+        "today_date": datetime.now(ZoneInfo(MARATHON_TZ)).date().isoformat(), "tz": MARATHON_TZ,
         "marathon_start": marathon_start, "mastermind": mastermind,
         "authors": materials_data["authors"], "materials": materials_data["materials"], "events": events,
         "mila_events": mila_events, "notes": notes,
