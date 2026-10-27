@@ -3939,9 +3939,17 @@ const ICON_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 function audioActionsHtml(){
   return `<div class="aud-acts"><button type="button" class="aud-btn" id="audDl">${ICON_DL}<span>Скачать</span></button><button type="button" class="aud-btn" id="audShare">${ICON_SHARE}<span>Поделиться</span></button></div><div class="aud-msg" id="audMsg" hidden></div>`;
 }
+const RU_LAT = {"а":"a","б":"b","в":"v","г":"g","д":"d","е":"e","ё":"yo","ж":"zh","з":"z","и":"i","й":"y","к":"k","л":"l","м":"m","н":"n","о":"o","п":"p","р":"r","с":"s","т":"t","у":"u","ф":"f","х":"kh","ц":"ts","ч":"ch","ш":"sh","щ":"shch","ъ":"","ы":"y","ь":"","э":"e","ю":"yu","я":"ya"};
+function toLatin(t){
+  return String(t||"").split("").map(ch=>{
+    const lo = ch.toLowerCase(), r = RU_LAT[lo];
+    if(r === undefined) return ch;
+    return ch === lo ? r : (r.charAt(0).toUpperCase() + r.slice(1));
+  }).join("");
+}
 function audioFileName(mat, url){
   const ext = ((url.split("?")[0].match(/\.([a-z0-9]{2,4})$/i)||[])[1] || "mp3").toLowerCase();
-  const base = String(mat.title||"music").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "music";
+  const base = toLatin(mat.title||"music").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "music";
   return base + "." + ext;
 }
 async function freshMaterialUrl(mat){
@@ -3972,7 +3980,7 @@ function wireAudioActions(mat){
       const blob = await (await fetch(url)).blob();
       const file = new File([blob], name, {type: blob.type || "audio/mpeg"});
       if(navigator.canShare && navigator.canShare({files:[file]})){
-        await navigator.share({files:[file], title: mat.title || name});
+        await navigator.share({files:[file], title: name.replace(/\.[a-z0-9]+$/i, "")});
       } else {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(file); a.download = name;
