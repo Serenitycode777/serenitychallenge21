@@ -3526,11 +3526,8 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.restore();
 
   ctx.fillStyle="#3F6660"; ctx.textAlign="center";
-  ctx.font="600 54px "+HEAD+", Georgia, serif";
-  ctx.fillText(String(TODAY), badgeCx, badgeCy+11);
-  ctx.fillStyle="#6B6475";
-  ctx.font="600 12px "+SYS+", sans-serif";
-  ctx.fillText("ДЕНЬ", badgeCx, badgeCy+31);
+  ctx.font="600 58px "+HEAD+", Georgia, serif";
+  ctx.fillText(String(TODAY), badgeCx, badgeCy+19);
 
   ctx.save();
   ctx.shadowColor="rgba(51,46,61,.32)"; ctx.shadowBlur=40; ctx.shadowOffsetY=18;
