@@ -122,11 +122,6 @@ async def init_db(app):
     )""")
     await DB_POOL.execute("CREATE INDEX IF NOT EXISTS idx_daily_logs_user ON daily_logs(user_id)")
     await DB_POOL.execute("ALTER TABLE daily_logs ADD COLUMN IF NOT EXISTS habits_meta JSONB")
-    for _old, _new in [("Полноценный сон", "Сон 7-8 часов"), ("Меньше кофе", "Отказ от кофе"),
-                       ("Полоскание кокосовым маслом", "Полоскание полости рта кокосовым маслом"),
-                       ("Йога и медитации", "Йога/медитации"), ("Уборка", "Уборка дома"),
-                       ("Меньше соцсетей", "Без соцсетей после 8 вечера")]:
-        await DB_POOL.execute("UPDATE habit_selections SET name=$2 WHERE name=$1", _old, _new)
     # ---- письма: тексты автоматических писем (правятся в админке) и запланированные рассылки ----
     await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS email_templates (
         key TEXT PRIMARY KEY, subject TEXT NOT NULL, body TEXT NOT NULL, updated DOUBLE PRECISION
@@ -163,50 +158,7 @@ async def init_db(app):
     await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS photo_url TEXT")
     await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS date_label TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS place_label TEXT DEFAULT ''")
-    await DB_POOL.execute(
-        "UPDATE mila_events SET date_label=split_part(date_place,',',1), "
-        "place_label=trim(substring(date_place from position(',' in date_place)+1)) "
-        "WHERE (date_label IS NULL OR date_label='') AND date_place IS NOT NULL "
-        "AND date_place<>'' AND position(',' in date_place)>0"
-    )
 
-    await seed_materials_once()
-
-
-async def seed_materials_once():
-    """Разовый перенос старых data/materials.json (13 материалов, 4 автора) в
-    реальные таблицы – выполняется только если materials пока пустая (т.е. один
-    раз, при первом запуске после появления этих таблиц). Дальше источником
-    правды становится админка (/api/admin/folders|themes|materials), не файл."""
-    if await DB_POOL.fetchval("SELECT COUNT(*) FROM materials"):
-        return
-    if not MATERIALS_FILE.exists():
-        return
-    data = json.loads(MATERIALS_FILE.read_text(encoding="utf-8"))
-    now = time.time()
-    for key, a in data.get("authors", {}).items():
-        await DB_POOL.execute(
-            "INSERT INTO folders (id, name, description, topics, photo_url, created) "
-            "VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (id) DO NOTHING",
-            key, a.get("name", key), a.get("desc", ""), a.get("topics", ""), a.get("photo"), now,
-        )
-    seen_tags = set()
-    for m in data.get("materials", []):
-        for t in m.get("tags", []):
-            seen_tags.add(t)
-    for t in seen_tags:
-        await DB_POOL.execute(
-            "INSERT INTO themes (id, label, created) VALUES ($1,$2,$3) ON CONFLICT (id) DO NOTHING",
-            t, t, now,
-        )
-    for m in data.get("materials", []):
-        await DB_POOL.execute(
-            "INSERT INTO materials (folder_id, title, format, tags, day, url, created) "
-            "VALUES ($1,$2,$3,$4,$5,$6,$7)",
-            m.get("author"), m.get("title", ""), m.get("type", "link"),
-            json.dumps(m.get("tags", []), ensure_ascii=False), m.get("day"), m.get("url", "#"), now,
-        )
-    print(f"[миграция] перенесено {len(data.get('authors', {}))} папок и {len(data.get('materials', []))} материалов из materials.json в supabase")
 
 
 async def close_db(app):
@@ -219,7 +171,6 @@ def normalize_email(e: str) -> str:
 
 
 # ---------- материалы ----------
-MATERIALS_FILE = HERE / "data" / "materials.json"  # больше не источник правды, см. seed_materials_once()
 MARATHON_START_DEFAULT = "2026-10-19"  # используется, пока в settings нет значения "marathon_start" (задаётся в админке)
 MARATHON_TZ = "America/New_York"
 INTRO_FOLDER_ID = "662d1a2b85"  # папка "До начала марафона" — обычная папка материалов, жёстко привязана к карточке
@@ -227,12 +178,6 @@ INTRO_FOLDER_ID = "662d1a2b85"  # папка "До начала марафона
 
 async def get_marathon_start() -> str:
     return await get_setting("marathon_start", MARATHON_START_DEFAULT)
-
-
-def load_materials() -> dict:
-    """Старый путь (читает JSON-файл) – больше не вызывается, оставлено как
-    запасной вариант. Реальный источник данных теперь load_materials_from_db()."""
-    return json.loads(MATERIALS_FILE.read_text(encoding="utf-8"))
 
 
 def _jsonb(v):
@@ -524,101 +469,14 @@ padding:11px;font-size:14px;cursor:pointer}}
 </div></body></html>"""
 
 
-def admin_page(rows) -> str:
-    def row_html(r):
-        paid = r["status"] == "оплачено"
-        badge = ('<span style="background:#EAF1E8;color:#4F7249;padding:4px 10px;border-radius:999px;'
-                  'font-size:12px;font-weight:600;">оплачено</span>') if paid else \
-                ('<span style="background:#FBF0DE;color:#A9752E;padding:4px 10px;border-radius:999px;'
-                  'font-size:12px;font-weight:600;">ждёт</span>')
-        confirm_btn = "" if paid or r["method"] == "stripe" else \
-            f'<form method="post" action="/admin/confirm/{r["id"]}" style="display:inline;">' \
-            f'<button style="background:#7C6A9C;color:#fff;border:none;border-radius:8px;' \
-            f'padding:7px 12px;font-size:12px;cursor:pointer;">Отметить оплаченным</button></form>'
-        delete_btn = (f'<form method="post" action="/admin/delete/{r["id"]}" style="display:inline;" '
-                      f'onsubmit="return confirm(\'Удалить эту заявку?\');">'
-                      f'<button style="background:none;color:#B3415A;border:1px solid #EAD7DB;border-radius:8px;'
-                      f'padding:7px 10px;font-size:12px;cursor:pointer;">удалить</button></form>')
-        dt = time.strftime("%d.%m %H:%M", time.localtime(r["confirmed"] or r["created"]))
-        note_val = E(r["note"] or "")
-        note_form = (f'<form method="post" action="/admin/note/{r["id"]}" style="display:flex;gap:6px;">'
-                     f'<input name="note" value="{note_val}" placeholder="заметка…" '
-                     f'style="flex:1;min-width:0;border:1px solid #E7E1DC;border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:inherit;">'
-                     f'<button style="background:#F2EEF7;color:#5A5266;border:none;border-radius:8px;'
-                     f'padding:6px 10px;font-size:12px;cursor:pointer;">✓</button></form>')
-        return (f'<tr style="border-bottom:1px solid #F0EBE6;">'
-                f'<td style="padding:12px 16px;">{E(r["name"] or "–")}</td>'
-                f'<td style="padding:12px 16px;color:#6B6470;">{E(r["email"])}</td>'
-                f'<td style="padding:12px 16px;color:#6B6470;">{E(r["phone"] or "–")}</td>'
-                f'<td style="padding:12px 16px;color:#6B6470;">{E(r["method"])}</td>'
-                f'<td style="padding:12px 16px;">{badge}</td>'
-                f'<td style="padding:12px 16px;color:#6B6470;">{dt}</td>'
-                f'<td style="padding:12px 16px;min-width:160px;">{note_form}</td>'
-                f'<td style="padding:12px 16px;text-align:right;white-space:nowrap;">{confirm_btn} {delete_btn}</td></tr>')
-
-    total = len(rows)
-    paid_n = sum(1 for r in rows if r["status"] == "оплачено")
-    waiting_n = total - paid_n
-    rows_html = "".join(row_html(r) for r in rows) or \
-        '<tr><td colspan="8" style="padding:24px;text-align:center;color:#8A8390;">пока пусто</td></tr>'
-
-    return f"""<!doctype html><html lang="ru"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>Заявки и оплаты</title>
-<style>
-body{{margin:0;font-family:Inter,system-ui,sans-serif;background:#F7F4F1;color:#352F3D;padding:32px 20px}}
-.wrap{{max-width:1100px;margin:0 auto}}
-.stat{{background:#fff;border:1px solid #E7E1DC;border-radius:12px;padding:14px 20px;min-width:130px}}
-table{{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E7E1DC;border-radius:14px;overflow:hidden}}
-th{{text-align:left;padding:12px 16px;background:#F2EEF7;font-size:13px}}
-input,select{{font:inherit}}
-details.addform summary{{cursor:pointer;font-size:13.5px;color:#5A5266;font-weight:600;padding:10px 0}}
-.addform-body{{background:#fff;border:1px solid #E7E1DC;border-radius:12px;padding:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:end}}
-.addform-body label{{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#8A8390}}
-.addform-body input,.addform-body select{{border:1px solid #E7E1DC;border-radius:8px;padding:8px 10px;font-size:13.5px}}
-</style></head><body>
-<div class="wrap">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-<h1 style="font-size:24px;margin:0;">Заявки марафона</h1>
-<div style="display:flex;gap:16px;align-items:center;">
-<a href="/admin/export.csv" style="font-size:13px;color:#7C6A9C;font-weight:600;">скачать CSV</a>
-<a href="/admin/logout" style="font-size:13px;color:#8A8390;">выйти</a>
-</div>
-</div>
-<div style="display:flex;gap:14px;margin-bottom:20px;">
-<div class="stat"><div style="font-size:12px;color:#8A8390;">всего</div><div style="font-size:22px;font-weight:600;">{total}</div></div>
-<div class="stat"><div style="font-size:12px;color:#8A8390;">оплачено</div><div style="font-size:22px;font-weight:600;color:#6F8F6B;">{paid_n}</div></div>
-<div class="stat"><div style="font-size:12px;color:#8A8390;">ждут</div><div style="font-size:22px;font-weight:600;color:#C08A3E;">{waiting_n}</div></div>
-</div>
-<details class="addform" style="margin-bottom:16px;">
-<summary>+ добавить вручную</summary>
-<form class="addform-body" method="post" action="/admin/add">
-<label>Имя<input name="name"></label>
-<label>Email <span style="color:#B3415A">*</span><input name="email" type="email" required></label>
-<label>Телефон<input name="phone"></label>
-<label>Способ<select name="method"><option value="venmo">venmo</option><option value="zelle">zelle</option><option value="stripe">stripe</option></select></label>
-<label>Статус<select name="status"><option value="ждёт">ждёт</option><option value="оплачено">оплачено</option></select></label>
-<label>Заметка<input name="note"></label>
-<button style="background:#7C6A9C;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13.5px;cursor:pointer;">Добавить</button>
-</form>
-</details>
-<table><thead><tr><th>Имя</th><th>Почта</th><th>Телефон</th><th>Способ</th><th>Статус</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
-<tbody>{rows_html}</tbody></table>
-</div></body></html>"""
-
-
-# Полная админка (Материалы/Календарь/Мероприятия — визуальный прототип без сохранения,
-# CRM — реальные данные через /api/admin/*) — одна статичная страница, отдаётся прямо
-# с сервера (не claude.ai-артефакт), под той же cookie-сессией, что и остальной /admin.
-# Материалы/Календарь/Мероприятия пока только в браузере участницы (сбрасываются при
-# обновлении), CRM работает по-настоящему.
+# Админка — одна статичная страница, отдаётся этим же сервером под cookie-сессией /admin;
+# все данные (CRM, материалы, календарь, мероприятия, письма, настройки) — через /api/admin/*.
 CABINET_APP_HTML = """<!doctype html><html lang="ru"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Serenity Moon</title><script>
 (function(){
 var L=/^\\/eng(\\/|$)/.test(location.pathname)?'en':'ru'; try{localStorage.setItem('sm_lang',L)}catch(e){}
 window.SM_LANG=L;
-var D={"Личный кабинет участницы марафона «Начни сегодня!»": "Participant account for the “Start Today!” marathon", "Вход в кабинет": "Sign in", "Марафон «Начни сегодня!» · Serenity Moon": "“Start Today!” Marathon · Serenity Moon", "Введите email": "Enter email", "Пароль": "Password", "Введите пароль": "Enter password", "показать пароль": "show password", "Повтори пароль": "Repeat password", "Забыла пароль?": "Forgot password?", "Войти": "Sign in", "Первый раз?": "First time here?", "Зарегистрироваться": "Sign up", "Восстановление пароля": "Password recovery", "Пришлём ссылку на email, по ней можно будет задать новый пароль": "We’ll email you a link to set a new password", "Отправить ссылку": "Send link", "← назад ко входу": "← back to sign in", "Новый пароль": "New password", "Придумай новый пароль для входа в кабинет": "Create a new password for your account", "Сохранить и войти": "Save and sign in", "Загружаем кабинет…": "Loading your account…", "Сегодня": "Today", "Прогресс": "Progress", "Материалы": "Materials", "Расписание": "Schedule", "Профиль": "Profile", "Мой прогресс": "My progress", "Марафон «Начни сегодня!»": "“Start Today!” Marathon", "День": "Day", "из 21": "of 21", "как начисляются бриллианты": "how diamonds are earned", "Кристаллы": "Crystals", "Дней до финала": "Days to finish", "Твой путь — 21 день": "Your path — 21 days", "что значит цвет": "what the colors mean", "неделя 1": "week 1", "неделя 2": "week 2", "неделя 3": "week 3", "Ближайшие достижения": "Upcoming achievements", "как открываются звёзды и галочки за мастермайнд": "how stars and mastermind checkmarks unlock", "Кодовое слово": "Code word", "Мои привычки": "My habits", "Выбрано 5 привычек": "5 habits selected", "Продолжить": "Continue", "По привычкам": "By habit", "Раньше тоже делала": "Did this before too", "Канал": "Channel", "Чат": "Chat", "Изменить": "Edit", "из": "of", "выполнено": "done", "Время для себя любимой": "Time just for you", "Без учёта сна": "Sleep not included", "всего мин": "total min", "вечер – хорошее время заглянуть к себе": "evening is a good time to check in with yourself", "Поделиться": "Share", "Избранные материалы": "Favorite materials", "Смотреть": "View", "Поиск материалов": "Search materials", "Фильтры материалов": "Material filters", "Формат": "Format", "Любой": "Any", "Видео": "Video", "Аудио": "Audio", "Категория": "Category", "Любая": "Any", "Сбросить": "Reset", "Применить": "Apply", "по папке": "by folder", "Перед началом марафона": "Before the marathon starts", "До начала марафона": "Before the marathon starts", "Важная информация, как получить максимальную пользу от материалов": "Important info on how to get the most out of the materials", "предыдущий месяц": "previous month", "следующий месяц": "next month", "Пн": "Mo", "Вт": "Tu", "Ср": "We", "Чт": "Th", "Пт": "Fr", "Сб": "Sa", "Вс": "Su", "мероприятия": "events", "Выйти из кабинета": "Sign out", "назад": "back", "день": "day", "завершён": "complete", "Ты держишь ритм ✨": "You’re keeping the rhythm ✨", "привычек выполнено сегодня": "habits done today", "«Маленькие шаги каждый день создают большие результаты»": "“Small steps every day create big results”", "Ура! 🎉 Ты это сделала!": "Yay! 🎉 You did it!", "неделя 1 пройдена": "week 1 complete", "Поздравляю, ты прошла неделю марафона – и за это получаешь звезду": "Congratulations, you’ve completed the first week of the marathon – and you earn a star", "Забрать звезду": "Claim your star", "редактировать привычку": "edit habit", "название привычки...": "habit name...", "дни недели": "days of the week", "отмечать можно только в выбранные": "can only be checked on selected days", "пн": "mo", "вт": "tu", "ср": "we", "чт": "th", "пт": "fr", "сб": "sa", "вс": "su", "сколько минут занимает": "how many minutes it takes", "мин.": "min.", "учитывать количество": "track a quantity", "число за день – стаканы, км, шаги...": "amount per day – glasses, km, steps...", "количество": "amount", "Уже выбрано максимум 5 привычек – сначала убери одну": "You’ve already chosen the maximum of 5 habits – remove one first", "сохранить": "save", "удалить": "delete", "Тело": "Body", "Полноценный сон": "Full night’s sleep", "Каждую ночь": "Every night", "7-8 час.": "7-8 hrs", "Ложитесь спать до 10-11 вечера. Это поможет вам лучше спать и повысить уровень энергии по утрам. Поддержание постоянного циркадного ритма чрезвычайно полезно для здоровья.": "Go to bed by 10-11 pm. It will help you sleep better and feel more energetic in the morning. Keeping a steady circadian rhythm is extremely good for your health.", "Во сне тело восстанавливается, а мозг закрепляет всё, что ты узнала и прожила за день – без этого остальные привычки держатся хуже.": "During sleep the body recovers and the brain consolidates everything you learned and lived through during the day – without it, other habits are harder to keep.", "Стакан тёплой воды": "A glass of warm water", "Утро": "Morning", "1 мин.": "1 min", "Натощак выпивайте 1 стакан тёплой воды (можно с лимоном). Запускает организм и помогает ему проснуться.": "Drink 1 glass of warm water on an empty stomach (lemon is optional). It switches the body on and helps it wake up.", "После ночи организм немного обезвожен – вода мягко запускает обмен веществ и пищеварение.": "After the night the body is slightly dehydrated – water gently starts metabolism and digestion.", "100 прыжков на месте": "100 jumps in place", "2 мин.": "2 min", "Опускайтесь на полную стопу. Отличный вариант запуска организма по утрам.": "Land on your whole foot. A great way to start the body in the morning.", "Короткая физическая встряска утром усиливает кровообращение и помогает проснуться без кофеина.": "A short physical shake-up in the morning boosts circulation and helps you wake up without caffeine.", "Пить 1,5-2 литра воды": "Drink 1.5-2 liters of water", "В течение дня": "Throughout the day", "1,5-2 л.": "1.5-2 L", "Пей воду маленькими порциями на протяжении дня, не дожидаясь жажды. Поддерживает энергию, кожу и работу всех систем организма.": "Drink water in small portions throughout the day, without waiting until you’re thirsty. Supports energy, skin and every system in the body.", "Даже лёгкое обезвоживание снижает концентрацию и энергию – регулярная вода держит тело в тонусе весь день.": "Even mild dehydration lowers focus and energy – drinking water regularly keeps the body in tone all day.", "Контрастный/холодный душ": "Contrast/cold shower", "5 мин.": "5 min", "Принятие холодного душа укрепляет иммунитет, стимулирует кровообращение, повышает энергию и настроение, снимает воспаления.": "A cold shower strengthens immunity, stimulates circulation, lifts energy and mood, and reduces inflammation.", "Резкая смена температуры тренирует сосуды и нервную систему – со временем это ощущается как прилив бодрости.": "A sharp temperature change trains blood vessels and the nervous system – over time it feels like a rush of energy.", "Массаж щёткой": "Dry brushing", "Ежедневно": "Daily", "3-5 мин.": "3-5 min", "Не менее 1 раза, лучше 2 раза утром и вечером. Улучшает лимфоток и кровообращение в тканях.": "At least once, ideally twice – morning and evening. Improves lymph flow and circulation in the tissues.", "Лимфоток не имеет собственного «насоса» и двигается только за счёт движения – сухой массаж стимулирует его механически.": "Lymph has no “pump” of its own and only moves with movement – dry brushing stimulates it mechanically.", "10 000 шагов в день": "10,000 steps a day", "Помогает укрепить мышечный каркас, поддерживать вес и улучшает снабжение тканей кислородом.": "Helps strengthen your muscles, maintain your weight and improves oxygen supply to the tissues.", "Регулярная ходьба – один из самых простых способов поддерживать сердце и обмен веществ без нагрузки на суставы.": "Regular walking is one of the simplest ways to support your heart and metabolism without stressing your joints.", "Регулярные тренировки": "Regular workouts", "2-3 раза в неделю": "2-3 times a week", "20-40 мин.": "20-40 min", "Укрепляют сердце и лёгкие, повышают выносливость и физическую силу, поддерживают здоровый вес и способствуют психологическому благополучию.": "Strengthen the heart and lungs, build endurance and strength, support a healthy weight and contribute to psychological well-being.", "Физическая нагрузка не только укрепляет тело, но и снижает уровень стресса через выброс эндорфинов.": "Exercise not only strengthens the body but also lowers stress by releasing endorphins.", "Опускание на пятки": "Heel drops", "Любое время дня": "Any time of day", "2-3 мин.": "2-3 min", "Приподняться на 2-3 см и резко опускаться на пятки. Выполняется в быстром темпе.": "Rise 2-3 cm onto your toes and drop sharply onto your heels. Done at a quick pace.", "Короткая вибрация через пятки мягко стимулирует кровообращение и лимфоток, не отнимая много времени.": "A short vibration through the heels gently stimulates circulation and lymph flow without taking much time.", "Простукивание тимуса": "Thymus tapping", "Тимус играет ключевую роль в развитии и функционировании иммунных клеток. Регулярное простукивание улучшает кровообращение и лимфообращение, а также стимулирует его функции.": "The thymus plays a key role in the development and function of immune cells. Regular tapping improves blood and lymph circulation and also stimulates its function.", "Простой телесный ритуал, который помогает поддерживать иммунитет без дополнительных затрат времени.": "A simple body ritual that helps support immunity without taking extra time.", "Тряска ног и рук лёжа на спине": "Shaking arms and legs lying on your back", "Помогает улучшить кровообращение, стимулирует лимфатическую систему, способствует снятию напряжения и стресса, повышает энергию и снимает усталость.": "Helps improve circulation, stimulates the lymphatic system, releases tension and stress, boosts energy and relieves fatigue.", "Мягкая встряска телу помогает «сбросить» напряжение, накопленное за день, без нагрузки на суставы.": "A gentle shake helps the body “drop” the tension built up during the day, without stressing the joints.", "Растирание ушей": "Ear rubbing", "Регулярно": "Regularly", "1-2 мин.": "1-2 min", "Массаж ушной раковины, где находятся акупунктурные точки. Снимает напряжение, улучшает кровообращение, снижает стресс и головную боль.": "Massage of the ear, where acupuncture points are located. Relieves tension, improves circulation, reduces stress and headaches.", "На ушах сосредоточено много акупунктурных точек – короткий массаж быстро снимает напряжение.": "The ears hold many acupuncture points – a short massage quickly relieves tension.", "Стояние на аппликаторе (Кузнецова/Ляпко/Садху)": "Standing on an acupressure mat (Kuznetsov/Lyapko/Sadhu)", "2-10 мин.": "2-10 min", "Статичный массаж ступней способствует улучшению кровообращения, снятию напряжения и боли, стимуляции эндорфинов и повышению энергии.": "Static foot massage improves circulation, relieves tension and pain, stimulates endorphins and boosts energy.", "Воздействие на точки стоп с утра бодрит не хуже чашки кофе, без нагрузки на нервную систему.": "Stimulating the points on your feet in the morning energizes you as well as a cup of coffee, without straining the nervous system.", "Массаж живота «Наули»": "“Nauli” belly massage", "5-10 мин.": "5-10 min", "Вакуум живота помогает стимуляции пищеварительной системы, улучшению обмена веществ и снятию напряжения.": "The abdominal vacuum helps stimulate the digestive system, improve metabolism and release tension.", "Мягкая стимуляция живота поддерживает пищеварение и снимает лишнее напряжение в этой зоне.": "Gentle stimulation of the belly supports digestion and releases extra tension in this area.", "Питание": "Nutrition", "Сбалансированная еда": "Balanced meals", "Всегда": "Always", "Полезное питание – ключевой элемент здорового образа жизни. Стремитесь к сбалансированному соотношению углеводов, белков и жиров. Слушайте своё тело.": "Healthy eating is a key part of a healthy lifestyle. Aim for a balanced ratio of carbs, protein and fats. Listen to your body.", "Стабильное питание убирает резкие скачки энергии и голода, из-за которых труднее держать остальные привычки.": "Steady eating removes sharp swings in energy and hunger that make other habits harder to keep.", "Без сахара": "No sugar", "Весь день": "All day", "Старайся избегать сахара и сладких перекусов в течение дня. Меньше резких скачков энергии – и легче держать остальные привычки марафона.": "Try to avoid sugar and sweet snacks during the day. Fewer energy spikes – and it’s easier to keep your other marathon habits.", "Резкий подъём сахара в крови даёт короткий всплеск энергии и такой же резкий спад – без него день ровнее.": "A sharp rise in blood sugar gives a short burst of energy followed by an equally sharp crash – without it, the day is steadier.", "Меньше кофе": "Less coffee", "Ограничь кофе 1-2 чашками в день, особенно во второй половине дня. Меньше тревожности и лучше сон.": "Limit coffee to 1-2 cups a day, especially in the afternoon. Less anxiety and better sleep.", "Кофеин во второй половине дня может мешать засыпанию, даже если ты этого не замечаешь.": "Caffeine in the afternoon can interfere with falling asleep, even if you don’t notice it.", "Уход и красота": "Care & beauty", "Ванна с Эпсом солью": "Epsom salt bath", "1 раз в неделю": "Once a week", "40-60 мин.": "40-60 min", "Отличный вариант снять стресс, расслабиться, повысить тонус кожи и улучшить обмен веществ.": "A great way to relieve stress, relax, tone the skin and improve metabolism.", "Тёплая вода расслабляет мышцы, а сама пауза даёт нервной системе время переключиться с режима «делать» на «отдыхать».": "Warm water relaxes the muscles, and the pause itself gives the nervous system time to switch from “doing” to “resting”.", "Полоскание кокосовым маслом": "Coconut oil pulling", "5-7 мин.": "5-7 min", "Держите ложку кокосового масла во рту сколько сможете. Отличный детокс, а ещё помогает отбелить зубы.": "Hold a spoonful of coconut oil in your mouth for as long as you can. A great detox that also helps whiten teeth.", "Простой ритуал ухода, который легко встроить в уже существующую утреннюю рутину, не добавляя отдельного времени.": "A simple care ritual that easily fits into your existing morning routine without adding separate time.", "Уход за лицом": "Facial care", "10-15 мин.": "10-15 min", "Ежедневный массаж лица и зоны декольте. Прекрасный способ сохранить молодость и красоту.": "Daily massage of the face and décolleté. A wonderful way to stay young and beautiful.", "Уход работает по накоплению – эффект заметен не сразу, а именно от повторения, а не от одного раза.": "Care works cumulatively – the effect isn’t visible right away, it comes from repetition, not from a single time.", "Спокойствие": "Calm", "Йога и медитации": "Yoga and meditation", "30-40 мин.": "30-40 min", "Улучшает общее состояние здоровья, включает техники дыхания и медитации, способствующие расслаблению ума и тела.": "Improves overall health and includes breathing and meditation techniques that relax the mind and body.", "Осознанное дыхание переключает нервную систему из режима тревоги в режим покоя за считанные минуты.": "Conscious breathing switches the nervous system from anxiety mode to rest mode in just minutes.", "Дыхательная практика": "Breathing practice", "Несколько глубоких осознанных вдохов и выдохов. Быстро снижает напряжение и возвращает внимание в тело.": "A few deep, conscious inhales and exhales. Quickly lowers tension and brings your attention back to the body.", "Медленный выдох напрямую сигналит нервной системе, что можно расслабиться – самый быстрый доступный инструмент против стресса.": "A slow exhale directly signals the nervous system that it’s safe to relax – the fastest tool available against stress.", "Дневник благодарностей": "Gratitude journal", "Помогает сместить фокус внимания с негативных аспектов жизни на позитивные, замечать и ценить мелочи и радости.": "Helps shift your focus from the negative sides of life to the positive ones, noticing and appreciating little things and joys.", "Фокус на хорошем – тренируемый навык: чем чаще его замечаешь, тем легче это даётся со временем.": "Focusing on the good is a trainable skill: the more often you notice it, the easier it becomes over time.", "Улыбайся своему отражению в зеркале": "Smile at your reflection in the mirror", "В любое время": "Any time", "Сколько хотите": "As much as you like", "Расслабляет мышцы лица и шеи, помогает на разных уровнях учиться принимать и любить себя.": "Relaxes the muscles of the face and neck, and helps you learn to accept and love yourself on many levels.", "Маленький жест заботы к себе, который со временем меняет внутренний разговор с собой.": "A small gesture of self-care that changes your inner dialogue over time.", "Быть на природе": "Time in nature", "Как можно чаще": "As often as possible", "Ходить босыми ногами по траве, обниматься с деревьями :)": "Walk barefoot on the grass, hug trees :)", "Контакт с природой – один из самых простых и доступных способов снизить уровень стресса.": "Contact with nature is one of the simplest and most accessible ways to lower stress.", "Развитие": "Growth", "Прочитать новое": "Read something new", "30-45 мин.": "30-45 min", "Всего 30 минут чтения в день могут развить вашу концентрацию и критическое мышление.": "Just 30 minutes of reading a day can develop your focus and critical thinking.", "Чтение – небольшая тренировка для концентрации, которая слабеет от бесконечного скролла.": "Reading is a little workout for focus, which weakens with endless scrolling.", "Изучение иностранного языка": "Learning a foreign language", "10-20 мин.": "10-20 min", "Повышает когнитивные способности, развивает мозг, улучшает память и способствует саморазвитию.": "Boosts cognitive abilities, develops the brain, improves memory and supports personal growth.", "Новый язык – нагрузка для мозга, похожая на тренировку тела, только для памяти и мышления.": "A new language is a workout for the brain, like training the body, only for memory and thinking.", "Близкие": "Loved ones", "Время с семьёй/детьми": "Time with family/children", "Это важно! Качественное время с близкими – один из главных приоритетов.": "This matters! Quality time with loved ones is one of the top priorities.", "Качественное присутствие рядом с близкими – один из самых стабильных источников ощущения благополучия.": "Being truly present with loved ones is one of the most reliable sources of well-being.", "Дом и порядок": "Home & order", "Уборка": "Tidying up", "Немного порядка вокруг – немного порядка внутри. Не обязательно генеральная уборка, достаточно малого.": "A little order around you – a little order inside. No need for a deep clean, a little is enough.", "Порядок вокруг снижает визуальный шум – меньше отвлекающих раздражителей для внимания.": "Order around you reduces visual noise – fewer distractions for your attention.", "Полить растения": "Water the plants", "2-5 мин.": "2-5 min", "Забота о чём-то живом рядом с тобой – маленький, но приятный ритуал.": "Caring for something alive next to you is a small but pleasant ritual.", "Забота о чём-то живом – простой способ почувствовать себя нужной и внимательной, без лишних усилий.": "Caring for something alive is a simple way to feel needed and attentive, without extra effort.", "Разобрать вещи": "Declutter", "Убери то, что давно не нужно. Меньше лишнего – больше свободного пространства и внимания.": "Get rid of what you haven’t needed for a long time. Less clutter – more free space and attention.", "Лишние вещи вокруг незаметно забирают немного внимания каждый раз, когда попадаются на глаза.": "Extra things around you quietly take a bit of your attention every time you see them.", "Планирование": "Planning", "Утро/Вечер": "Morning/Evening", "В твоей жизни будет меньше хаоса, если ты будешь планировать.": "There will be less chaos in your life if you plan.", "Несколько минут планирования снимают тревогу неопределённости и экономят силы на решения в течение дня.": "A few minutes of planning relieve the anxiety of uncertainty and save energy for decisions during the day.", "Без вредного": "Less of the harmful", "Меньше соцсетей": "Less social media", "По желанию": "Optional", "Сократи бесцельный скролл – освободившееся время и внимание можно отдать себе.": "Cut down on aimless scrolling – the time and attention you free up can go to yourself.", "Бесцельный скролл истощает внимание почти так же, как многозадачность – пауза в нём освобождает ресурс для себя.": "Aimless scrolling drains attention almost as much as multitasking – a break from it frees up energy for yourself.", "Ты уже на верном пути": "You’re already on the right path", "Твоя энергия становится яснее": "Your energy is getting clearer", "Маленькие шаги ведут к большим переменам": "Small steps lead to big changes", "Ты заботишься о себе, и это важно": "You take care of yourself, and that matters", "Доверяй своему ритму": "Trust your rhythm", "Ты сияешь изнутри": "You shine from within", "Сегодня – хороший день для тишины": "Today is a good day for silence", "Ты становишься устойчивее с каждым днём": "You’re getting steadier every day", "Дисциплина – это проявление любви к себе": "Discipline is an act of self-love", "Каждый день укрепляет твою решимость. Продолжай!": "Every day strengthens your resolve. Keep going!", "Пропустить день – это нормально, ты не начинаешь с нуля": "Skipping a day is okay – you’re not starting from zero", "Вчера был непростой день – сегодня можно просто начать заново": "Yesterday was a hard day – today you can simply start again", "Один пропуск ничего не перечёркивает – ты всё ещё в пути": "One missed day doesn’t erase anything – you’re still on the path", "Заботиться о себе – не значит делать всё идеально": "Taking care of yourself doesn’t mean doing everything perfectly", "Так держать! Привычка становится частью твоей жизни.": "Keep it up! The habit is becoming part of your life.", "Так держать, это уже настоящая привычка": "Keep it up, this is already a real habit", "Твоя последовательность вдохновляет – продолжай в том же духе": "Your consistency is inspiring – keep going the same way", "Ты создаёшь привычку, которая работает на тебя.": "You’re building a habit that works for you.", "Здорово! Шаг за шагом ты приближаешься к своей цели! ✨": "Wonderful! Step by step you’re getting closer to your goal! ✨", "Сегодня уже 15 человек нашли время позаботиться о себе и выполнили хотя бы 2 привычки 💛": "Today 15 people have already found time to take care of themselves and completed at least 2 habits 💛", "У тебя ещё есть время на себя сегодня – 15 человек уже нашли эти пару минут 💛": "You still have time for yourself today – 15 people have already found those few minutes 💛", "15 человек сегодня выбрали заботу о себе вместо спешки 💛": "15 people chose self-care over rushing today 💛", "Маленький шаг – уже победа. сегодня его сделали 15 человек 💛": "A small step is already a win. 15 people took it today 💛", "Любовь к себе не требует больших шагов – можно начать всего с десяти минут 💛": "Self-love doesn’t need big steps – you can start with just ten minutes 💛", "15 человек сегодня выбрали себя, хотя бы немного 💛": "15 people chose themselves today, even just a little 💛", "Ты справишься, даже если день был непростым – 15 человек сегодня тоже справились 💛": "You’ll manage, even if the day was hard – 15 people managed today too 💛", "Ты не обязана успевать всё – сегодня 15 человек позаботились о себе хотя бы немного 💛": "You don’t have to do everything – today 15 people took care of themselves at least a little 💛", "Забота о себе может быть совсем маленькой – сегодня это доказали 15 человек 💛": "Self-care can be very small – 15 people proved it today 💛", "15 человек сегодня нашли время для себя – ты тоже умеешь это находить 💛": "15 people found time for themselves today – you know how to find it too 💛", "присоединяйся, когда будешь готова": "join in when you’re ready", "сделай свой шаг, когда будет удобно": "take your step when it suits you", "начни с того, что по силам сегодня": "start with what feels doable today", "просто попробуй – дальше будет легче": "just try – it gets easier from there", "просто вернись к себе, когда будет время": "just come back to yourself when you have time", "дней": "days", "Получено": "Received", "Впереди": "Ahead", "✓ бриллиант получен (+3 💎)": "✓ diamond received (+3 💎)", "кодовое слово из эфира": "code word from the live session", "неверное слово": "wrong word", "Получить 💎": "Get 💎", "Бриллианты 💎": "Diamonds 💎", "Набери": "Collect", "21–27 бриллиантов": "21–27 diamonds", "– и участвуешь в розыгрыше подарков. Главное – не пропускать дни, идеальных случаев может и не быть.": "– and you enter the gift draw. The main thing is not to skip days; perfect days may not always happen.", "+1 за день со 100% привычек · максимум 21": "+1 for a day with 100% of habits · max 21", "+3 за мастермайнд по кодовому слову · 2 эфира": "+3 for a mastermind with the code word · 2 sessions", "Будь честна с собой: цель марафона не в розыгрыше, а в том, чтобы изменить свою жизнь.": "Be honest with yourself: the goal of the marathon isn’t the draw, it’s changing your life.", "Достижения": "Achievements", "Три звезды открываются по неделям марафона – на 7-й, 14-й и 21-й день. Просто дойди до этого дня, и звезда станет твоей.": "Three stars unlock by marathon weeks – on day 7, 14 and 21. Just reach that day and the star is yours.", "Две галочки «ММ» – за мастермайнды. Нажми на галочку и впиши кодовое слово, которое Мила назовёт на эфире – получишь +3 бриллианта.": "Two “MM” checkmarks are for the masterminds. Tap a checkmark and enter the code word Mila says during the live session – you’ll get +3 diamonds.", "Карта 21 дня": "21-day map", "Чем темнее квадратик – тем больше привычек в этот день закрыто. Серый – день ещё не начат или ничего не отмечено, светлый – закрыто немного, насыщенный бирюзовый – почти всё или всё.": "The darker the square, the more habits were completed that day. Gray – the day hasn’t started or nothing is checked, light – a few done, deep teal – almost all or all.", "Мастермайнды": "Masterminds", "записи эфиров с Милой": "recordings of live sessions with Mila", "Запись мастермайнда – введи кодовое слово, которое Мила называла вживую, и получи бриллиант": "Mastermind recording – enter the code word Mila said live and get a diamond", "Мастермайнд 1": "Mastermind 1", "мастермайнд": "mastermind", "Мастермайнд 2": "Mastermind 2", "сессия истекла – войди снова": "session expired – please sign in again", "янв": "Jan", "фев": "Feb", "мар": "Mar", "апр": "Apr", "мая": "May", "июн": "Jun", "июл": "Jul", "авг": "Aug", "сен": "Sep", "окт": "Oct", "ноя": "Nov", "дек": "Dec", "Январь": "January", "Февраль": "February", "Март": "March", "Апрель": "April", "Май": "May", "Июнь": "June", "Июль": "July", "Август": "August", "Сентябрь": "September", "Октябрь": "October", "Ноябрь": "November", "Декабрь": "December", "час": "hour", "мин": "min", "минут": "minutes", "минута": "minute", "минуты": "minutes", "минуту": "minute", "часа": "hours", "часов": "hours", "ч": "h", "ч.": "h", "вечером": "evening", "все папки": "all folders", "Избранное": "Favorites", "Узнать больше →": "Learn more →", "пока нет мероприятий": "no events yet", "Поздравляю, ты прошла две недели марафона – и за это получаешь звезду": "Congratulations, you’ve completed two weeks of the marathon – and you earn a star", "Поздравляю, ты прошла марафон полностью – и за это получаешь звезду": "Congratulations, you’ve completed the whole marathon – and you earn a star", "неделя 2 пройдена": "week 2 complete", "марафон завершён": "marathon complete", "не удалось загрузить кабинет, попробуй ещё раз": "couldn’t load your account, please try again", "не нашли оплату на этот email – напиши организатору марафона": "we couldn’t find a payment for this email – please contact the marathon organizer", "такой email уже зарегистрирован – попробуй войти": "this email is already registered – try signing in", "неверный email или пароль": "wrong email or password", "проверь email и пароль": "check your email and password", "подтверди email по ссылке из письма, потом попробуй войти": "confirm your email using the link in the message, then try signing in", "не получилось войти, попробуй ещё раз": "couldn’t sign in, please try again", "не получилось зарегистрироваться, попробуй ещё раз": "couldn’t sign up, please try again", "Регистрация": "Sign up", "Уже есть аккаунт?": "Already have an account?", "введи email": "enter your email", "если такой email зарегистрирован – письмо со ссылкой уже в пути, проверь почту": "if this email is registered, a message with a link is on its way – check your inbox", "не получилось связаться с сервером, попробуй ещё раз": "couldn’t reach the server, please try again", "пароль минимум 6 символов": "password must be at least 6 characters", "пароли не совпадают": "passwords don’t match", "не получилось сохранить пароль – ссылка могла устареть, запроси новую": "couldn’t save the password – the link may have expired, request a new one", "заполни email и пароль (минимум 6 символов)": "enter email and password (at least 6 characters)", "готово! проверь почту, подтверди email и затем войди": "done! check your inbox, confirm your email and then sign in", "· сегодня": "· today", "Только начинаешь путь – вперёд, шаг за шагом": "Just starting the path – forward, step by step", "Ты в начале пути марафона – продолжай в своём темпе": "You’re at the start of the marathon – keep going at your own pace", "Ты уже прошла треть пути марафона – продолжай в своём темпе": "You’ve already done a third of the marathon – keep going at your own pace", "Ты уже прошла больше половины пути марафона – продолжай в своём темпе": "You’ve already done more than half of the marathon – keep going at your own pace", "Ты прошла весь марафон – поздравляю!": "You’ve completed the whole marathon – congratulations!", "(сегодня)": "(today)", "21-дневный марафон": "21-day marathon", "Этот день ещё не наступил – загляни сюда, когда он начнётся.": "This day hasn’t come yet – check back when it starts.", "В этот день привычки ещё не были выбраны.": "No habits were chosen on this day yet.", "День закрыт": "Day closed", "Закрыть день": "Close the day", "всего ч": "total h", "Пока не выбраны привычки – нажми «Изменить».": "No habits chosen yet – tap “Edit”.", "Все привычки на сегодня отмечены ✨": "All habits for today are checked ✨", "Сегодня нет запланированных привычек – день отдыха 🌙": "No habits planned for today – a rest day 🌙", "осталось сегодня – начни с одной, дальше будет легче": "left for today – start with one, it gets easier", "осталось сегодня 💗": "left for today 💗", "Ура! Ты справилась! 💗": "Yay! You made it! 💗", "Ты в процессе, и этого достаточно": "You’re in the process, and that’s enough", "Хорошо, до встречи": "Okay, see you", "Отлично, увидимся завтра": "Great, see you tomorrow", "Выбери привычки": "Choose habits", "Выбери свои первые привычки": "Choose your first habits", "Добро пожаловать в Serenity Moon 🌙": "Welcome to Serenity Moon 🌙", "Своя привычка – добавлено вручную, подробностей нет.": "Your own habit – added manually, no details.", "Когда": "When", "Сколько": "How long", "Почему это работает": "Why it works", "в день": "a day", "Перед тем как подтвердить свой выбор, ещё раз просмотри список. Убедись, что количество привычек и время на их выполнение реалистичны для тебя.": "Before confirming your choice, look through the list once more. Make sure the number of habits and the time they take are realistic for you.", "Помни: лучше меньше, но регулярно! 💚": "Remember: less, but regularly! 💚", "не сегодня": "not today", "Свои привычки": "My own habits", "+ добавить свою привычку": "+ add your own habit", "Выбери хотя бы одну привычку, чтобы сохранить": "Choose at least one habit to save", "Начать марафон 🌙": "Start the marathon 🌙", "Сохранить": "Save", "Скачать": "Download", "Не получилось скачать – попробуй ещё раз": "Couldn’t download – please try again", "Не получилось поделиться – попробуй ещё раз": "Couldn’t share – please try again", "На этом устройстве поделиться файлом нельзя – мы его скачали, отправь его из загрузок": "Sharing files isn’t supported on this device – we downloaded it instead, you can send it from your downloads", "Прежняя привычка": "Previous habit", "Выдели 2–7 минут в день на просмотр писем: удали ненужные, ответь на важные и наведи порядок во входящих. Можно с помощью ИИ.": "Set aside 2–7 minutes a day to go through your emails: delete what you don’t need, reply to what matters and tidy up your inbox. AI can help.", "2-7 мин.": "2-7 min", "Откажись от кофе на время марафона – замени его тёплой водой, травяным чаем или цикорием. Меньше тревожности, ровнее энергия и лучше сон.": "Give up coffee for the marathon – swap it for warm water, herbal tea or chicory. Less anxiety, steadier energy and better sleep.", "Без кофеина нервная система отдыхает от постоянной стимуляции – энергия становится ровнее, а сон глубже.": "Without caffeine your nervous system gets a break from constant stimulation – your energy becomes steadier and your sleep deeper.", "Сон 7-8 часов": "Sleep 7–8 hours", "Отказ от кофе": "No coffee", "Полоскание полости рта кокосовым маслом": "Coconut oil pulling", "Йога/медитации": "Yoga/meditation", "Уборка дома": "Tidying the home", "Разбор имейлов": "Email clean-up", "Без соцсетей после 8 вечера": "No social media after 8 pm", "Приподняться на 2-3 см и резко опускаться на пятки. Выполняется в быстром темпе. ВНИМАНИЕ: нельзя выполнять беременным.": "Rise 2-3 cm onto your toes and drop sharply onto your heels. Done at a quick pace. CAUTION: not to be done during pregnancy.", "Выдели 10–20 минут на просмотр писем: удали ненужные, ответь на важные и наведи порядок во входящих. Можно с помощью ИИ.": "Set aside 10–20 minutes to go through your emails: delete what you don’t need, reply to what matters and tidy up your inbox. AI can help.", "Снижает информационную перегрузку, помогает избавиться от накопившихся дел, улучшает концентрацию и создаёт ощущение порядка и контроля.": "Reduces information overload, helps clear pending tasks, improves focus and creates a sense of order and control.", "1-3 мин.": "1-3 min", "30-45 мин.": "30-45 min", "15-30 мин.": "15-30 min", "10-30 мин.": "10-30 min", "Поддержка": "Support", "не в этот день": "not this day", "Мои заметки": "My notes", "Прошлые заметки": "Earlier notes", "сохранено ✓": "saved ✓", "не сохранено": "not saved", "сохраняю…": "saving…", "свернуть ▴": "collapse ▴", "развернуть ▾": "expand ▾", "Как прошёл день? Что заметила, что помогло…": "How was your day? What did you notice, what helped…", "Заметка дня – только для тебя": "Note of the day – only you can see it", "изменить": "edit", "пустая заметка удалится": "an empty note will be deleted", "не получилось сохранить – попробуй ещё раз": "couldn’t save – please try again", "раньше тоже делала": "did this before too", "каждый день": "every day", "дни не заданы": "no days set", "Пока нет активных привычек": "No active habits yet", "была в твоём списке ранее": "was on your list before", "новая привычка": "new habit", "Выбрано": "Selected", "привычка": "habit", "привычек": "habits", "Маленькие шаги каждый день —": "Small steps every day —", "путь к большим переменам": "the path to big changes", "МАРАФОН «НАЧНИ СЕГОДНЯ!»": "“START TODAY!” MARATHON", "привычек сегодня": "habits today", "ДЕНЬ": "DAY", "карточка дня": "day card", "Поделиться в чат": "Share to chat", "Мой день": "My day", "марафона «Начни сегодня!»": "of the “Start Today!” marathon", "Картинка сохранена, открываю чат…": "Image saved, opening the chat…", "Материал": "Material", "Новое": "New", "· скачать": "· download", "в избранное": "to favorites", "Дни встреч": "Meeting days", "Zoom-встреча": "Zoom meeting", "прошёл · запись скоро": "ended · recording coming soon", "Открыть Zoom ›": "Open Zoom ›", "Открыть Zoom": "Open Zoom", "← все папки": "← all folders", "Практики и материалы": "Practices and materials", "Ничего не нашлось": "Nothing found", "← назад": "← back", "Убрать материал из избранного?": "Remove this material from favorites?", "Убрать": "Remove", "Открыто": "Open", "Доступ к файлу открывается в день разблокировки.": "Access to the file opens on the unlock day.", "← к материалам": "← to materials", "Открыть материал →": "Open material →", "Загружаю…": "Loading…", "Не получилось открыть файл. Попробуй ещё раз через минуту – если не поможет, напиши нам.": "Couldn’t open the file. Try again in a minute – if that doesn’t help, write to us.", "материал": "material", "открыть в отдельной вкладке": "open in a new tab", "Текст скоро добавим.": "Text coming soon.", "Добавь своё имя": "Add your name", "редактировать": "edit", "Удалить фото профиля?": "Delete profile photo?", "Удалить": "Delete", "Редактировать профиль": "Edit profile", "имя и фамилия": "first and last name", "возраст": "age", "город": "city", "о себе": "about me", "Отмена": "Cancel", "Язык · Language": "Язык · Language"};
+var D={"Личный кабинет участницы марафона «Начни сегодня!»": "Participant account for the “Start Today!” marathon", "Вход в кабинет": "Sign in", "Марафон «Начни сегодня!» · Serenity Moon": "“Start Today!” Marathon · Serenity Moon", "Введите email": "Enter email", "Пароль": "Password", "Введите пароль": "Enter password", "показать пароль": "show password", "Повтори пароль": "Repeat password", "Забыла пароль?": "Forgot password?", "Войти": "Sign in", "Первый раз?": "First time here?", "Зарегистрироваться": "Sign up", "Восстановление пароля": "Password recovery", "Пришлём ссылку на email, по ней можно будет задать новый пароль": "We’ll email you a link to set a new password", "Отправить ссылку": "Send link", "← назад ко входу": "← back to sign in", "Новый пароль": "New password", "Придумай новый пароль для входа в кабинет": "Create a new password for your account", "Сохранить и войти": "Save and sign in", "Загружаем кабинет…": "Loading your account…", "Сегодня": "Today", "Прогресс": "Progress", "Материалы": "Materials", "Расписание": "Schedule", "Профиль": "Profile", "Мой прогресс": "My progress", "Марафон «Начни сегодня!»": "“Start Today!” Marathon", "День": "Day", "из 21": "of 21", "как начисляются бриллианты": "how diamonds are earned", "Кристаллы": "Crystals", "Дней до финала": "Days to finish", "Твой путь — 21 день": "Your path — 21 days", "что значит цвет": "what the colors mean", "неделя 1": "week 1", "неделя 2": "week 2", "неделя 3": "week 3", "Ближайшие достижения": "Upcoming achievements", "как открываются звёзды и галочки за мастермайнд": "how stars and mastermind checkmarks unlock", "Кодовое слово": "Code word", "Мои привычки": "My habits", "Выбрано 5 привычек": "5 habits selected", "Продолжить": "Continue", "По привычкам": "By habit", "Раньше тоже делала": "Did this before too", "Канал": "Channel", "Чат": "Chat", "Изменить": "Edit", "из": "of", "выполнено": "done", "Время для себя любимой": "Time just for you", "Без учёта сна": "Sleep not included", "всего мин": "total min", "вечер – хорошее время заглянуть к себе": "evening is a good time to check in with yourself", "Поделиться": "Share", "Избранные материалы": "Favorite materials", "Смотреть": "View", "Поиск материалов": "Search materials", "Фильтры материалов": "Material filters", "Формат": "Format", "Любой": "Any", "Видео": "Video", "Аудио": "Audio", "Категория": "Category", "Любая": "Any", "Сбросить": "Reset", "Применить": "Apply", "по папке": "by folder", "До начала марафона": "Before the marathon starts", "Важная информация, как получить максимальную пользу от материалов": "Important info on how to get the most out of the materials", "предыдущий месяц": "previous month", "следующий месяц": "next month", "Пн": "Mo", "Вт": "Tu", "Ср": "We", "Чт": "Th", "Пт": "Fr", "Сб": "Sa", "Вс": "Su", "мероприятия": "events", "Выйти из кабинета": "Sign out", "назад": "back", "день": "day", "завершён": "complete", "Ты держишь ритм ✨": "You’re keeping the rhythm ✨", "привычек выполнено сегодня": "habits done today", "«Маленькие шаги каждый день создают большие результаты»": "“Small steps every day create big results”", "Ура! 🎉 Ты это сделала!": "Yay! 🎉 You did it!", "неделя 1 пройдена": "week 1 complete", "Поздравляю, ты прошла неделю марафона – и за это получаешь звезду": "Congratulations, you’ve completed the first week of the marathon – and you earn a star", "Забрать звезду": "Claim your star", "редактировать привычку": "edit habit", "название привычки...": "habit name...", "дни недели": "days of the week", "отмечать можно только в выбранные": "can only be checked on selected days", "пн": "mo", "вт": "tu", "ср": "we", "чт": "th", "пт": "fr", "сб": "sa", "вс": "su", "сколько минут занимает": "how many minutes it takes", "мин.": "min.", "учитывать количество": "track a quantity", "число за день – стаканы, км, шаги...": "amount per day – glasses, km, steps...", "количество": "amount", "Уже выбрано максимум 5 привычек – сначала убери одну": "You’ve already chosen the maximum of 5 habits – remove one first", "сохранить": "save", "удалить": "delete", "Тело": "Body", "Каждую ночь": "Every night", "7-8 час.": "7-8 hrs", "Ложитесь спать до 10-11 вечера. Это поможет вам лучше спать и повысить уровень энергии по утрам. Поддержание постоянного циркадного ритма чрезвычайно полезно для здоровья.": "Go to bed by 10-11 pm. It will help you sleep better and feel more energetic in the morning. Keeping a steady circadian rhythm is extremely good for your health.", "Во сне тело восстанавливается, а мозг закрепляет всё, что ты узнала и прожила за день – без этого остальные привычки держатся хуже.": "During sleep the body recovers and the brain consolidates everything you learned and lived through during the day – without it, other habits are harder to keep.", "Стакан тёплой воды": "A glass of warm water", "Утро": "Morning", "1 мин.": "1 min", "Натощак выпивайте 1 стакан тёплой воды (можно с лимоном). Запускает организм и помогает ему проснуться.": "Drink 1 glass of warm water on an empty stomach (lemon is optional). It switches the body on and helps it wake up.", "После ночи организм немного обезвожен – вода мягко запускает обмен веществ и пищеварение.": "After the night the body is slightly dehydrated – water gently starts metabolism and digestion.", "100 прыжков на месте": "100 jumps in place", "2 мин.": "2 min", "Опускайтесь на полную стопу. Отличный вариант запуска организма по утрам.": "Land on your whole foot. A great way to start the body in the morning.", "Короткая физическая встряска утром усиливает кровообращение и помогает проснуться без кофеина.": "A short physical shake-up in the morning boosts circulation and helps you wake up without caffeine.", "Пить 1,5-2 литра воды": "Drink 1.5-2 liters of water", "В течение дня": "Throughout the day", "1,5-2 л.": "1.5-2 L", "Пей воду маленькими порциями на протяжении дня, не дожидаясь жажды. Поддерживает энергию, кожу и работу всех систем организма.": "Drink water in small portions throughout the day, without waiting until you’re thirsty. Supports energy, skin and every system in the body.", "Даже лёгкое обезвоживание снижает концентрацию и энергию – регулярная вода держит тело в тонусе весь день.": "Even mild dehydration lowers focus and energy – drinking water regularly keeps the body in tone all day.", "Контрастный/холодный душ": "Contrast/cold shower", "5 мин.": "5 min", "Принятие холодного душа укрепляет иммунитет, стимулирует кровообращение, повышает энергию и настроение, снимает воспаления.": "A cold shower strengthens immunity, stimulates circulation, lifts energy and mood, and reduces inflammation.", "Резкая смена температуры тренирует сосуды и нервную систему – со временем это ощущается как прилив бодрости.": "A sharp temperature change trains blood vessels and the nervous system – over time it feels like a rush of energy.", "Массаж щёткой": "Dry brushing", "Ежедневно": "Daily", "3-5 мин.": "3-5 min", "Не менее 1 раза, лучше 2 раза утром и вечером. Улучшает лимфоток и кровообращение в тканях.": "At least once, ideally twice – morning and evening. Improves lymph flow and circulation in the tissues.", "Лимфоток не имеет собственного «насоса» и двигается только за счёт движения – сухой массаж стимулирует его механически.": "Lymph has no “pump” of its own and only moves with movement – dry brushing stimulates it mechanically.", "10 000 шагов в день": "10,000 steps a day", "Помогает укрепить мышечный каркас, поддерживать вес и улучшает снабжение тканей кислородом.": "Helps strengthen your muscles, maintain your weight and improves oxygen supply to the tissues.", "Регулярная ходьба – один из самых простых способов поддерживать сердце и обмен веществ без нагрузки на суставы.": "Regular walking is one of the simplest ways to support your heart and metabolism without stressing your joints.", "Регулярные тренировки": "Regular workouts", "2-3 раза в неделю": "2-3 times a week", "20-40 мин.": "20-40 min", "Укрепляют сердце и лёгкие, повышают выносливость и физическую силу, поддерживают здоровый вес и способствуют психологическому благополучию.": "Strengthen the heart and lungs, build endurance and strength, support a healthy weight and contribute to psychological well-being.", "Физическая нагрузка не только укрепляет тело, но и снижает уровень стресса через выброс эндорфинов.": "Exercise not only strengthens the body but also lowers stress by releasing endorphins.", "Опускание на пятки": "Heel drops", "Любое время дня": "Any time of day", "2-3 мин.": "2-3 min", "Приподняться на 2-3 см и резко опускаться на пятки. Выполняется в быстром темпе.": "Rise 2-3 cm onto your toes and drop sharply onto your heels. Done at a quick pace.", "Короткая вибрация через пятки мягко стимулирует кровообращение и лимфоток, не отнимая много времени.": "A short vibration through the heels gently stimulates circulation and lymph flow without taking much time.", "Простукивание тимуса": "Thymus tapping", "Тимус играет ключевую роль в развитии и функционировании иммунных клеток. Регулярное простукивание улучшает кровообращение и лимфообращение, а также стимулирует его функции.": "The thymus plays a key role in the development and function of immune cells. Regular tapping improves blood and lymph circulation and also stimulates its function.", "Простой телесный ритуал, который помогает поддерживать иммунитет без дополнительных затрат времени.": "A simple body ritual that helps support immunity without taking extra time.", "Тряска ног и рук лёжа на спине": "Shaking arms and legs lying on your back", "Помогает улучшить кровообращение, стимулирует лимфатическую систему, способствует снятию напряжения и стресса, повышает энергию и снимает усталость.": "Helps improve circulation, stimulates the lymphatic system, releases tension and stress, boosts energy and relieves fatigue.", "Мягкая встряска телу помогает «сбросить» напряжение, накопленное за день, без нагрузки на суставы.": "A gentle shake helps the body “drop” the tension built up during the day, without stressing the joints.", "Растирание ушей": "Ear rubbing", "Регулярно": "Regularly", "1-2 мин.": "1-2 min", "Массаж ушной раковины, где находятся акупунктурные точки. Снимает напряжение, улучшает кровообращение, снижает стресс и головную боль.": "Massage of the ear, where acupuncture points are located. Relieves tension, improves circulation, reduces stress and headaches.", "На ушах сосредоточено много акупунктурных точек – короткий массаж быстро снимает напряжение.": "The ears hold many acupuncture points – a short massage quickly relieves tension.", "Стояние на аппликаторе (Кузнецова/Ляпко/Садху)": "Standing on an acupressure mat (Kuznetsov/Lyapko/Sadhu)", "2-10 мин.": "2-10 min", "Статичный массаж ступней способствует улучшению кровообращения, снятию напряжения и боли, стимуляции эндорфинов и повышению энергии.": "Static foot massage improves circulation, relieves tension and pain, stimulates endorphins and boosts energy.", "Воздействие на точки стоп с утра бодрит не хуже чашки кофе, без нагрузки на нервную систему.": "Stimulating the points on your feet in the morning energizes you as well as a cup of coffee, without straining the nervous system.", "Массаж живота «Наули»": "“Nauli” belly massage", "5-10 мин.": "5-10 min", "Вакуум живота помогает стимуляции пищеварительной системы, улучшению обмена веществ и снятию напряжения.": "The abdominal vacuum helps stimulate the digestive system, improve metabolism and release tension.", "Мягкая стимуляция живота поддерживает пищеварение и снимает лишнее напряжение в этой зоне.": "Gentle stimulation of the belly supports digestion and releases extra tension in this area.", "Питание": "Nutrition", "Сбалансированная еда": "Balanced meals", "Всегда": "Always", "Полезное питание – ключевой элемент здорового образа жизни. Стремитесь к сбалансированному соотношению углеводов, белков и жиров. Слушайте своё тело.": "Healthy eating is a key part of a healthy lifestyle. Aim for a balanced ratio of carbs, protein and fats. Listen to your body.", "Стабильное питание убирает резкие скачки энергии и голода, из-за которых труднее держать остальные привычки.": "Steady eating removes sharp swings in energy and hunger that make other habits harder to keep.", "Без сахара": "No sugar", "Весь день": "All day", "Старайся избегать сахара и сладких перекусов в течение дня. Меньше резких скачков энергии – и легче держать остальные привычки марафона.": "Try to avoid sugar and sweet snacks during the day. Fewer energy spikes – and it’s easier to keep your other marathon habits.", "Резкий подъём сахара в крови даёт короткий всплеск энергии и такой же резкий спад – без него день ровнее.": "A sharp rise in blood sugar gives a short burst of energy followed by an equally sharp crash – without it, the day is steadier.", "Уход и красота": "Care & beauty", "Ванна с Эпсом солью": "Epsom salt bath", "1 раз в неделю": "Once a week", "Отличный вариант снять стресс, расслабиться, повысить тонус кожи и улучшить обмен веществ.": "A great way to relieve stress, relax, tone the skin and improve metabolism.", "Тёплая вода расслабляет мышцы, а сама пауза даёт нервной системе время переключиться с режима «делать» на «отдыхать».": "Warm water relaxes the muscles, and the pause itself gives the nervous system time to switch from “doing” to “resting”.", "5-7 мин.": "5-7 min", "Держите ложку кокосового масла во рту сколько сможете. Отличный детокс, а ещё помогает отбелить зубы.": "Hold a spoonful of coconut oil in your mouth for as long as you can. A great detox that also helps whiten teeth.", "Простой ритуал ухода, который легко встроить в уже существующую утреннюю рутину, не добавляя отдельного времени.": "A simple care ritual that easily fits into your existing morning routine without adding separate time.", "Уход за лицом": "Facial care", "10-15 мин.": "10-15 min", "Ежедневный массаж лица и зоны декольте. Прекрасный способ сохранить молодость и красоту.": "Daily massage of the face and décolleté. A wonderful way to stay young and beautiful.", "Уход работает по накоплению – эффект заметен не сразу, а именно от повторения, а не от одного раза.": "Care works cumulatively – the effect isn’t visible right away, it comes from repetition, not from a single time.", "Спокойствие": "Calm", "Улучшает общее состояние здоровья, включает техники дыхания и медитации, способствующие расслаблению ума и тела.": "Improves overall health and includes breathing and meditation techniques that relax the mind and body.", "Осознанное дыхание переключает нервную систему из режима тревоги в режим покоя за считанные минуты.": "Conscious breathing switches the nervous system from anxiety mode to rest mode in just minutes.", "Дыхательная практика": "Breathing practice", "Несколько глубоких осознанных вдохов и выдохов. Быстро снижает напряжение и возвращает внимание в тело.": "A few deep, conscious inhales and exhales. Quickly lowers tension and brings your attention back to the body.", "Медленный выдох напрямую сигналит нервной системе, что можно расслабиться – самый быстрый доступный инструмент против стресса.": "A slow exhale directly signals the nervous system that it’s safe to relax – the fastest tool available against stress.", "Дневник благодарностей": "Gratitude journal", "Помогает сместить фокус внимания с негативных аспектов жизни на позитивные, замечать и ценить мелочи и радости.": "Helps shift your focus from the negative sides of life to the positive ones, noticing and appreciating little things and joys.", "Фокус на хорошем – тренируемый навык: чем чаще его замечаешь, тем легче это даётся со временем.": "Focusing on the good is a trainable skill: the more often you notice it, the easier it becomes over time.", "Улыбайся своему отражению в зеркале": "Smile at your reflection in the mirror", "В любое время": "Any time", "Сколько хотите": "As much as you like", "Расслабляет мышцы лица и шеи, помогает на разных уровнях учиться принимать и любить себя.": "Relaxes the muscles of the face and neck, and helps you learn to accept and love yourself on many levels.", "Маленький жест заботы к себе, который со временем меняет внутренний разговор с собой.": "A small gesture of self-care that changes your inner dialogue over time.", "Быть на природе": "Time in nature", "Как можно чаще": "As often as possible", "Ходить босыми ногами по траве, обниматься с деревьями :)": "Walk barefoot on the grass, hug trees :)", "Контакт с природой – один из самых простых и доступных способов снизить уровень стресса.": "Contact with nature is one of the simplest and most accessible ways to lower stress.", "Развитие": "Growth", "Прочитать новое": "Read something new", "30-45 мин.": "30-45 min", "Всего 30 минут чтения в день могут развить вашу концентрацию и критическое мышление.": "Just 30 minutes of reading a day can develop your focus and critical thinking.", "Чтение – небольшая тренировка для концентрации, которая слабеет от бесконечного скролла.": "Reading is a little workout for focus, which weakens with endless scrolling.", "Изучение иностранного языка": "Learning a foreign language", "10-20 мин.": "10-20 min", "Повышает когнитивные способности, развивает мозг, улучшает память и способствует саморазвитию.": "Boosts cognitive abilities, develops the brain, improves memory and supports personal growth.", "Новый язык – нагрузка для мозга, похожая на тренировку тела, только для памяти и мышления.": "A new language is a workout for the brain, like training the body, only for memory and thinking.", "Близкие": "Loved ones", "Время с семьёй/детьми": "Time with family/children", "Это важно! Качественное время с близкими – один из главных приоритетов.": "This matters! Quality time with loved ones is one of the top priorities.", "Качественное присутствие рядом с близкими – один из самых стабильных источников ощущения благополучия.": "Being truly present with loved ones is one of the most reliable sources of well-being.", "Дом и порядок": "Home & order", "Уборка": "Tidying up", "Немного порядка вокруг – немного порядка внутри. Не обязательно генеральная уборка, достаточно малого.": "A little order around you – a little order inside. No need for a deep clean, a little is enough.", "Порядок вокруг снижает визуальный шум – меньше отвлекающих раздражителей для внимания.": "Order around you reduces visual noise – fewer distractions for your attention.", "Полить растения": "Water the plants", "Разобрать вещи": "Declutter", "Убери то, что давно не нужно. Меньше лишнего – больше свободного пространства и внимания.": "Get rid of what you haven’t needed for a long time. Less clutter – more free space and attention.", "Лишние вещи вокруг незаметно забирают немного внимания каждый раз, когда попадаются на глаза.": "Extra things around you quietly take a bit of your attention every time you see them.", "Планирование": "Planning", "Утро/Вечер": "Morning/Evening", "В твоей жизни будет меньше хаоса, если ты будешь планировать.": "There will be less chaos in your life if you plan.", "Несколько минут планирования снимают тревогу неопределённости и экономят силы на решения в течение дня.": "A few minutes of planning relieve the anxiety of uncertainty and save energy for decisions during the day.", "Без вредного": "Less of the harmful", "По желанию": "Optional", "Сократи бесцельный скролл – освободившееся время и внимание можно отдать себе.": "Cut down on aimless scrolling – the time and attention you free up can go to yourself.", "Бесцельный скролл истощает внимание почти так же, как многозадачность – пауза в нём освобождает ресурс для себя.": "Aimless scrolling drains attention almost as much as multitasking – a break from it frees up energy for yourself.", "Ты уже на верном пути": "You’re already on the right path", "Твоя энергия становится яснее": "Your energy is getting clearer", "Маленькие шаги ведут к большим переменам": "Small steps lead to big changes", "Ты заботишься о себе, и это важно": "You take care of yourself, and that matters", "Доверяй своему ритму": "Trust your rhythm", "Ты сияешь изнутри": "You shine from within", "Сегодня – хороший день для тишины": "Today is a good day for silence", "Ты становишься устойчивее с каждым днём": "You’re getting steadier every day", "Дисциплина – это проявление любви к себе": "Discipline is an act of self-love", "Каждый день укрепляет твою решимость. Продолжай!": "Every day strengthens your resolve. Keep going!", "Пропустить день – это нормально, ты не начинаешь с нуля": "Skipping a day is okay – you’re not starting from zero", "Вчера был непростой день – сегодня можно просто начать заново": "Yesterday was a hard day – today you can simply start again", "Один пропуск ничего не перечёркивает – ты всё ещё в пути": "One missed day doesn’t erase anything – you’re still on the path", "Заботиться о себе – не значит делать всё идеально": "Taking care of yourself doesn’t mean doing everything perfectly", "Так держать! Привычка становится частью твоей жизни.": "Keep it up! The habit is becoming part of your life.", "Так держать, это уже настоящая привычка": "Keep it up, this is already a real habit", "Твоя последовательность вдохновляет – продолжай в том же духе": "Your consistency is inspiring – keep going the same way", "Ты создаёшь привычку, которая работает на тебя.": "You’re building a habit that works for you.", "Здорово! Шаг за шагом ты приближаешься к своей цели! ✨": "Wonderful! Step by step you’re getting closer to your goal! ✨", "Сегодня уже 15 человек нашли время позаботиться о себе и выполнили хотя бы 2 привычки 💛": "Today 15 people have already found time to take care of themselves and completed at least 2 habits 💛", "У тебя ещё есть время на себя сегодня – 15 человек уже нашли эти пару минут 💛": "You still have time for yourself today – 15 people have already found those few minutes 💛", "15 человек сегодня выбрали заботу о себе вместо спешки 💛": "15 people chose self-care over rushing today 💛", "Маленький шаг – уже победа. сегодня его сделали 15 человек 💛": "A small step is already a win. 15 people took it today 💛", "Любовь к себе не требует больших шагов – можно начать всего с десяти минут 💛": "Self-love doesn’t need big steps – you can start with just ten minutes 💛", "15 человек сегодня выбрали себя, хотя бы немного 💛": "15 people chose themselves today, even just a little 💛", "Ты справишься, даже если день был непростым – 15 человек сегодня тоже справились 💛": "You’ll manage, even if the day was hard – 15 people managed today too 💛", "Ты не обязана успевать всё – сегодня 15 человек позаботились о себе хотя бы немного 💛": "You don’t have to do everything – today 15 people took care of themselves at least a little 💛", "Забота о себе может быть совсем маленькой – сегодня это доказали 15 человек 💛": "Self-care can be very small – 15 people proved it today 💛", "15 человек сегодня нашли время для себя – ты тоже умеешь это находить 💛": "15 people found time for themselves today – you know how to find it too 💛", "присоединяйся, когда будешь готова": "join in when you’re ready", "сделай свой шаг, когда будет удобно": "take your step when it suits you", "начни с того, что по силам сегодня": "start with what feels doable today", "просто попробуй – дальше будет легче": "just try – it gets easier from there", "просто вернись к себе, когда будет время": "just come back to yourself when you have time", "дней": "days", "Получено": "Received", "Впереди": "Ahead", "✓ бриллиант получен (+3 💎)": "✓ diamond received (+3 💎)", "кодовое слово из эфира": "code word from the live session", "неверное слово": "wrong word", "Получить 💎": "Get 💎", "Бриллианты 💎": "Diamonds 💎", "Набери": "Collect", "21–27 бриллиантов": "21–27 diamonds", "– и участвуешь в розыгрыше подарков. Главное – не пропускать дни, идеальных случаев может и не быть.": "– and you enter the gift draw. The main thing is not to skip days; perfect days may not always happen.", "+1 за день со 100% привычек · максимум 21": "+1 for a day with 100% of habits · max 21", "+3 за мастермайнд по кодовому слову · 2 эфира": "+3 for a mastermind with the code word · 2 sessions", "Будь честна с собой: цель марафона не в розыгрыше, а в том, чтобы изменить свою жизнь.": "Be honest with yourself: the goal of the marathon isn’t the draw, it’s changing your life.", "Достижения": "Achievements", "Три звезды открываются по неделям марафона – на 7-й, 14-й и 21-й день. Просто дойди до этого дня, и звезда станет твоей.": "Three stars unlock by marathon weeks – on day 7, 14 and 21. Just reach that day and the star is yours.", "Две галочки «ММ» – за мастермайнды. Нажми на галочку и впиши кодовое слово, которое Мила назовёт на эфире – получишь +3 бриллианта.": "Two “MM” checkmarks are for the masterminds. Tap a checkmark and enter the code word Mila says during the live session – you’ll get +3 diamonds.", "Карта 21 дня": "21-day map", "Чем темнее квадратик – тем больше привычек в этот день закрыто. Серый – день ещё не начат или ничего не отмечено, светлый – закрыто немного, насыщенный бирюзовый – почти всё или всё.": "The darker the square, the more habits were completed that day. Gray – the day hasn’t started or nothing is checked, light – a few done, deep teal – almost all or all.", "Мастермайнды": "Masterminds", "Мастермайнд 1": "Mastermind 1", "мастермайнд": "mastermind", "Мастермайнд 2": "Mastermind 2", "сессия истекла – войди снова": "session expired – please sign in again", "янв": "Jan", "фев": "Feb", "мар": "Mar", "апр": "Apr", "мая": "May", "июн": "Jun", "июл": "Jul", "авг": "Aug", "сен": "Sep", "окт": "Oct", "ноя": "Nov", "дек": "Dec", "Январь": "January", "Февраль": "February", "Март": "March", "Апрель": "April", "Май": "May", "Июнь": "June", "Июль": "July", "Август": "August", "Сентябрь": "September", "Октябрь": "October", "Ноябрь": "November", "Декабрь": "December", "час": "hour", "мин": "min", "минут": "minutes", "минута": "minute", "минуты": "minutes", "минуту": "minute", "часа": "hours", "часов": "hours", "ч": "h", "ч.": "h", "вечером": "evening", "все папки": "all folders", "Избранное": "Favorites", "Узнать больше →": "Learn more →", "пока нет мероприятий": "no events yet", "Поздравляю, ты прошла две недели марафона – и за это получаешь звезду": "Congratulations, you’ve completed two weeks of the marathon – and you earn a star", "Поздравляю, ты прошла марафон полностью – и за это получаешь звезду": "Congratulations, you’ve completed the whole marathon – and you earn a star", "неделя 2 пройдена": "week 2 complete", "марафон завершён": "marathon complete", "не удалось загрузить кабинет, попробуй ещё раз": "couldn’t load your account, please try again", "не нашли оплату на этот email – напиши организатору марафона": "we couldn’t find a payment for this email – please contact the marathon organizer", "такой email уже зарегистрирован – попробуй войти": "this email is already registered – try signing in", "неверный email или пароль": "wrong email or password", "проверь email и пароль": "check your email and password", "подтверди email по ссылке из письма, потом попробуй войти": "confirm your email using the link in the message, then try signing in", "не получилось войти, попробуй ещё раз": "couldn’t sign in, please try again", "не получилось зарегистрироваться, попробуй ещё раз": "couldn’t sign up, please try again", "Регистрация": "Sign up", "Уже есть аккаунт?": "Already have an account?", "введи email": "enter your email", "если такой email зарегистрирован – письмо со ссылкой уже в пути, проверь почту": "if this email is registered, a message with a link is on its way – check your inbox", "не получилось связаться с сервером, попробуй ещё раз": "couldn’t reach the server, please try again", "пароль минимум 6 символов": "password must be at least 6 characters", "пароли не совпадают": "passwords don’t match", "не получилось сохранить пароль – ссылка могла устареть, запроси новую": "couldn’t save the password – the link may have expired, request a new one", "заполни email и пароль (минимум 6 символов)": "enter email and password (at least 6 characters)", "готово! проверь почту, подтверди email и затем войди": "done! check your inbox, confirm your email and then sign in", "· сегодня": "· today", "Только начинаешь путь – вперёд, шаг за шагом": "Just starting the path – forward, step by step", "Ты в начале пути марафона – продолжай в своём темпе": "You’re at the start of the marathon – keep going at your own pace", "Ты уже прошла треть пути марафона – продолжай в своём темпе": "You’ve already done a third of the marathon – keep going at your own pace", "Ты уже прошла больше половины пути марафона – продолжай в своём темпе": "You’ve already done more than half of the marathon – keep going at your own pace", "Ты прошла весь марафон – поздравляю!": "You’ve completed the whole marathon – congratulations!", "(сегодня)": "(today)", "21-дневный марафон": "21-day marathon", "Этот день ещё не наступил – загляни сюда, когда он начнётся.": "This day hasn’t come yet – check back when it starts.", "В этот день привычки ещё не были выбраны.": "No habits were chosen on this day yet.", "День закрыт": "Day closed", "Закрыть день": "Close the day", "всего ч": "total h", "Пока не выбраны привычки – нажми «Изменить».": "No habits chosen yet – tap “Edit”.", "Все привычки на сегодня отмечены ✨": "All habits for today are checked ✨", "Сегодня нет запланированных привычек – день отдыха 🌙": "No habits planned for today – a rest day 🌙", "осталось сегодня – начни с одной, дальше будет легче": "left for today – start with one, it gets easier", "осталось сегодня 💗": "left for today 💗", "Ура! Ты справилась! 💗": "Yay! You made it! 💗", "Ты в процессе, и этого достаточно": "You’re in the process, and that’s enough", "Хорошо, до встречи": "Okay, see you", "Отлично, увидимся завтра": "Great, see you tomorrow", "Выбери привычки": "Choose habits", "Выбери свои первые привычки": "Choose your first habits", "Добро пожаловать в Serenity Moon 🌙": "Welcome to Serenity Moon 🌙", "Своя привычка – добавлено вручную, подробностей нет.": "Your own habit – added manually, no details.", "Когда": "When", "Сколько": "How long", "Почему это работает": "Why it works", "в день": "a day", "Перед тем как подтвердить свой выбор, ещё раз просмотри список. Убедись, что количество привычек и время на их выполнение реалистичны для тебя.": "Before confirming your choice, look through the list once more. Make sure the number of habits and the time they take are realistic for you.", "Помни: лучше меньше, но регулярно! 💚": "Remember: less, but regularly! 💚", "не сегодня": "not today", "Свои привычки": "My own habits", "+ добавить свою привычку": "+ add your own habit", "Выбери хотя бы одну привычку, чтобы сохранить": "Choose at least one habit to save", "Начать марафон 🌙": "Start the marathon 🌙", "Сохранить": "Save", "Скачать": "Download", "Не получилось скачать – попробуй ещё раз": "Couldn’t download – please try again", "Не получилось поделиться – попробуй ещё раз": "Couldn’t share – please try again", "На этом устройстве поделиться файлом нельзя – мы его скачали, отправь его из загрузок": "Sharing files isn’t supported on this device – we downloaded it instead, you can send it from your downloads", "Прежняя привычка": "Previous habit", "Выдели 2–7 минут в день на просмотр писем: удали ненужные, ответь на важные и наведи порядок во входящих. Можно с помощью ИИ.": "Set aside 2–7 minutes a day to go through your emails: delete what you don’t need, reply to what matters and tidy up your inbox. AI can help.", "2-7 мин.": "2-7 min", "Откажись от кофе на время марафона – замени его тёплой водой, травяным чаем или цикорием. Меньше тревожности, ровнее энергия и лучше сон.": "Give up coffee for the marathon – swap it for warm water, herbal tea or chicory. Less anxiety, steadier energy and better sleep.", "Без кофеина нервная система отдыхает от постоянной стимуляции – энергия становится ровнее, а сон глубже.": "Without caffeine your nervous system gets a break from constant stimulation – your energy becomes steadier and your sleep deeper.", "Сон 7-8 часов": "Sleep 7–8 hours", "Отказ от кофе": "No coffee", "Полоскание полости рта кокосовым маслом": "Coconut oil pulling", "Йога/медитации": "Yoga/meditation", "Уборка дома": "Tidying the home", "Разбор имейлов": "Email clean-up", "Без соцсетей после 8 вечера": "No social media after 8 pm", "Приподняться на 2-3 см и резко опускаться на пятки. Выполняется в быстром темпе. ВНИМАНИЕ: нельзя выполнять беременным.": "Rise 2-3 cm onto your toes and drop sharply onto your heels. Done at a quick pace. CAUTION: not to be done during pregnancy.", "Снижает информационную перегрузку, помогает избавиться от накопившихся дел, улучшает концентрацию и создаёт ощущение порядка и контроля.": "Reduces information overload, helps clear pending tasks, improves focus and creates a sense of order and control.", "1-3 мин.": "1-3 min", "15-30 мин.": "15-30 min", "10-30 мин.": "10-30 min", "Поддержка": "Support", "не в этот день": "not this day", "Мои заметки": "My notes", "Прошлые заметки": "Earlier notes", "сохранено ✓": "saved ✓", "не сохранено": "not saved", "сохраняю…": "saving…", "свернуть ▴": "collapse ▴", "развернуть ▾": "expand ▾", "Как прошёл день? Что заметила, что помогло…": "How was your day? What did you notice, what helped…", "Заметка дня – только для тебя": "Note of the day – only you can see it", "изменить": "edit", "пустая заметка удалится": "an empty note will be deleted", "не получилось сохранить – попробуй ещё раз": "couldn’t save – please try again", "раньше тоже делала": "did this before too", "каждый день": "every day", "дни не заданы": "no days set", "Пока нет активных привычек": "No active habits yet", "была в твоём списке ранее": "was on your list before", "новая привычка": "new habit", "Выбрано": "Selected", "привычка": "habit", "привычек": "habits", "Маленькие шаги каждый день —": "Small steps every day —", "путь к большим переменам": "the path to big changes", "МАРАФОН «НАЧНИ СЕГОДНЯ!»": "“START TODAY!” MARATHON", "привычек сегодня": "habits today", "ДЕНЬ": "DAY", "карточка дня": "day card", "Поделиться в чат": "Share to chat", "Мой день": "My day", "марафона «Начни сегодня!»": "of the “Start Today!” marathon", "Картинка сохранена, открываю чат…": "Image saved, opening the chat…", "Материал": "Material", "Новое": "New", "· скачать": "· download", "в избранное": "to favorites", "Дни встреч": "Meeting days", "Zoom-встреча": "Zoom meeting", "прошёл · запись скоро": "ended · recording coming soon", "Открыть Zoom": "Open Zoom", "Практики и материалы": "Practices and materials", "Ничего не нашлось": "Nothing found", "← назад": "← back", "Убрать материал из избранного?": "Remove this material from favorites?", "Убрать": "Remove", "Открыто": "Open", "Доступ к файлу открывается в день разблокировки.": "Access to the file opens on the unlock day.", "← к материалам": "← to materials", "Открыть материал →": "Open material →", "Загружаю…": "Loading…", "Не получилось открыть файл. Попробуй ещё раз через минуту – если не поможет, напиши нам.": "Couldn’t open the file. Try again in a minute – if that doesn’t help, write to us.", "материал": "material", "открыть в отдельной вкладке": "open in a new tab", "Текст скоро добавим.": "Text coming soon.", "Добавь своё имя": "Add your name", "редактировать": "edit", "Удалить фото профиля?": "Delete profile photo?", "Удалить": "Delete", "Редактировать профиль": "Edit profile", "имя и фамилия": "first and last name", "возраст": "age", "город": "city", "о себе": "about me", "Отмена": "Cancel", "Язык · Language": "Язык · Language"};
 var R=[["^День (\\\\d+) \\\\(сегодня\\\\)$", "Day $1 (today)"], ["^День (\\\\d+) · (.+?) · сегодня$", "Day $1 · $2 · today"], ["^День (\\\\d+) · (.+)$", "Day $1 · $2"], ["^День (\\\\d+)$", "Day $1"], ["^(\\\\d+) дней$", "$1 days"], ["^ММ (\\\\d+)$", "MM $1"], ["^Мастермайнд (\\\\d+)$", "Mastermind $1"], ["^(\\\\d+) из (\\\\d+)$", "$1 of $2"], ["^Выбрано 1 привычка$", "1 habit selected"], ["^Выбрано (\\\\d+) привычк(?:а|и|ек)$", "$1 habits selected"], ["^выбрано (\\\\d+) · ~(.+) в день$", "$1 selected · ~$2 a day"], ["^выбрано (\\\\d+)$", "$1 selected"], ["^🌿 Выбери от 1 до (\\\\d+) привычек, которые ты готова выполнять ежедневно в течение 21 дня\\\\.$", "🌿 Choose 1 to $1 habits you’re ready to do every day for 21 days."], ["^с (\\\\d+ [A-Za-z]+)$", "from $1"], ["^Открыто (\\\\d+ [A-Za-z]+)$", "Open since $1"], ["^Показать ещё · осталось (\\\\d+)$", "Show more · $1 left"], ["^сегодня в (.+?) –$", "today at $1 –"], ["^сегодня –$", "today –"], ["^← к материалам (.*)$", "← back to $1"], ["^(.*) · редактировать$", "$1 · edit"], ["^Мой день (\\\\d+) марафона «Начни сегодня!»$", "My day $1 of the “Start Today!” marathon"], ["^(\\\\d+) (?:минут|минута|минуты)$", "$1 min"], ["^(\\\\d+) (?:час|часа|часов)$", "$1 h"], ["^(\\\\d+) (?:час|часа|часов) (\\\\d+) минут$", "$1 h $2 min"]].map(function(r){return [new RegExp(r[0]),r[1]];});
 var CYR=/[А-Яа-яЁё]/;
 var NT={}; Object.keys(D).forEach(function(key){ var n=key.match(/\\d+/g); if(n){ NT[key.replace(/\\d+/g,'#')]=[n,D[key]]; } });
@@ -696,7 +554,7 @@ if(document.body) start(); else document.addEventListener('DOMContentLoaded',sta
   --font-head: "Cormorant Garamond",Georgia,"Times New Roman",serif;
 }
 *{box-sizing:border-box}
-.btn:active,.editlink:active,.close-x:active,.chip:active,.habchip:active,.hab-edit:active,
+.btn:active,.editlink:active,.close-x:active,.chip:active,.habchip:active,
 .evt-row:active,.hday:active,.mcard:active,.evcard a:active{transform:scale(.96)}
 .btn,.editlink,.close-x,.chip,.habchip{transition:transform .1s}
 button,a,.btn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
@@ -730,13 +588,9 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 .cal-day{height:34px;display:flex;align-items:center;justify-content:center}
 .cal-day span{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink)}
 .cal-day.ev span{color:#fff;font-weight:600}
-.cal-day.ev.c-sage span{background:var(--sage)}
-.cal-day.ev.c-lav span{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
 .cal-legend{display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);
   font-size:12px;color:var(--ink-soft)}
 .cal-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
-.cal-dot.c-sage{background:var(--sage)}
-.cal-dot.c-lav{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
 
 main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)))}
 .screen[hidden]{display:none}
@@ -799,7 +653,6 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
     flex:1;min-width:0;padding:0;background:var(--bg);min-height:100vh;box-sizing:border-box
   }
   .maininner{max-width:960px;margin:0 auto;padding:40px 48px 60px;box-sizing:border-box}
-  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 }
 
 /* главная */
@@ -810,11 +663,6 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
 .dh-pill{height:12px;border-radius:999px;background:var(--surface-2);overflow:hidden}
 .dh-pill i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--lav),var(--sage));transition:width .5s}
 .dh-sub{font-size:12.5px;color:var(--ink-soft);line-height:1.4;margin-top:10px}
-.streak{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);
-  border-radius:14px;padding:10px 16px;margin-bottom:12px;box-shadow:var(--shadow)}
-.streak svg{width:20px;height:20px;color:var(--sand-ink);flex-shrink:0}
-.streak .n{font-family:var(--sys);font-weight:600;font-size:15px}
-.streak .t{font-size:11px;color:var(--ink-soft)}
 .heatcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:13px 14px;box-shadow:var(--shadow);margin-bottom:10px}
 .heatcard h3{font-size:12.5px;margin-bottom:7px;font-family:var(--sys);font-weight:600}
 .weeklbl{font-size:9.5px;font-weight:400;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);opacity:.75;margin:7px 0 4px}
@@ -822,7 +670,6 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
 .heatgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:4px}
 .hday{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;
   font-weight:600;cursor:pointer;border:1.5px solid transparent;position:relative}
-.hday-corner{position:absolute;top:3px;right:4px;font-size:9px;font-weight:600;opacity:.8}
 .hday-main{display:flex;flex-direction:column;align-items:center;line-height:1.05}
 .hday-dd{font-size:16px;font-weight:700}
 .hday-mm{font-size:8.5px;font-weight:500;opacity:.9;margin-top:1px}
@@ -834,7 +681,6 @@ main{flex:1;padding:0 18px calc(88px + min(16px, env(safe-area-inset-bottom,0px)
 .hday.istoday{border-color:#D4A94C;border-width:2.5px;box-shadow:0 0 0 4px rgba(212,169,76,.4),0 0 14px rgba(212,169,76,.5)}
 .hday-check{display:flex;align-items:center;justify-content:center}
 .hday-check svg{width:17px;height:17px;flex-shrink:0}
-.hint{font-size:12.5px;color:var(--ink-soft);text-align:center;line-height:1.5}
 
 .info-hint{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--lav);background:var(--surface);
   color:var(--lav-ink);font-size:11.5px;font-weight:700;cursor:pointer;flex-shrink:0;display:inline-flex;
@@ -877,22 +723,14 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .mm-card-status.locked{color:var(--ink-soft);background:var(--surface-2)}
 .mm-card-status.open{color:var(--lav-ink);background:rgba(170,157,184,.16)}
 .mm-card-status.done{color:var(--sage-ink);background:rgba(106,153,147,.14)}
-
-.hc-row{display:flex;align-items:center;gap:12px;width:100%;background:var(--surface);border:1px solid var(--line);
-  border-radius:16px;padding:14px 16px;margin:4px 0 14px;box-shadow:var(--shadow);cursor:pointer;font-family:var(--sys);text-align:left}
 .hc-row-icon{width:38px;height:38px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-soft)}
 .hc-row-icon svg{width:17px;height:17px}
-.hc-row-body{flex:1;min-width:0}
 .hc-row-title{font-family:var(--font-head);font-weight:600;font-size:15.5px;color:var(--ink)}
 .hc-row-sub{font-size:12px;color:var(--ink-soft);margin-top:1px}
 .hc-row-chev{width:16px;height:16px;color:var(--ink-soft);flex-shrink:0}
-.mm-inline{margin-top:0;padding-top:0;border-top:none;max-height:0;opacity:0;overflow:hidden;transition:max-height .2s ease,opacity .2s ease,margin-top .2s ease,padding-top .2s ease}
-.mm-inline.open{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);max-height:140px;opacity:1}
-.mm-inline-hint{font-size:11px;color:var(--ink-soft);margin:0 0 8px}
 
 .mm-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
 .mm-row:first-child{border-top:none}
-.mm-title{font-size:13px;font-weight:600;flex-shrink:0;width:104px}
 .mm-field{flex:1}
 .mm-input{width:100%;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-family:var(--sys)}
 .mm-input:focus{outline:none;border-color:var(--lav);box-shadow:0 0 0 3px rgba(170,157,184,.18)}
@@ -968,13 +806,7 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   .markwrap input:checked + .markvisual, .markvisual.on{animation:none}
 }
 .hab-text{font-size:15px;flex:1}
-.hab-mins{font-size:12px;color:var(--ink-soft);font-weight:400}
 .hab.done .hab-text{color:var(--lav-ink);text-decoration:line-through;font-weight:500}
-.hab-streak{font-size:11.5px;color:var(--sand-ink);font-weight:600;white-space:nowrap;flex-shrink:0}
-.checklist-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}
-.checklist-head h3{font-size:13.5px;font-family:var(--sys);font-weight:600;color:var(--ink-soft)}
-.day-status{font-size:13.5px;color:var(--ink-soft);margin:0 0 12px;line-height:1.4}
-.day-status b{color:var(--ink);font-weight:700}
 .habits-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:4px 0 14px;box-shadow:var(--shadow)}
 .habits-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
 .habits-card-top h3{margin:0;font-family:var(--font-head);font-weight:600;font-size:20px;color:var(--ink);line-height:1.25}
@@ -1007,11 +839,6 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .hcs-pill{font-size:12px;font-weight:700;color:var(--sage-ink);background:rgba(106,153,147,.13);
   border-radius:999px;padding:3px 10px;flex-shrink:0;margin-top:1px}
 .editlink{background:none;border:none;color:var(--lav-ink);font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--sys)}
-.checklist-head .editlink{background:var(--surface);border:1.5px solid var(--line);border-radius:999px;
-  padding:7px 14px;box-shadow:0 2px 6px -2px rgba(0,0,0,.08)}
-@media (max-width:899px){
-  .habits-row{flex-direction:column;align-items:stretch;gap:10px}
-}
 .pickcat{margin-bottom:20px}
 .pickcat h4{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:9px}
 .chipgrid{display:flex;flex-wrap:wrap;gap:8px}
@@ -1030,10 +857,6 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   background:var(--surface);color:var(--lav-ink);font-size:13px;font-weight:600;padding:9px 16px;
   cursor:pointer;font-family:var(--sys);margin-top:6px;transition:transform .1s}
 .addhabit-btn:active{transform:scale(.97)}
-.custom-row{display:flex;gap:8px;margin-bottom:18px}
-.custom-row input{flex:1;font-family:var(--sys);font-size:13.5px;border:1px solid var(--line);
-  border-radius:12px;padding:10px 13px;color:var(--ink);background:var(--surface)}
-.custom-row button{border:none;background:var(--lav);color:#fff;border-radius:12px;padding:0 16px;font-weight:600;cursor:pointer}
 .pick-total{text-align:center;font-size:12.5px;font-weight:600;color:var(--sage-ink);margin:0 0 10px}
 .savepick{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:13px;font-weight:600;
   font-size:13.5px;cursor:pointer;position:sticky;bottom:0}
@@ -1051,13 +874,6 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 @media (min-width:900px){
   .share-out img{width:260px;display:block;margin:0 auto}
 }
-.share-note{font-size:12.5px;font-weight:600;color:var(--lav-ink);margin-top:10px;line-height:1.5;text-align:center}
-.share-divider{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--ink-soft);font-size:10.5px;
-  font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-.share-divider::before,.share-divider::after{content:"";flex:1;height:1px;background:var(--line)}
-.share-links{display:flex;flex-direction:column;gap:8px;max-width:240px;margin:0 auto}
-.share-links .btn{font-size:12px;padding:9px 14px}
-.share-links .btn svg{width:14px;height:14px}
 .evening-rem{display:flex;gap:10px;border:1.5px dashed var(--line);border-radius:14px;padding:13px 15px;margin-top:14px}
 .evening-rem svg{width:17px;height:17px;color:var(--sage-ink);flex-shrink:0;margin-top:1px}
 .evening-rem .lead{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
@@ -1070,8 +886,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-date{width:58px;flex-shrink:0;text-align:center;border-radius:12px;padding:9px 4px;color:#fff}
 .evt-date .d{font-family:var(--font-head);font-size:32px;font-weight:600;line-height:1;color:#fff}
 .evt-date .l{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#fff;opacity:.9;margin-top:2px}
-.evt-date.c-sage{background:var(--sage)}
-.evt-date.c-lav{background:linear-gradient(135deg,var(--lav),#C9A9DE)}
 .evt-icon{width:32px;height:32px;border-radius:50%;background:rgba(170,157,184,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .evt-icon svg{width:15px;height:15px;color:#6E4FA0}
 .evt-body{flex:1;min-width:0}
@@ -1095,11 +909,9 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-alert-txt b{font-weight:600}
 .evt-alert-tag{font-size:11px;color:var(--ink-soft);white-space:nowrap}
 .mat-layout{display:block}
-.mat-side{margin-top:16px}
 @media (min-width:900px){
   .mat-layout{display:flex;gap:20px;align-items:flex-start}
   .mat-main{flex:1;min-width:0}
-  .mat-side{width:280px;flex-shrink:0;margin-top:0;position:sticky;top:40px}
 }
 .search-filter-row{display:flex;gap:8px;align-items:flex-start;position:relative;margin:10px 0 16px}
 .search-wrap{position:relative;flex:1;margin:0}
@@ -1146,13 +958,11 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .chip{font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--sys)}
 .chip.active{background:var(--lav);border-color:var(--lav);color:#fff}
-.chip.active.theme{background:var(--sage);border-color:var(--sage)}
 .chip.folder{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;font-size:13px;
   font-weight:600;border-radius:14px;padding:14px 10px;min-height:46px}
 .chip.folder.active{background:linear-gradient(135deg,var(--lav),var(--sage));border-color:transparent;color:#fff}
 .chip.folder[data-f="__fav__"] svg{width:15px;height:15px;flex-shrink:0;color:#D9707A}
 .chip.folder.active[data-f="__fav__"] svg{color:#fff}
-.mgrid{display:flex;flex-direction:column;gap:10px;background:var(--surface);border-radius:18px;padding:12px;box-shadow:var(--shadow)}
 .mcard{background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;padding:16px;cursor:pointer;
   display:flex;gap:14px;align-items:flex-start}
 .mcard[hidden]{display:none}
@@ -1164,7 +974,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .mcard h3{font-size:16.5px;font-weight:600;text-transform:uppercase}
 .mcard .topics{font-size:12px;color:var(--ink-soft);margin-top:2px}
 .mcard .foot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-soft);margin-top:8px}
-.mcard .count{font-weight:600;color:var(--ink)}
 
 /* профиль */
 .avatar-row{display:flex;flex-direction:column;align-items:center;margin:14px 0 20px}
@@ -1372,7 +1181,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .fd-stat .num{font-family:var(--sys);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
 .fd-stat .lbl{font-size:11px;opacity:.85;margin-top:2px}
 .fd-quote{font-family:var(--sys);font-style:italic;font-size:13px;line-height:1.5;opacity:.95;margin-bottom:12px}
-.fd-honest{font-family:var(--sys);font-size:11px;line-height:1.5;opacity:.8;margin-bottom:20px}
 .fd-btn{width:100%;background:rgba(255,255,255,.95);color:var(--lav-ink);border:none;border-radius:999px;
   padding:12px;font-weight:600;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
 .fd-btn svg{width:14px;height:14px}
@@ -1449,15 +1257,6 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .hm-delete{width:100%;padding:11px;border-radius:12px;font-weight:500;font-size:13px;border:none;cursor:pointer;
   font-family:var(--sys);transition:background-color .15s;background:#fef2f2;color:#ef4444}
 @media (hover:hover){ .hm-delete:hover{background:#fee2e2} }
-.hab-edit{background:none;border:none;color:var(--ink-soft);opacity:.45;padding:4px;margin-left:0;cursor:pointer;
-  flex-shrink:0;display:flex;align-items:center;border-radius:8px}
-.hab-edit svg{width:14px;height:14px}
-@media (hover:hover){ .hab-edit:hover{opacity:1;background:rgba(0,0,0,.05)} }
-.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
-.statcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 10px;box-shadow:var(--shadow);text-align:center}
-.statcard .slbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin-bottom:5px}
-.statcard .sval{font-family:var(--sys);font-size:19px;font-weight:700;color:var(--ink)}
-.statcard .sval small{font-size:12px;font-weight:500;color:var(--ink-soft);margin-left:2px}
 .byhab-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .byhab-row:first-of-type{border-top:none}
 .byhab-ring{position:relative;width:30px;height:30px;flex-shrink:0}
@@ -2156,7 +1955,6 @@ const ICONS = {
 };
 ICONS.link = ICONS.pdf;
 ICONS.play = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7-11-7Z"/></svg>';
-const MASTERMIND_AUTHOR = {mastermind:{name:"Мастермайнды",topics:"записи эфиров с Милой",desc:"Запись мастермайнда – введи кодовое слово, которое Мила называла вживую, и получи бриллиант"}};
 const MASTERMIND_MATERIALS = [
   {author:"mastermind",title:"Мастермайнд 1",type:"video",tags:["мастермайнд"],day:3,mmId:"1",url:"#"},
   {author:"mastermind",title:"Мастермайнд 2",type:"video",tags:["мастермайнд"],day:15,mmId:"2",url:"#"}
@@ -2331,11 +2129,6 @@ function dayToDate(d){
   return dt;
 }
 function fmtDateRu(dt){ return dt.getUTCDate()+" "+RU_MONTHS_SHORT[dt.getUTCMonth()]; }
-function fmtIsoDateRu(iso){
-  if(!iso) return "";
-  const [y,m,dd] = iso.split("-").map(Number);
-  return fmtDateRu(new Date(Date.UTC(y, m-1, dd)));
-}
 function logForDate(dateStr){ return STATE.logsByDate[dateStr] || {habits_done:{}, closed:false}; }
 function habitScheduledOn(name, d){
   const cfg = habitConfig[name];
@@ -2387,7 +2180,7 @@ function defaultHabitConfig(){ return {days:[0,1,2,3,4,5,6], qtyOn:false, target
 function parseDurToMinutes(dur){
   if(!dur) return 5;
   const s = dur.toLowerCase();
-  const nums = s.match(/\d+([.,]\d+)?/g);
+  const nums = s.match(/\\d+([.,]\\d+)?/g);
   if(!nums) return 5;
   const vals = nums.map(n=>parseFloat(n.replace(",", ".")));
   const avg = vals.reduce((a,b)=>a+b, 0) / vals.length;
@@ -2409,7 +2202,6 @@ function unitMinuteMultiplier(u){
   if(HOUR_UNITS.some(t => s === t || s.startsWith(t))) return 60;
   return 0;
 }
-function isTimeUnit(u){ return unitMinuteMultiplier(u) > 0; }
 function habitMinutes(name){
   const meta = findHabitMeta(name);
   if(meta && meta.noTime) return 0;
@@ -2523,7 +2315,7 @@ function renderMilaEvents(){
     const link = e.link ? `<a href="${e.link}" target="_blank" rel="noopener">Узнать больше →</a>` : "";
     const desc = e.description ? `<p class="desc">${e.description}</p>` : "";
     const dateStr = e.date || e.date_place || "";
-    const m = dateStr.match(/^(\d{1,2})\s*(.*)$/);
+    const m = dateStr.match(/^(\\d{1,2})\\s*(.*)$/);
     const dateBadge = m
       ? `<div class="num">${m[1]}</div><div class="mon">${m[2]}</div>`
       : `<div class="mon">${dateStr}</div>`;
@@ -3710,7 +3502,7 @@ function evtDateParts(iso){
 }
 function mskToEt(raw){
   if(!raw) return raw;
-  const re = /(\d{1,2}):(\d{2})(?:\s*[-–]\s*(\d{1,2}):(\d{2}))?/;
+  const re = /(\\d{1,2}):(\\d{2})(?:\\s*[-–]\\s*(\\d{1,2}):(\\d{2}))?/;
   const m = raw.match(re);
   if(!m) return raw;
   const shift = (h,mi)=>{ let t = h*60+mi - 7*60; t = ((t % 1440)+1440)%1440; return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"); };
@@ -3891,7 +3683,7 @@ function openMaterialDetailFor(m, eyebrow, backLabel, onBack){
       try{
         const resp = await apiFetch("/api/cabinet/materials/"+m.id+"/link");
         const data = await resp.json();
-        if(resp.ok && data.ok && /^https?:\/\//.test(data.url)){
+        if(resp.ok && data.ok && /^https?:\\/\\//.test(data.url)){
           renderMaterialEmbed(m.type, data.url, m);
           btn.hidden = true;
         } else {
@@ -3948,8 +3740,8 @@ function toLatin(t){
   }).join("");
 }
 function audioFileName(mat, url){
-  const ext = ((url.split("?")[0].match(/\.([a-z0-9]{2,4})$/i)||[])[1] || "mp3").toLowerCase();
-  const base = toLatin(mat.title||"music").replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "music";
+  const ext = ((url.split("?")[0].match(/\\.([a-z0-9]{2,4})$/i)||[])[1] || "mp3").toLowerCase();
+  const base = toLatin(mat.title||"music").replace(/[\\/:*?"<>|]+/g, " ").replace(/\\s+/g, " ").trim().slice(0, 80) || "music";
   return base + "." + ext;
 }
 async function freshMaterialUrl(mat){
@@ -3980,7 +3772,7 @@ function wireAudioActions(mat){
       const blob = await (await fetch(url)).blob();
       const file = new File([blob], name, {type: blob.type || "audio/mpeg"});
       if(navigator.canShare && navigator.canShare({files:[file]})){
-        await navigator.share({files:[file], title: name.replace(/\.[a-z0-9]+$/i, "")});
+        await navigator.share({files:[file], title: name.replace(/\\.[a-z0-9]+$/i, "")});
       } else {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(file); a.download = name;
@@ -4210,7 +4002,6 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
   display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
 .top .name{font-family:var(--font-head);font-weight:600;font-size:17px}
 .top .logout{margin-left:auto;font-size:12px;color:var(--ink-soft);text-decoration:none}
-.sub{font-size:12.5px;color:var(--ink-soft);margin:6px 0 22px}
 
 .tabs{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:14px;margin-bottom:22px}
 .tab{flex:1;text-align:center;padding:9px 10px;border-radius:11px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;user-select:none}
@@ -4307,10 +4098,6 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .crm-wrap{color:var(--ink)}
 .crm-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap}
 .crm-top h1{font-size:19px;margin:0;font-weight:600}
-.crm-actions{display:flex;gap:14px;align-items:center}
-.crm-actions a{font-size:12.5px;font-weight:600;text-decoration:none;cursor:pointer}
-.crm-actions a.primary{color:var(--lav-ink)}
-.crm-actions a.secondary{color:var(--ink-soft)}
 .crm-stats{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .crm-stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:90px;box-shadow:var(--shadow)}
 .crm-stat .l{font-size:11.5px;color:var(--ink-soft)}
@@ -4377,7 +4164,6 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .foldercard .fbody{flex:1;min-width:0}
 .foldercard .fbody h3{font-size:16px;font-weight:600;margin:0}
 .foldercard .fbody .topics{font-size:12px;color:var(--ink-soft);margin-top:2px}
-.foldercard .fcount{font-size:11.5px;color:var(--ink-soft);flex-shrink:0;white-space:nowrap}
 .foldercard .fchev{width:16px;height:16px;flex-shrink:0;color:var(--ink-soft);transition:transform .15s}
 .foldercard .fchev.open{transform:rotate(90deg)}
 .foldercard .factions{display:flex;gap:2px;flex-shrink:0}
@@ -5204,7 +4990,7 @@ function readFileAsDataUrl(file){
     r.onerror = reject;
     r.onload = ()=>{
       const src = r.result;
-      if(!/^image\//.test(file.type) || /svg|gif/.test(file.type)){ resolve(src); return; }
+      if(!/^image\\//.test(file.type) || /svg|gif/.test(file.type)){ resolve(src); return; }
       const img = new Image();
       img.onload = ()=>{
         const MAX = 1200, k = Math.min(1, MAX/Math.max(img.width, img.height));
@@ -6630,54 +6416,6 @@ async def admin(request):
     return html_response(ADMIN_APP_HTML)
 
 
-async def admin_confirm(request):
-    if not authed(request):
-        raise web.HTTPFound("/admin/login")
-    row_id = int(request.match_info["id"])
-    row = await DB_POOL.fetchrow("SELECT * FROM signups WHERE id=$1", row_id)
-    if row and row["status"] != "оплачено":
-        await DB_POOL.execute("UPDATE signups SET status='оплачено', confirmed=$1 WHERE id=$2",
-                               time.time(), row_id)
-        await send_access_email(row["email"], row["name"])
-    raise web.HTTPFound("/admin")
-
-
-async def admin_note(request):
-    if not authed(request):
-        raise web.HTTPFound("/admin/login")
-    row_id = int(request.match_info["id"])
-    data = await request.post()
-    await DB_POOL.execute("UPDATE signups SET note=$1 WHERE id=$2", str(data.get("note", "")).strip(), row_id)
-    raise web.HTTPFound("/admin")
-
-
-async def admin_delete(request):
-    if not authed(request):
-        raise web.HTTPFound("/admin/login")
-    row_id = int(request.match_info["id"])
-    await DB_POOL.execute("DELETE FROM signups WHERE id=$1", row_id)
-    raise web.HTTPFound("/admin")
-
-
-async def admin_add(request):
-    if not authed(request):
-        raise web.HTTPFound("/admin/login")
-    data = await request.post()
-    email = str(data.get("email", "")).strip()
-    if not email:
-        raise web.HTTPFound("/admin")
-    status = str(data.get("status", "ждёт")).strip()
-    await DB_POOL.execute(
-        "INSERT INTO signups (name, email, email_norm, phone, method, status, note, created, confirmed) "
-        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
-        str(data.get("name", "")).strip(), email, normalize_email(email),
-        str(data.get("phone", "")).strip(),
-        str(data.get("method", "venmo")).strip(), status, str(data.get("note", "")).strip(),
-        time.time(), time.time() if status == "оплачено" else None,
-    )
-    raise web.HTTPFound("/admin")
-
-
 async def admin_export(request):
     if not authed(request):
         raise web.HTTPFound("/admin/login")
@@ -6753,13 +6491,8 @@ async def admin_logout(request):
 
 
 def admin_token_ok(request) -> bool:
-    """Доступ к JSON-api админки: обычная cookie-сессия /admin (страница теперь
-    отдаётся этим же сервером) ИЛИ заголовок X-Admin-Token (на случай стороннего
-    клиента/отдельной страницы без cookie)."""
-    if authed(request):
-        return True
-    token = request.headers.get("X-Admin-Token", "")
-    return bool(ADMIN_PASSWORD) and hmac.compare_digest(token, ADMIN_PASSWORD)
+    """Доступ к JSON-api админки: cookie-сессия /admin."""
+    return authed(request)
 
 
 def _signup_json(row) -> dict:
@@ -7596,10 +7329,6 @@ def make_app():
         web.get("/admin", admin),
         web.get("/admin/login", admin_login_page),
         web.post("/admin/login", admin_login_post),
-        web.post("/admin/confirm/{id}", admin_confirm),
-        web.post("/admin/note/{id}", admin_note),
-        web.post("/admin/delete/{id}", admin_delete),
-        web.post("/admin/add", admin_add),
         web.get("/admin/export.csv", admin_export),
         web.get("/admin/export-progress.csv", admin_export_progress),
         web.get("/admin/logout", admin_logout),
@@ -7624,8 +7353,7 @@ def make_app():
         web.get("/eng", cabinet),
         web.get("/eng/", cabinet),
         web.get("/", root),
-        # ---- JSON api для CRM-вкладки в админ-прототипе (claude.ai, другой origin — токен в
-        # заголовке X-Admin-Token вместо cookie-сессии) ----
+        # ---- JSON api админки (cookie-сессия /admin) ----
         web.get("/api/admin/signups", api_signups_list),
         web.get("/api/admin/participants", api_admin_participants),
         web.get("/api/admin/emails", api_emails_list),
