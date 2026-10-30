@@ -4040,6 +4040,14 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .sw.on::after{transform:translateX(17px)}
 .filebox{border:1.5px dashed var(--line);border-radius:12px;padding:18px;text-align:center;font-size:12.5px;color:var(--ink-soft);cursor:pointer}
 .filebox b{color:var(--lav-ink)}
+.filebox.busy{cursor:default;border-style:solid;border-color:var(--lav)}
+.filebox.ok{border-style:solid;border-color:var(--sage);color:var(--ink)}
+.filebox.err{border-style:solid;border-color:#D9A3AE;color:#B3415A}
+.filebox.err b{color:#B3415A}
+.up-name{font-weight:600;color:var(--ink);word-break:break-all;margin-bottom:8px}
+.up-bar{height:8px;border-radius:999px;background:var(--line);overflow:hidden;margin:0 auto 7px;max-width:360px}
+.up-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--sage),var(--lav));border-radius:999px;transition:width .25s ease}
+.up-meta{font-size:12px;color:var(--ink-soft)}
 .save{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:13px;font-weight:600;
   font-size:13.5px;cursor:pointer;margin-top:18px;transition:transform .1s}
 .save:active{transform:scale(.98)}
@@ -5283,27 +5291,86 @@ document.getElementById("marathonStartSave").addEventListener("click", async ()=
 });
 loadMarathonStart();
 
-async function uploadMaterialFile(file){
+const FILEBOX_IDLE = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
+let mUploading = null;  // текущая загрузка (xhr) – пока идёт, сохранять материал нельзя
+function fmtMB(b){ const mb=b/1048576; return (mb>=10?mb.toFixed(0):mb.toFixed(1)).replace(".",",")+" МБ"; }
+function escHtml(t){ return String(t).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function setFileBox(state, html){
   const box = document.getElementById("mFileBox");
-  box.textContent = "загружаю «" + file.name + "»…";
-  const fd = new FormData();
-  fd.append("file", file, file.name);
+  box.classList.remove("busy","ok","err");
+  if(state) box.classList.add(state);
+  box.innerHTML = html;
+}
+function resetFileBox(){ if(mUploading){ try{mUploading.abort();}catch(e){} mUploading=null; } setFileBox("", FILEBOX_IDLE); }
+function xhrUpload(method, url, body, onProgress){
+  return new Promise((resolve, reject)=>{
+    const x = new XMLHttpRequest();
+    mUploading = x;
+    x.open(method, url);
+    x.withCredentials = url.startsWith("/");
+    x.upload.onprogress = e=>{ if(e.lengthComputable) onProgress(e.loaded, e.total); };
+    x.onload = ()=>{ let j={}; try{ j=JSON.parse(x.responseText||"{}"); }catch(e){} resolve({status:x.status, json:j, text:x.responseText||""}); };
+    x.onerror = ()=>reject(new Error("network"));
+    x.onabort = ()=>reject(new Error("abort"));
+    x.send(body);
+  });
+}
+async function uploadMaterialFile(file){
+  if(mUploading){ showToast("подожди – предыдущий файл ещё загружается"); return; }
+  const name = escHtml(file.name), total = file.size;
+  const tooBig = maxMb => setFileBox("err", `✗ <b>${name}</b> – ${fmtMB(total)}, а лимит хранилища ${maxMb} МБ на файл.<br>Сожми видео (напр. 720p) или вставь ссылку (YouTube/Vimeo/Google Drive) ниже.<br><b>Выбрать другой файл</b>`);
+  const started = Date.now();
+  const progress = (loaded, tot)=>{
+    const pct = tot ? Math.min(100, Math.round(loaded/tot*100)) : 0;
+    const secs = (Date.now()-started)/1000, speed = secs>1 ? loaded/secs : 0;
+    const left = speed && loaded<tot ? Math.round((tot-loaded)/speed) : 0;
+    const eta = left>59 ? ` · осталось ~${Math.ceil(left/60)} мин` : (left>0 ? ` · осталось ~${left} сек` : "");
+    document.getElementById("upBar").style.width = pct+"%";
+    document.getElementById("upMeta").textContent = pct<100
+      ? `${pct}% · ${fmtMB(loaded)} из ${fmtMB(tot)}${eta}`
+      : "100% · сохраняю файл в хранилище…";
+  };
+  setFileBox("busy", `<div class="up-name">${name}</div><div class="up-bar"><i id="upBar"></i></div><div class="up-meta" id="upMeta">готовлю загрузку… (${fmtMB(total)})</div>`);
   try{
-    const res = await fetch("/api/admin/materials/upload", {method:"POST", body: fd, credentials:"same-origin"});
-    if(!res.ok) throw new Error("http "+res.status);
-    const data = await res.json();
-    document.getElementById("mLink").value = data.url;
-    box.innerHTML = "файл загружен: <b>" + file.name + "</b> (заменить – выбери другой файл)";
+    // 1) прямая загрузка в хранилище по подписанной ссылке
+    let r = await fetch("/api/admin/materials/upload-url", {method:"POST", credentials:"same-origin",
+      headers:{"Content-Type":"application/json"}, body: JSON.stringify({filename:file.name, size:total, type:file.type})});
+    let sign = {}; try{ sign = await r.json(); }catch(e){}
+    let storageUrl = null;
+    if(r.status === 413){ mUploading=null; tooBig(sign.max_mb||50); showToast("файл слишком большой"); return; }
+    if(r.ok && sign.upload_url){
+      const fd = new FormData(); fd.append("cacheControl", "3600"); fd.append("", file, file.name);
+      const res = await xhrUpload("PUT", sign.upload_url, fd, progress);
+      if(res.status === 413 || /exceeded the maximum/i.test(res.text)){ mUploading=null; tooBig(sign.max_mb||50); showToast("файл слишком большой"); return; }
+      if(res.status >= 200 && res.status < 300) storageUrl = sign.url;
+    }
+    // 2) запасной путь – через сервер (если прямая загрузка не сработала)
+    if(!storageUrl){
+      const fd = new FormData(); fd.append("file", file, file.name);
+      document.getElementById("upBar").style.width = "0%";
+      const res = await xhrUpload("POST", "/api/admin/materials/upload", fd, progress);
+      if(res.status === 413){ mUploading=null; tooBig(res.json.max_mb||50); showToast("файл слишком большой"); return; }
+      if(res.status < 200 || res.status >= 300 || !res.json.url) throw new Error("http "+res.status);
+      storageUrl = res.json.url;
+    }
+    mUploading = null;
+    document.getElementById("mLink").value = storageUrl;
+    const btn = document.getElementById("saveMaterial").textContent;
+    setFileBox("ok", `✓ Файл загружен: <b>${name}</b> (${fmtMB(total)})<br>теперь нажми «${escHtml(btn)}» · <b>заменить файл</b>`);
     showToast("Файл «"+file.name+"» загружен ✓");
   }catch(e){
-    box.innerHTML = "не получилось загрузить файл – перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
+    mUploading = null;
+    if(e.message === "abort") return;
+    setFileBox("err", `✗ Не получилось загрузить <b>${name}</b>`+(e.message==="network" ? " – прервалось соединение, проверь интернет." : ".")+`<br><b>Попробовать ещё раз</b> или вставь ссылку ниже`);
     showToast("ошибка загрузки файла");
   }
 }
+window.addEventListener("beforeunload", e=>{ if(mUploading){ e.preventDefault(); e.returnValue=""; } });
 document.getElementById("mTitle").addEventListener("input", updateMStepSummaries);
-document.getElementById("mFileBox").addEventListener("click", ()=>document.getElementById("mFile").click());
+document.getElementById("mFileBox").addEventListener("click", ()=>{ if(!mUploading) document.getElementById("mFile").click(); });
 document.getElementById("mFile").addEventListener("change", e=>{
   if(e.target.files[0]) uploadMaterialFile(e.target.files[0]);
+  e.target.value = "";
 });
 document.getElementById("mFileBox").addEventListener("dragover", e=>{ e.preventDefault(); });
 document.getElementById("mFileBox").addEventListener("drop", e=>{
@@ -5326,7 +5393,7 @@ function startEditMaterial(m){
     if(chip) chip.classList.add("on");
   });
   document.getElementById("mLink").value = (m.url && m.url!=="#") ? m.url : "";
-  document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
+  resetFileBox();
   const hasEvent = !!m.calendar_event_id;
   evtToggle.classList.toggle("on", hasEvent);
   document.getElementById("evtPickWrap").style.display = hasEvent ? "" : "none";
@@ -5341,7 +5408,7 @@ function cancelEditMaterial(){
   document.getElementById("mTitle").value = "";
   document.getElementById("mLink").value = "";
   document.getElementById("mFile").value = "";
-  document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
+  resetFileBox();
   mDayPicker.reset(); mClosePicker.reset(); setMatLang("", true);
   document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
   evtToggle.classList.remove("on");
@@ -5353,6 +5420,7 @@ function cancelEditMaterial(){
 }
 document.getElementById("cancelEditMaterial").addEventListener("click", cancelEditMaterial);
 document.getElementById("saveMaterial").addEventListener("click", async ()=>{
+  if(mUploading){ showToast("подожди – файл ещё загружается"); document.getElementById("mFileBox").scrollIntoView({block:"center", behavior:"smooth"}); return; }
   const title = document.getElementById("mTitle").value.trim();
   const themeIds = [...document.querySelectorAll("#mThemes .tchip.on")].map(c=>c.dataset.t);
   if(!selectedFolder){ setMStepOpen("folder"); document.getElementById("folderPicker").scrollIntoView({block:"center"}); return; }
@@ -5380,7 +5448,7 @@ document.getElementById("saveMaterial").addEventListener("click", async ()=>{
       document.getElementById("mTitle").value = "";
       document.getElementById("mLink").value = "";
       document.getElementById("mFile").value = "";
-      document.getElementById("mFileBox").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>либо вставь ссылку ниже";
+      resetFileBox();
       mDayPicker.reset();
       document.querySelectorAll("#mThemes .tchip.on").forEach(c=>c.classList.remove("on"));
       setMStepOpen("folder");
@@ -6968,7 +7036,42 @@ async def api_materials_delete(request):
     return web.json_response({"ok": True})
 
 
-MATERIALS_UPLOAD_MAX_BYTES = 80 * 1024 * 1024  # 80MB – хватает на видео-уроки и аудио
+# лимит размера одного файла = глобальный лимит supabase storage (Storage → Settings).
+# Сейчас 50 МБ (при включённом spend cap больше нельзя); если лимит в supabase поднимут —
+# задать переменную MATERIALS_MAX_MB на render.
+MATERIALS_MAX_MB = int(os.environ.get("MATERIALS_MAX_MB", "50") or 50)
+MATERIALS_UPLOAD_MAX_BYTES = MATERIALS_MAX_MB * 1024 * 1024
+
+
+async def api_materials_upload_url(request):
+    """Подписанная ссылка для загрузки файла материала напрямую из браузера в supabase
+    storage (минуя сервер) – так большие видео не упираются в память/таймауты render,
+    а браузер видит реальный прогресс загрузки."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        return web.json_response({"error": "storage_not_configured"}, status=500)
+    data = await request.json()
+    filename = str(data.get("filename") or "file")
+    size = int(data.get("size") or 0)
+    if size > MATERIALS_UPLOAD_MAX_BYTES:
+        return web.json_response({"error": "file_too_large", "max_mb": MATERIALS_MAX_MB}, status=413)
+    ext = re.sub(r"[^A-Za-z0-9.]", "", Path(filename).suffix or "")[:10]
+    storage_path = f"{uuid.uuid4().hex}{ext}"
+    async with ClientSession() as session:
+        async with session.post(
+            f"{SUPABASE_URL}/storage/v1/object/upload/sign/materials/{storage_path}",
+            json={},
+            headers={"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {SUPABASE_ANON_KEY}"},
+        ) as resp:
+            body = await resp.text()
+            if resp.status >= 400:
+                return web.json_response({"error": "sign_failed", "detail": body[:300]}, status=502)
+            signed = json.loads(body).get("url", "")
+    if not signed:
+        return web.json_response({"error": "sign_failed"}, status=502)
+    return web.json_response({"ok": True, "upload_url": f"{SUPABASE_URL}/storage/v1{signed}",
+                              "url": f"storage:materials/{storage_path}", "max_mb": MATERIALS_MAX_MB})
 
 
 async def api_materials_upload(request):
@@ -6996,7 +7099,7 @@ async def api_materials_upload(request):
             break
         total += len(chunk)
         if total > MATERIALS_UPLOAD_MAX_BYTES:
-            return web.json_response({"error": "file_too_large"}, status=413)
+            return web.json_response({"error": "file_too_large", "max_mb": MATERIALS_MAX_MB}, status=413)
         chunks.append(chunk)
     body = b"".join(chunks)
     async with ClientSession() as session:
@@ -7010,6 +7113,8 @@ async def api_materials_upload(request):
         ) as resp:
             if resp.status >= 400:
                 err = await resp.text()
+                if resp.status == 413 or "exceeded the maximum" in err:
+                    return web.json_response({"error": "file_too_large", "max_mb": MATERIALS_MAX_MB}, status=413)
                 return web.json_response({"error": "upload_failed", "detail": err[:300]}, status=502)
     return web.json_response({"ok": True, "url": f"storage:materials/{storage_path}", "filename": filename})
 
@@ -7384,6 +7489,7 @@ def make_app():
         web.put("/api/admin/materials/{id}", api_materials_update),
         web.delete("/api/admin/materials/{id}", api_materials_delete),
         web.post("/api/admin/materials/upload", api_materials_upload),
+        web.post("/api/admin/materials/upload-url", api_materials_upload_url),
         web.get("/api/admin/calendar-events", api_calendar_list),
         web.post("/api/admin/calendar-events", api_calendar_add),
         web.put("/api/admin/calendar-events/{id}", api_calendar_update),
