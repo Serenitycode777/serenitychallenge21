@@ -3453,7 +3453,7 @@ const PHOTOS = {
 function matchesQuery(m){ if(!query) return true; return (m.title+" "+(m.tags||[]).join(" ")).toLowerCase().includes(query); }
 
 function matThumbHtml(m){
-  const grad = m.type==="video" ? "linear-gradient(135deg,var(--sage),#9FC9BE)"
+  const grad = (m.type==="video"||m.type==="link"||!m.type) ? "linear-gradient(135deg,var(--sage),#9FC9BE)"
     : m.type==="audio" ? "linear-gradient(135deg,var(--lav),#CBB3DE)"
     : "linear-gradient(135deg,var(--sand),#E3D2BC)";
   const inner = (m.type==="video"||m.type==="audio")
