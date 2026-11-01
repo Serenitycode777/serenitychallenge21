@@ -3066,14 +3066,20 @@ function renderProgress(){
 
   document.getElementById("byHabitList").innerHTML = HABITS.length ? HABITS.map((h,i)=>{
     const id = HABIT_IDS[i];
-    let done = 0;
-    for(let d=1; d<=TODAY; d++){ if(doneForHabitOnDay(id, d)) done++; }
-    const pct = Math.round(done/TODAY*100);
+    // only days on which this habit was actually scheduled count (e.g. "пт" = Fridays only)
+    let done = 0, total = 0;
+    for(let d=1; d<=TODAY; d++){
+      const it = dayHabits(d).find(x=>String(x.id)===String(id));
+      if(!it || !it.sched) continue;
+      total++;
+      if(doneForHabitOnDay(id, d)) done++;
+    }
+    const pct = total ? Math.round(done/total*100) : 0;
     const circ = 75.4, off = (circ*(1-pct/100)).toFixed(1);
     return `<div class="byhab-row">
       <div class="byhab-ring"><svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="12" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="15" cy="15" r="12" fill="none" stroke="var(--sage)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}"/></svg></div>
       <div class="byhab-body"><div class="byhab-name">${h}</div><div class="byhab-sub">${habitScheduleLabel(h)}</div></div>
-      <div class="byhab-right"><div class="byhab-pct">${pct}%</div><div class="byhab-fr">${done} из ${TODAY}</div></div></div>`;
+      <div class="byhab-right"><div class="byhab-pct">${pct}%</div><div class="byhab-fr">${done} из ${total}</div></div></div>`;
   }).join("") : `<p class="note" style="margin:0">Пока нет активных привычек</p>`;
 
   const pastCard = document.getElementById("pastHabitsCard");
