@@ -150,6 +150,8 @@ async def init_db(app):
     await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS lang TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE signups ADD COLUMN IF NOT EXISTS free BOOLEAN DEFAULT FALSE")
     await DB_POOL.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_seen DOUBLE PRECISION")
+    # галочка «News» во вкладке «Участницы» – кому слать запланированные письма-новости
+    await DB_POOL.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS news BOOLEAN DEFAULT FALSE")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS photo_url TEXT")
     await DB_POOL.execute("ALTER TABLE folders ADD COLUMN IF NOT EXISTS dot_color TEXT DEFAULT ''")
     # описание мероприятия Милы — добавлено позже исходной таблицы mila_events
@@ -258,6 +260,7 @@ EMAIL_AUDIENCES = {
     "waiting": "ждут оплату",
     "all": "все из CRM",
     "free": "Free",
+    "news": "News (галочка в «Участницах»)",
 }
 
 
@@ -329,6 +332,10 @@ async def send_access_email(to_email: str, name: str):
 
 
 async def _email_audience_rows(audience: str, recipients=None):
+    if audience == "news":
+        return await DB_POOL.fetch(
+            "SELECT DISTINCT ON (email_norm) name, email FROM profiles "
+            "WHERE news=TRUE AND COALESCE(email,'') <> '' ORDER BY email_norm, created DESC")
     base = "SELECT DISTINCT ON (email_norm) name, email FROM signups WHERE COALESCE(email,'') <> '' "
     if audience == "free":
         rows = await DB_POOL.fetch(base + "AND free=TRUE ORDER BY email_norm, id DESC")
@@ -4180,6 +4187,9 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .crm-badge.paid{background:var(--ok-bg);color:var(--ok)}
 .crm-badge.wait{background:var(--warn-bg);color:var(--warn)}
 .crm-free{width:17px;height:17px;accent-color:var(--sage);cursor:pointer}
+.crm-news{width:17px;height:17px;accent-color:var(--lav);cursor:pointer}
+.news-th{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.news-th input{width:15px;height:15px;accent-color:var(--lav);cursor:pointer;margin:0}
 .em-free{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:10px 12px;max-height:260px;overflow:auto}
 .em-free-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink-soft);margin-bottom:6px}
 .em-free-head button{border:none;background:none;color:var(--sage-ink);font-weight:600;font-size:12px;cursor:pointer;padding:0}
@@ -4295,7 +4305,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       </div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Телеграм</th><th>Привычек</th><th>% выполнения</th><th>💎</th><th>Мастермайнды</th><th>Была в кабинете</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Email</th><th>Телеграм</th><th>Привычек</th><th>% выполнения</th><th>💎</th><th>Мастермайнды</th><th>Была в кабинете</th><th style="text-align:center"><label class="news-th" title="отметить / снять всех в списке">News<input type="checkbox" id="newsAll"></label></th><th></th></tr></thead>
           <tbody id="progBody"></tbody>
         </table>
       </div>
@@ -4808,8 +4818,35 @@ function renderProgress(){
     <td>${p.perfect_days + p.mastermind_count*3}</td>
     <td>${p.mastermind_count}/2</td>
     <td${isQuiet(p.last_active, p.last_seen)?' style="color:#B3415A;font-weight:600"':(p.last_seen && Date.now()-p.last_seen*1000 < 300000 ? ' style="color:#4F7A75;font-weight:600"' : '')}>${fmtLastSeen(p)}</td>
+    <td style="text-align:center"><input type="checkbox" class="crm-news" data-news="${p.id}" ${p.news?'checked':''} title="получать письма-новости"></td>
     <td><button class="crm-del" data-pdel="${p.id}" title="удалить участницу">✕</button></td>
-  </tr>`).join("") : `<tr><td colspan="9" style="text-align:center;color:#999">пока никто не зарегистрировался в кабинете</td></tr>`;
+  </tr>`).join("") : `<tr><td colspan="11" style="text-align:center;color:#999">пока никто не зарегистрировался в кабинете</td></tr>`;
+  const allBox = document.getElementById("newsAll");
+  allBox.checked = rows.length > 0 && rows.every(p=>p.news);
+  allBox.indeterminate = rows.some(p=>p.news) && !allBox.checked;
+  allBox.onchange = async ()=>{
+    const on = allBox.checked, ids = rows.map(p=>p.id);
+    if(!ids.length) return;
+    try{
+      await apiFetch("/api/admin/participants/all/news", {method:"PUT", body: JSON.stringify({ids, news:on})});
+      rows.forEach(p=>p.news = on);
+      showToast(on ? "News: отмечены все в списке ("+ids.length+")" : "News: галочки сняты");
+    }catch(e){}
+    renderProgress();
+  };
+  document.querySelectorAll("[data-news]").forEach(cb=>{
+    cb.addEventListener("change", async ()=>{
+      cb.disabled = true;
+      try{
+        await apiFetch("/api/admin/participants/"+cb.dataset.news+"/news", {method:"PUT", body: JSON.stringify({news: cb.checked})});
+        const p = PARTICIPANT_PROGRESS.find(p=>p.id===cb.dataset.news);
+        if(p) p.news = cb.checked;
+        showToast(cb.checked ? "добавлена в рассылку News ✓" : "убрана из рассылки News");
+      }catch(e){ cb.checked = !cb.checked; }
+      cb.disabled = false;
+      renderProgress();
+    });
+  });
   document.querySelectorAll("[data-pdel]").forEach(btn=>{
     btn.addEventListener("click", async ()=>{
       if(!(await askConfirm("Удалить эту участницу из кабинета? Это сотрёт её привычки и отметки, вернуть будет нельзя."))) return;
@@ -6749,7 +6786,7 @@ async def api_admin_participants(request):
     «Участницы» в админке (кто отстаёт/пропал, кому написать лично)."""
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
-    profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind, last_seen FROM profiles ORDER BY created DESC")
+    profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind, last_seen, news FROM profiles ORDER BY created DESC")
     signup_rows = await DB_POOL.fetch("SELECT email_norm, instagram FROM signups WHERE instagram IS NOT NULL AND instagram <> ''")
     telegram_by_email = {r["email_norm"]: r["instagram"] for r in signup_rows}
     result = []
@@ -6778,9 +6815,20 @@ async def api_admin_participants(request):
             "id": str(uid), "name": p["name"] or "", "email": p["email"] or "", "telegram": telegram,
             "habit_count": habit_count, "avg_pct": avg_pct, "perfect_days": perfect_days,
             "mastermind_count": mm_count, "last_active": last_date.isoformat() if last_date else None,
-            "last_seen": p["last_seen"],
+            "last_seen": p["last_seen"], "news": bool(p["news"]),
         })
     return web.json_response(result)
+
+
+async def api_admin_participant_news(request):
+    """Ставит/снимает галочку «News» у участницы (аудитория рассылки «News»)."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    ids = data.get("ids") or [request.match_info["id"]]
+    await DB_POOL.execute("UPDATE profiles SET news=$2 WHERE id::text = ANY($1::text[])",
+                          [str(i) for i in ids], bool(data.get("news")))
+    return web.json_response({"ok": True})
 
 
 async def api_admin_participant_delete(request):
@@ -7503,6 +7551,7 @@ def make_app():
         web.post("/api/admin/emails/scheduled/{id}/send", api_emails_sched_send_now),
         web.post("/api/admin/emails/test", api_emails_test),
         web.delete("/api/admin/participants/{id}", api_admin_participant_delete),
+        web.put("/api/admin/participants/{id}/news", api_admin_participant_news),
         web.post("/api/admin/signups", api_signup_add),
         web.post("/api/admin/signups/{id}/confirm", api_signup_confirm),
         web.post("/api/admin/signups/{id}/note", api_signup_note),
