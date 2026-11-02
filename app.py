@@ -334,7 +334,27 @@ async def send_access_email(to_email: str, name: str):
     await resend_send(to_email, fill_email(subject, values), fill_email(body, values))
 
 
+async def _chosen_rows(recipients):
+    """Получательницы, выбранные в письме при сохранении – независимо от того, как галочки
+    Free/News/Emails поменяют потом (их можно перенастраивать под следующее письмо)."""
+    chosen = []
+    for e in recipients:
+        n = normalize_email(e)
+        if n and n not in chosen:
+            chosen.append(n)
+    names = {}
+    for r in await DB_POOL.fetch("SELECT email_norm, name FROM signups WHERE email_norm = ANY($1::text[]) ORDER BY id", chosen):
+        if r["name"]:
+            names[r["email_norm"]] = r["name"]
+    for r in await DB_POOL.fetch("SELECT email_norm, name FROM profiles WHERE email_norm = ANY($1::text[])", chosen):
+        if r["name"] and r["email_norm"] not in names:
+            names[r["email_norm"]] = r["name"]
+    return [{"name": names.get(n, ""), "email": n} for n in chosen]
+
+
 async def _email_audience_rows(audience: str, recipients=None):
+    if audience in ("free", "news", "emails") and recipients is not None:
+        return await _chosen_rows(recipients)
     if audience == "news":
         rows = await DB_POOL.fetch(
             "SELECT DISTINCT ON (email_norm) name, email FROM profiles "
@@ -4647,6 +4667,8 @@ const EM_MON = ["янв","фев","мар","апр","мая","июн","июл","
 function emEsc(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 async function loadEmails(){
   try{ EMAILS = await apiFetch("/api/admin/emails"); }catch(e){ return; }
+  // новое письмо – берём галочки такими, какие они сейчас в CRM / «Участницах»
+  if(!emEditingId && EM_PICK[emAudience]) emRecipients = emPickList().map(x=>x.email);
   document.getElementById("emMailWarn").hidden = !!EMAILS.mail_ready;
   const tt = document.getElementById("emTestTo");
   if(!tt.value) tt.value = EMAILS.test_to || "";
@@ -4664,7 +4686,15 @@ function renderEmAud(){
   }));
   renderEmFree();
 }
-function emPickList(){ return ((EMAILS.pick_lists||{})[emAudience]) || (emAudience==="free" ? (EMAILS.free_list||[]) : []); }
+function emPickList(){
+  const list = (((EMAILS.pick_lists||{})[emAudience]) || (emAudience==="free" ? (EMAILS.free_list||[]) : [])).slice();
+  // при правке уже запланированного письма показываем и тех, у кого галочку потом сняли
+  if(emEditingId && emRecipients){
+    const have = new Set(list.map(x=>x.email.toLowerCase()));
+    emRecipients.forEach(e=>{ if(!have.has(e.toLowerCase())) list.push({name:"", email:e}); });
+  }
+  return list;
+}
 function renderEmFree(){
   const box = document.getElementById("emFreeBox");
   box.hidden = !EM_PICK[emAudience];
