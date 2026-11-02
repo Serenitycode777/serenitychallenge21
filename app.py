@@ -1001,6 +1001,17 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .v3{display:flex;align-items:center;gap:13px;cursor:pointer}
 .v3-txt{flex:1;font-size:14px;font-weight:600}
 .v3-txt small{display:block;font-weight:400;font-size:11.5px;color:var(--ink-soft);margin-top:1px}
+.prof-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:-8px 0 0}
+.prof-tile{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  padding:12px 10px;box-shadow:var(--shadow);cursor:pointer;text-decoration:none;color:var(--ink);font-family:var(--sys);
+  font-size:13.5px;font-weight:600;text-align:left;min-width:0;-webkit-tap-highlight-color:transparent}
+.prof-tile:active{transform:scale(.98)}
+.prof-tile .pt-ic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.prof-tile .pt-ic svg{width:18px;height:18px}
+.prof-tile .pt-ic.lav{background:#EFE9F3;color:var(--lav-ink)}
+.prof-tile .pt-ic.sage{background:#E5EEEC;color:var(--sage-ink)}
+.prof-tile .pt-lbl{flex:1;min-width:0;line-height:1.25;overflow-wrap:anywhere}
+.prof-tile .chev{width:14px;height:14px;color:var(--ink-soft);flex-shrink:0}
 .v3 .chev{width:16px;height:16px;color:var(--ink-soft);flex-shrink:0}
 .editform .field:last-of-type{margin-bottom:0}
 .editform .savebtn{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:12px;
@@ -1632,6 +1643,18 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
         <div class="v3-txt">Ника Кузнецова<small>34 · Durham · редактировать</small></div>
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
       </div>
+      <div class="prof-tiles">
+        <button class="prof-tile" id="profFavBtn" type="button">
+          <span class="pt-ic lav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.1A4.4 4.4 0 0 1 12 7.1a4.4 4.4 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/></svg></span>
+          <span class="pt-lbl">Избранное</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+        </button>
+        <a class="prof-tile" id="profSupportBtn" href="mailto:serenitymooncircle@gmail.com?subject=I%20have%20questions%20about%20the%20marathon%2Fplatform">
+          <span class="pt-ic sage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4.5 14v-2a7.5 7.5 0 0 1 15 0v2"/><rect x="3.5" y="13" width="4" height="6" rx="1.6"/><rect x="16.5" y="13" width="4" height="6" rx="1.6"/><path d="M18.5 19c0 1.5-1.8 2.5-4.5 2.5h-1.5"/></svg></span>
+          <span class="pt-lbl">Поддержка</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+      </div>
       <div class="lang-card"><span class="lang-lbl">Язык · Language</span><div class="lang-sw" id="langSwitch"><button type="button" data-lang="ru">Русский</button><button type="button" data-lang="en">English</button></div></div>
 
       <div class="sectitle">мероприятия</div>
@@ -2029,6 +2052,11 @@ document.querySelectorAll(".navbtn").forEach(btn=>{
   });
 });
 document.getElementById("favMaterialsBtn").addEventListener("click", ()=>{
+  playPopSound();
+  setActiveTab("materials");
+  setActiveFolder("__fav__");
+});
+document.getElementById("profFavBtn").addEventListener("click", ()=>{
   playPopSound();
   setActiveTab("materials");
   setActiveFolder("__fav__");
