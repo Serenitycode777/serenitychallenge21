@@ -333,9 +333,13 @@ async def send_access_email(to_email: str, name: str):
 
 async def _email_audience_rows(audience: str, recipients=None):
     if audience == "news":
-        return await DB_POOL.fetch(
+        rows = await DB_POOL.fetch(
             "SELECT DISTINCT ON (email_norm) name, email FROM profiles "
             "WHERE news=TRUE AND COALESCE(email,'') <> '' ORDER BY email_norm, created DESC")
+        if recipients is not None:
+            chosen = {normalize_email(e) for e in recipients}
+            rows = [r for r in rows if normalize_email(r["email"]) in chosen]
+        return rows
     base = "SELECT DISTINCT ON (email_norm) name, email FROM signups WHERE COALESCE(email,'') <> '' "
     if audience == "free":
         rows = await DB_POOL.fetch(base + "AND free=TRUE ORDER BY email_norm, id DESC")
@@ -4630,6 +4634,10 @@ document.addEventListener("keydown", e=>{
 
 /* ---------- письма участницам ---------- */
 let EMAILS = {system:[], scheduled:[], counts:{}, audiences:{}, test_to:""};
+const EM_PICK = {  // аудитории, где можно выбрать конкретных получательниц
+  free: "в CRM пока никто не отмечен как Free – поставь галочку в колонке Free",
+  news: "в «Участницах» пока никто не отмечен галочкой News – поставь её в колонке News"
+};
 let emAudience = "paid", emEditingId = null, emRecipients = null;
 const EM_MON = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
 function emEsc(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
@@ -4644,18 +4652,22 @@ function renderEmAud(){
   document.getElementById("emAudChips").innerHTML = Object.entries(EMAILS.audiences||{}).map(([k,l])=>
     `<div class="tchip${k===emAudience?' on':''}" data-aud="${k}">${l} · ${(EMAILS.counts||{})[k]||0}</div>`).join("");
   document.querySelectorAll("#emAudChips [data-aud]").forEach(c=>c.addEventListener("click", ()=>{
-    emAudience = c.dataset.aud;
-    if(emAudience === "free" && !emRecipients) emRecipients = (EMAILS.free_list||[]).map(x=>x.email);
+    if(emAudience !== c.dataset.aud){
+      emAudience = c.dataset.aud;
+      emRecipients = EM_PICK[emAudience] ? emPickList().map(x=>x.email) : null;
+    }
     renderEmAud();
   }));
   renderEmFree();
 }
+function emPickList(){ return ((EMAILS.pick_lists||{})[emAudience]) || (emAudience==="free" ? (EMAILS.free_list||[]) : []); }
 function renderEmFree(){
   const box = document.getElementById("emFreeBox");
-  box.hidden = emAudience !== "free";
+  box.hidden = !EM_PICK[emAudience];
   if(box.hidden) return;
-  const list = EMAILS.free_list || [];
-  if(!list.length){ box.innerHTML = `<div class="em-fe">в CRM пока никто не отмечен как Free – поставь галочку в колонке Free</div>`; return; }
+  const list = emPickList();
+  if(emRecipients === null) emRecipients = list.map(x=>x.email);
+  if(!list.length){ box.innerHTML = `<div class="em-fe">${EM_PICK[emAudience]}</div>`; return; }
   const sel = new Set((emRecipients||[]).map(e=>e.toLowerCase()));
   box.innerHTML = `<div class="em-free-head"><span>выбрано ${list.filter(x=>sel.has(x.email.toLowerCase())).length} из ${list.length}</span><span><button type="button" id="emFreeAll">выбрать всех</button> · <button type="button" id="emFreeNone">снять всех</button></span></div>`
     + list.map(x=>`<label><input type="checkbox" data-fe="${emEsc(x.email)}" ${sel.has(x.email.toLowerCase())?'checked':''}><span>${emEsc(x.name||"–")} <span class="em-fe">${emEsc(x.email)}</span></span></label>`).join("");
@@ -4695,7 +4707,7 @@ function renderEmails(){
   list.innerHTML = rows.length ? rows.map(m=>{
     const [d,t] = m.send_local.split("T"); const [y,mo,dd] = d.split("-").map(Number);
     const st = m.status==="sent" ? `отправлено ${m.sent_count} из ${m.total_count}` : m.status==="sending" ? "отправляется…" : m.status==="failed" ? "ошибка" : "запланировано";
-    const aud = ((EMAILS.audiences||{})[m.audience] || m.audience) + (m.audience==="free" && m.recipients ? ` (${m.recipients.length})` : "");
+    const aud = ((EMAILS.audiences||{})[m.audience] || m.audience) + (EM_PICK[m.audience] && m.recipients ? ` (${m.recipients.length})` : "");
     return `<div class="evrow${m.status==='sent'?' past':''}">
       <div class="evday">${dd}<span style="font-size:9.5px;font-weight:600">${EM_MON[mo-1]}</span></div>
       <div class="evbody"><div class="evttl">${emEsc(m.subject)}</div><div class="evmeta">${t} · ${emEsc(aud)}${m.failed_count?` · не ушло: ${m.failed_count}`:''}</div></div>
@@ -4710,7 +4722,7 @@ function renderEmails(){
   }));
   list.querySelectorAll("[data-emnow]").forEach(b=>b.addEventListener("click", async ()=>{
     const m = rows.find(x=>x.id===+b.dataset.emnow);
-    const n = m.audience==="free" && m.recipients ? m.recipients.length : ((EMAILS.counts||{})[m.audience]||0);
+    const n = EM_PICK[m.audience] && m.recipients ? m.recipients.length : ((EMAILS.counts||{})[m.audience]||0);
     if(!(await askConfirm(`Отправить письмо «${m.subject}» сейчас? Получательниц: ${n}`))) return;
     try{ await apiFetch("/api/admin/emails/scheduled/"+m.id+"/send", {method:"POST"}); showToast("Отправка началась"); setTimeout(loadEmails, 2500); }catch(_){}
   }));
@@ -4754,8 +4766,8 @@ document.getElementById("emSave").addEventListener("click", async ()=>{
   if(!d){ showToast("выбери дату отправки"); return; }
   if(!subject){ showToast("напиши тему письма"); return; }
   if(!body){ showToast("напиши текст письма"); return; }
-  if(emAudience === "free" && !(emRecipients||[]).length){ showToast("отметь, кому из Free отправить письмо"); return; }
-  const payload = JSON.stringify({subject, body, audience: emAudience, send_local: d+"T"+t, recipients: emAudience==="free" ? emRecipients : null});
+  if(EM_PICK[emAudience] && !(emRecipients||[]).length){ showToast("отметь, кому отправить письмо"); return; }
+  const payload = JSON.stringify({subject, body, audience: emAudience, send_local: d+"T"+t, recipients: EM_PICK[emAudience] ? emRecipients : null});
   try{
     if(emEditingId) await apiFetch("/api/admin/emails/scheduled/"+emEditingId, {method:"PUT", body: payload});
     else await apiFetch("/api/admin/emails/scheduled", {method:"POST", body: payload});
@@ -6678,8 +6690,10 @@ async def api_emails_list(request):
     for a in EMAIL_AUDIENCES:
         counts[a] = len(await _email_audience_rows(a))
     free_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("free")]
+    news_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("news")]
     return web.json_response({
         "system": system, "scheduled": [_sched_json(r) for r in rows], "counts": counts, "free_list": free_list,
+        "pick_lists": {"free": free_list, "news": news_list},
         "audiences": EMAIL_AUDIENCES, "test_to": MAIL_REPLY_TO or "", "tz": MARATHON_TZ,
         "mail_ready": bool(RESEND_API_KEY and MAIL_FROM),
     })
@@ -6715,7 +6729,7 @@ def _sched_payload(data):
     except Exception:
         send_at = None
     recipients = None
-    if audience == "free":
+    if audience in ("free", "news"):
         recipients = [str(e).strip() for e in (data.get("recipients") or []) if str(e).strip()]
         if not recipients:
             send_at = None
