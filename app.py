@@ -149,6 +149,8 @@ async def init_db(app):
     await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS close_day INTEGER")
     await DB_POOL.execute("ALTER TABLE materials ADD COLUMN IF NOT EXISTS lang TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE signups ADD COLUMN IF NOT EXISTS free BOOLEAN DEFAULT FALSE")
+    # галочка «Emails» в CRM – отдельная аудитория для запланированных писем
+    await DB_POOL.execute("ALTER TABLE signups ADD COLUMN IF NOT EXISTS emails BOOLEAN DEFAULT FALSE")
     await DB_POOL.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_seen DOUBLE PRECISION")
     # галочка «News» во вкладке «Участницы» – кому слать запланированные письма-новости
     await DB_POOL.execute("ALTER TABLE profiles ADD COLUMN IF NOT EXISTS news BOOLEAN DEFAULT FALSE")
@@ -261,6 +263,7 @@ EMAIL_AUDIENCES = {
     "all": "все из CRM",
     "free": "Free",
     "news": "News (галочка в «Участницах»)",
+    "emails": "Emails (галочка в CRM)",
 }
 
 
@@ -341,8 +344,8 @@ async def _email_audience_rows(audience: str, recipients=None):
             rows = [r for r in rows if normalize_email(r["email"]) in chosen]
         return rows
     base = "SELECT DISTINCT ON (email_norm) name, email FROM signups WHERE COALESCE(email,'') <> '' "
-    if audience == "free":
-        rows = await DB_POOL.fetch(base + "AND free=TRUE ORDER BY email_norm, id DESC")
+    if audience in ("free", "emails"):
+        rows = await DB_POOL.fetch(base + f"AND {audience}=TRUE ORDER BY email_norm, id DESC")
         if recipients is not None:
             chosen = {normalize_email(e) for e in recipients}
             rows = [r for r in rows if normalize_email(r["email"]) in chosen]
@@ -4595,7 +4598,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       </div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Сумма</th><th>Статус</th><th>Free</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Телеграм</th><th>Способ</th><th>Сумма</th><th>Статус</th><th>Free</th><th style="text-align:center"><label class="news-th" title="отметить / снять всех в списке">Emails<input type="checkbox" id="crmEmailsAll"></label></th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
           <tbody id="crmBody"></tbody>
         </table>
       </div>
@@ -4636,7 +4639,8 @@ document.addEventListener("keydown", e=>{
 let EMAILS = {system:[], scheduled:[], counts:{}, audiences:{}, test_to:""};
 const EM_PICK = {  // аудитории, где можно выбрать конкретных получательниц
   free: "в CRM пока никто не отмечен как Free – поставь галочку в колонке Free",
-  news: "в «Участницах» пока никто не отмечен галочкой News – поставь её в колонке News"
+  news: "в «Участницах» пока никто не отмечен галочкой News – поставь её в колонке News",
+  emails: "в CRM пока никто не отмечен галочкой Emails – поставь её в колонке Emails"
 };
 let emAudience = "paid", emEditingId = null, emRecipients = null;
 const EM_MON = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
@@ -5860,11 +5864,38 @@ function renderParticipants(){
       <td><input class="crm-amt" data-amount="${p.id}" value="${p.amount!=null?p.amount:""}" placeholder="–" inputmode="decimal"></td>
       <td>${badge}</td>
       <td style="text-align:center"><input type="checkbox" class="crm-free" data-free="${p.id}" ${p.free?'checked':''} title="Free"></td>
+      <td style="text-align:center"><input type="checkbox" class="crm-news" data-crmem="${p.id}" ${p.emails?'checked':''} title="получать письма (аудитория Emails)"></td>
       <td>${fmtDT(p.confirmed || p.created)}</td>
       <td><input class="crm-note" data-note="${p.id}" value="${(p.note||"").replace(/"/g,"&quot;")}" placeholder="заметка…"></td>
       <td style="text-align:right;white-space:nowrap">${confirmBtn} <button class="crm-del" data-del="${p.id}">удалить</button></td>
     </tr>`;
-  }).join("") : `<tr><td colspan="11" style="padding:24px;text-align:center;color:var(--ink-soft)">ничего не нашлось</td></tr>`;
+  }).join("") : `<tr><td colspan="12" style="padding:24px;text-align:center;color:var(--ink-soft)">ничего не нашлось</td></tr>`;
+  const emAll = document.getElementById("crmEmailsAll");
+  emAll.checked = shown.length > 0 && shown.every(p=>p.emails);
+  emAll.indeterminate = shown.some(p=>p.emails) && !emAll.checked;
+  emAll.onchange = async ()=>{
+    const on = emAll.checked, ids = shown.map(p=>p.id);
+    if(!ids.length) return;
+    try{
+      await apiFetch("/api/admin/signups-emails", {method:"PUT", body: JSON.stringify({ids, emails:on})});
+      shown.forEach(p=>p.emails = on);
+      showToast(on ? "Emails: отмечены все в списке ("+ids.length+")" : "Emails: галочки сняты");
+    }catch(e){}
+    renderParticipants();
+  };
+  body.querySelectorAll("[data-crmem]").forEach(cb=>{
+    cb.addEventListener("change", async ()=>{
+      cb.disabled = true;
+      try{
+        await apiFetch(`/api/admin/signups/${cb.dataset.crmem}/note`, {method:"POST", body: JSON.stringify({emails: cb.checked})});
+        const p = PARTICIPANTS.find(p=>String(p.id)===cb.dataset.crmem);
+        if(p) p.emails = cb.checked;
+        showToast(cb.checked ? "добавлена в рассылку Emails ✓" : "убрана из рассылки Emails");
+      }catch(e){ cb.checked = !cb.checked; }
+      cb.disabled = false;
+      renderParticipants();
+    });
+  });
 
   body.querySelectorAll("[data-pay]").forEach(b=>{
     b.addEventListener("click", async ()=>{
@@ -6691,9 +6722,10 @@ async def api_emails_list(request):
         counts[a] = len(await _email_audience_rows(a))
     free_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("free")]
     news_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("news")]
+    emails_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("emails")]
     return web.json_response({
         "system": system, "scheduled": [_sched_json(r) for r in rows], "counts": counts, "free_list": free_list,
-        "pick_lists": {"free": free_list, "news": news_list},
+        "pick_lists": {"free": free_list, "news": news_list, "emails": emails_list},
         "audiences": EMAIL_AUDIENCES, "test_to": MAIL_REPLY_TO or "", "tz": MARATHON_TZ,
         "mail_ready": bool(RESEND_API_KEY and MAIL_FROM),
     })
@@ -6729,7 +6761,7 @@ def _sched_payload(data):
     except Exception:
         send_at = None
     recipients = None
-    if audience in ("free", "news"):
+    if audience in ("free", "news", "emails"):
         recipients = [str(e).strip() for e in (data.get("recipients") or []) if str(e).strip()]
         if not recipients:
             send_at = None
@@ -6869,6 +6901,16 @@ async def api_signup_confirm(request):
     return web.json_response(_signup_json(row))
 
 
+async def api_signups_emails_bulk(request):
+    """Ставит/снимает галочку «Emails» сразу у нескольких заявок CRM."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    ids = [int(i) for i in (data.get("ids") or [])]
+    await DB_POOL.execute("UPDATE signups SET emails=$2 WHERE id = ANY($1::int[])", ids, bool(data.get("emails")))
+    return web.json_response({"ok": True})
+
+
 async def api_signup_note(request):
     """Правка заметки и/или суммы (venmo/zelle не передают сумму сами –
     миля вписывает её вручную в CRM при подтверждении оплаты)."""
@@ -6891,6 +6933,9 @@ async def api_signup_note(request):
     if "free" in data:
         sets.append(f"free=${len(vals) + 1}")
         vals.append(bool(data.get("free")))
+    if "emails" in data:
+        sets.append(f"emails=${len(vals) + 1}")
+        vals.append(bool(data.get("emails")))
     if not sets:
         return web.json_response({"ok": True})
     vals.append(row_id)
@@ -7569,6 +7614,7 @@ def make_app():
         web.post("/api/admin/signups", api_signup_add),
         web.post("/api/admin/signups/{id}/confirm", api_signup_confirm),
         web.post("/api/admin/signups/{id}/note", api_signup_note),
+        web.put("/api/admin/signups-emails", api_signups_emails_bulk),
         web.delete("/api/admin/signups/{id}", api_signup_delete),
         web.get("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
         web.post("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
