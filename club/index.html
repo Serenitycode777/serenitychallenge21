@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Serenity Moon — женский клуб</title>
+<meta name="description" content="Женский Клуб осознанного проживания Себя. Программы и мероприятия для души, тела и ума.">
+<link rel="icon" type="image/png" href="img/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sage:#6A9993; --sage-deep:#4F7A75; --sage-tint:#EAF2F0;
+  --lav:#AA9DB8; --lav-ink:#6B5A7C; --lav-tint:#F1EDF5;
+  --mist:#F6F1EB; --linen:#CBBAA8; --gold:#C9A961;
+  --ink:#3D3646; --ink-soft:#6B6375; --line:#E6DED6; --bg:#FDFCFA; --surface:#fff;
+  --serif:"Cormorant Garamond",Georgia,serif; --sans:Montserrat,system-ui,-apple-system,sans-serif;
+  --shadow:0 18px 50px -22px rgba(61,54,70,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:50;background:rgba(253,252,250,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.hdr .wrap{display:flex;align-items:center;gap:24px;height:68px}
+.hdr .logo img{height:44px;width:auto}
+.hdr nav{display:flex;gap:22px;margin-left:auto}
+.hdr nav a{text-decoration:none;font-size:13.5px;color:var(--ink-soft);font-weight:500}
+.hdr nav a:hover{color:var(--sage-deep)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;text-decoration:none;font-family:var(--sans);font-weight:600;font-size:14px;border-radius:999px;padding:12px 24px;transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--sage-deep);color:#fff;box-shadow:0 10px 24px -12px rgba(79,122,117,.7)}
+.btn-primary:hover{background:#456b67}
+.btn-ghost{background:#fff;color:var(--sage-deep);border:1.5px solid #CFE2DE}
+.btn-ghost:hover{background:var(--sage-tint)}
+.btn-gold{background:linear-gradient(135deg,#E9C979,#C9A961);color:#3D3646;letter-spacing:.08em;text-transform:uppercase;font-size:13px;box-shadow:0 10px 24px -12px rgba(201,169,97,.9)}
+.hdr .btn{padding:10px 20px;font-size:13px}
+@media (max-width:760px){ .hdr nav{display:none} .hdr .btn{margin-left:auto} }
+
+/* divider */
+.divider{display:flex;align-items:center;justify-content:center;gap:16px;margin:0 auto;max-width:520px;padding:6px 20px}
+.divider span{flex:1;height:1px;background:var(--line)}
+.divider svg{width:30px;height:20px;flex-shrink:0}
+
+/* hero */
+.hero{padding:34px 0 30px}
+.hero-card{position:relative;overflow:hidden;border-radius:32px;background:linear-gradient(140deg,#EFE9F4 0%,#F7F3EE 45%,#E2EFEC 100%);box-shadow:var(--shadow);display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:20px;padding:56px 56px}
+.hero-card::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(201,169,97,.20),rgba(201,169,97,0) 70%);top:-120px;left:-120px}
+.eyebrow{display:inline-block;background:linear-gradient(90deg,var(--lav),var(--sage));color:#fff;font-weight:600;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;padding:8px 18px;border-radius:999px}
+.hero h1{font-family:var(--serif);font-weight:600;font-size:64px;line-height:1;letter-spacing:.04em;margin:18px 0 10px;color:var(--ink)}
+.hero .tag{font-family:var(--serif);font-style:italic;font-size:28px;line-height:1.2;color:var(--sage-deep)}
+.hero p.lead{margin:14px 0 26px;color:var(--ink-soft);font-size:16px;max-width:430px}
+.hero .ctas{display:flex;gap:12px;flex-wrap:wrap}
+.hero-photo{position:relative;z-index:1}
+.hero-photo img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:50% 50% 28px 28px;box-shadow:0 30px 60px -30px rgba(61,54,70,.45);border:6px solid rgba(255,255,255,.75)}
+.hero-photo .moon{position:absolute;top:-6px;right:12px;width:46px;height:46px;color:var(--gold)}
+@media (max-width:860px){
+  .hero-card{grid-template-columns:1fr;padding:36px 24px;text-align:center}
+  .hero h1{font-size:46px}
+  .hero .tag{font-size:23px}
+  .hero p.lead{margin-left:auto;margin-right:auto}
+  .hero .ctas{justify-content:center}
+  .hero-photo{max-width:300px;margin:8px auto 0}
+}
+
+/* sections */
+section{padding:56px 0}
+.sec-head{text-align:center;margin-bottom:34px}
+.sec-head h2{font-family:var(--serif);font-weight:600;font-size:42px;line-height:1.1;color:var(--ink)}
+.sec-head h2 em{color:var(--sage-deep)}
+.sec-head p{color:var(--ink-soft);margin-top:10px;font-size:15px}
+.tint{background:var(--mist)}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:24px;padding:28px 24px;text-align:center;box-shadow:var(--shadow)}
+.stat .n{font-family:var(--serif);font-weight:600;font-size:58px;line-height:1;color:var(--sage-deep)}
+.stat .u{font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--lav-ink);margin:6px 0 12px}
+.stat p{font-size:14px;color:var(--ink-soft)}
+@media (max-width:760px){ .stats{grid-template-columns:1fr} .stat .n{font-size:48px} }
+
+/* events */
+.events{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.ev{background:#fff;border:1px solid var(--line);border-radius:28px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.ev-img{aspect-ratio:3/2;overflow:hidden;background:var(--lav-tint)}
+.ev-img img{width:100%;height:100%;object-fit:cover}
+.ev-img.marathon{position:relative;background:linear-gradient(140deg,#E9E1F1,#F5F0EA 50%,#D9ECE8);display:flex;align-items:flex-end;justify-content:center}
+.ev-img.marathon img{width:82%;height:auto;object-fit:contain;margin-bottom:6%}
+.ev-img.marathon .date{position:absolute;top:18px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#4F7A75,#6A9993);color:#fff;border-radius:16px;padding:8px 22px;text-align:center;box-shadow:0 12px 26px -12px rgba(79,122,117,.8);border:2px solid #E9C979}
+.ev-img.marathon .date b{display:block;font-family:var(--serif);font-size:30px;line-height:1.05;white-space:nowrap}
+.ev-img.marathon .date small{white-space:nowrap}
+.ev-img.marathon .date small{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+.ev-img.marathon .date small i{font-style:normal;color:#E9C979}
+.ev-body{padding:24px 26px 26px;display:flex;flex-direction:column;flex:1}
+.ev-badge{align-self:flex-start;font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--sage-deep);background:var(--sage-tint);border-radius:999px;padding:5px 12px;margin-bottom:12px}
+.ev-badge.lav{color:var(--lav-ink);background:var(--lav-tint)}
+.ev h3{font-family:var(--serif);font-weight:600;font-size:28px;line-height:1.12;margin-bottom:14px}
+.meta{list-style:none;display:grid;gap:6px;margin-bottom:14px;font-size:14px}
+.meta li{display:flex;gap:8px}
+.meta li span{color:var(--ink-soft);min-width:112px}
+.meta li b{font-weight:600}
+.ev p{font-size:14.5px;color:var(--ink-soft);margin-bottom:10px}
+.ev .note{font-size:12.5px;font-style:italic}
+.ev-actions{margin-top:auto;padding-top:12px;display:flex;gap:10px;flex-wrap:wrap}
+.ev-actions .btn{padding:11px 22px;font-size:13px}
+.tg-row{text-align:center;margin-top:30px}
+@media (max-width:860px){ .events{grid-template-columns:1fr} .meta li span{min-width:98px} .ev-img.marathon .date{top:12px;padding:6px 16px} .ev-img.marathon .date b{font-size:24px} .ev-img.marathon img{width:74%;margin-bottom:3%} }
+
+/* guides */
+.guides{display:grid;grid-template-columns:repeat(2,minmax(0,320px));justify-content:center;gap:28px}
+.guide{background:#fff;border:1px solid var(--line);border-radius:28px;padding:30px 24px 26px;text-align:center;box-shadow:var(--shadow)}
+.guide img{width:170px;height:170px;border-radius:50%;object-fit:cover;margin:0 auto 18px;border:5px solid var(--sage-tint)}
+.guide h3{font-family:var(--serif);font-weight:600;font-size:28px}
+.guide .role{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--lav-ink);font-weight:600;margin:4px 0 14px}
+.guide a.ig{font-size:13.5px;color:var(--sage-deep);font-weight:600;text-decoration:none}
+@media (max-width:640px){ .guides{grid-template-columns:1fr} }
+
+/* form */
+.form-card{max-width:620px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:30px;padding:36px 34px;box-shadow:var(--shadow)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.02em}
+.field input,.field select,.field textarea{width:100%;font-family:var(--sans);font-size:15px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:14px;padding:13px 15px;outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--sage)}
+.field textarea{min-height:90px;resize:vertical}
+.hp{position:absolute;left:-9999px;opacity:0}
+.form-card .btn{width:100%;padding:15px;font-size:14px;margin-top:6px}
+.form-msg{margin-top:14px;font-size:14px;text-align:center}
+.form-msg.err{color:#B3415A}
+.form-done{text-align:center;padding:10px 0}
+.form-done .ok{width:64px;height:64px;border-radius:50%;background:var(--sage);color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.form-done h3{font-family:var(--serif);font-size:32px;margin-bottom:8px}
+@media (max-width:560px){ .form-card{padding:28px 20px} }
+
+/* contacts */
+.contacts{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+.c-btn{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px 22px 14px 14px;text-decoration:none;box-shadow:var(--shadow);font-weight:600;font-size:14.5px}
+.c-btn .ic{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
+.c-btn .ic svg{width:21px;height:21px}
+.c-btn small{display:block;font-weight:400;font-size:12px;color:var(--ink-soft)}
+.c-extra{text-align:center;margin-top:28px;color:var(--ink-soft);font-size:14px;line-height:1.7}
+.c-extra a{color:var(--sage-deep);font-weight:600}
+
+footer{border-top:1px solid var(--line);padding:30px 0 40px;text-align:center;color:var(--ink-soft);font-size:13px}
+footer img{height:54px;width:auto;margin:0 auto 10px}
+footer a{color:var(--sage-deep);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="leaf" viewBox="0 0 40 24"><path fill="none" stroke="#B9A98F" stroke-width="1.3" d="M20 22C20 14 20 8 20 2c3 4 5 9 0 20Zm0 0C20 22 12 20 9 11c5 0 9 4 11 11Zm0 0c0 0 8-2 11-11-5 0-9 4-11 11Z"/></symbol>
+</svg>
+
+<header class="hdr">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Serenity Moon"><img src="img/logo.png" alt="Serenity Moon"></a>
+    <nav>
+      <a href="#about">О клубе</a>
+      <a href="#events">Мероприятия</a>
+      <a href="#guides">Проводники</a>
+      <a href="#contacts">Контакты</a>
+    </nav>
+    <a class="btn btn-primary" href="#form">Записаться</a>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero">
+    <div class="wrap">
+      <div class="hero-card">
+        <div style="position:relative;z-index:1">
+          <span class="eyebrow">Events 2026</span>
+          <h1>SERENITY MOON</h1>
+          <div class="tag">Женский Клуб осознанного проживания Себя</div>
+          <p class="lead">Программы и мероприятия для души, тела и ума.</p>
+          <div class="ctas">
+            <a class="btn btn-primary" href="#events">Расписание мероприятий</a>
+            <a class="btn btn-ghost" href="#contacts">Сотрудничество</a>
+          </div>
+        </div>
+        <div class="hero-photo">
+          <svg class="moon" viewBox="0 0 24 24"><path fill="currentColor" d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>
+          <img src="img/hero.jpg" alt="Лотос">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider" aria-hidden="true"><span></span><svg><use href="#leaf"/></svg><span></span></div>
+
+  <section id="about">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Женский Клуб <em>«Serenity Moon»</em></h2>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="n">17</div><div class="u">events</div><p>Практики и ретриты, живые душевные встречи и online программы</p></div>
+        <div class="stat"><div class="n">93</div><div class="u">women</div><p>Женский круг — это источник силы и ресурсного состояния</p></div>
+        <div class="stat"><div class="n">5</div><div class="u">experts</div><p>Мастера своего дела — проводники на пути самопознания</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="events" class="tint">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Расписание мероприятий</h2>
+        <p>Мы пришлём ссылку для оплаты после регистрации.</p>
+      </div>
+
+      <div class="events">
+        <article class="ev">
+          <div class="ev-img marathon">
+            <div class="date"><b>9–29 ноября</b><small>21 день · <i>онлайн</i></small></div>
+            <img src="img/women.webp" alt="Подруги сидят вместе под луной">
+          </div>
+          <div class="ev-body">
+            <span class="ev-badge">Онлайн-марафон</span>
+            <h3>Марафон полезных привычек «Начни сегодня!»</h3>
+            <ul class="meta">
+              <li><span>дата:</span><b>9–29 ноября 2026</b></li>
+              <li><span>формат:</span><b>онлайн, 21 день</b></li>
+              <li><span>проводники:</span><b>Мила Браун и эксперты клуба</b></li>
+            </ul>
+            <p>Трекер привычек, практики от экспертов и живое женское сообщество — внедряем полезные привычки для тела и души, в своём темпе.</p>
+            <div class="ev-actions">
+              <a class="btn btn-primary" href="https://marathon.serenitymoonevents.com">Подробнее и участие</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="ev">
+          <div class="ev-img"><img src="img/kundalini.jpg" alt="Кундалини-йога и звуковая ванна"></div>
+          <div class="ev-body">
+            <span class="ev-badge lav">Живые встречи</span>
+            <h3>Кундалини-йога и Звуковая ванна</h3>
+            <ul class="meta">
+              <li><span>когда:</span><b>среда 11:00–12:30, воскресенье 16:30–18:00</b></li>
+              <li><span>энергообмен:</span><b>$30 / сессия</b></li>
+            </ul>
+            <p>Трансформационные сеансы, гармонично объединяющие практику Кундалини-йоги и расслабляющие звуковые ванны.</p>
+            <p class="note">Группа 7 человек, предварительная запись обязательна. Занятия проходят в домашней студии в доме Милы Браун, North Raleigh, NC.</p>
+            <div class="ev-actions">
+              <a class="btn btn-primary" href="#form" data-program="Кундалини-йога и Звуковая ванна (среда)">Записаться</a>
+              <a class="btn btn-ghost" href="http://milabrown.tilda.ws/kundaliniyogawithmila" target="_blank" rel="noopener">Подробнее</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="ev">
+          <div class="ev-img"><img src="img/iam.jpg" alt="Программа наставничества «Я ЕСТЬ»"></div>
+          <div class="ev-body">
+            <span class="ev-badge">Наставничество</span>
+            <h3>Программа наставничества «Я ЕСТЬ»</h3>
+            <ul class="meta">
+              <li><span>длительность:</span><b>11 недель (77 дней)</b></li>
+              <li><span>группа:</span><b>5–7 человек</b></li>
+              <li><span>наставник:</span><b>Мила Браун</b></li>
+              <li><span>энергообмен:</span><b>$101 / неделя</b></li>
+            </ul>
+            <p>Запишитесь на собеседование для более подробной информации.</p>
+            <div class="ev-actions">
+              <a class="btn btn-primary" href="#form" data-program="Программа наставничества «Я ЕСТЬ»">Записаться</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="ev">
+          <div class="ev-img"><img src="img/bowls.jpg" alt="Сессия с поющими чашами"></div>
+          <div class="ev-body">
+            <span class="ev-badge lav">Индивидуально или в группе</span>
+            <h3>Сессия с поющими чашами</h3>
+            <ul class="meta">
+              <li><span>время:</span><b>по договорённости</b></li>
+              <li><span>проводник:</span><b>Мила Браун</b></li>
+              <li><span>энергообмен:</span><b>$50–$111</b></li>
+            </ul>
+            <div class="ev-actions">
+              <a class="btn btn-primary" href="#form" data-program="Сессия с поющими чашами">Записаться</a>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="tg-row"><a class="btn btn-gold" href="https://t.me/+9cTaJZzyMLQ0NmM0" target="_blank" rel="noopener">Группа в Telegram</a></div>
+    </div>
+  </section>
+
+  <section id="guides">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Проводники</h2>
+        <p>Организаторы и ведущие наших программ.</p>
+      </div>
+      <div class="guides">
+        <div class="guide">
+          <img src="img/mila.jpg" alt="Мила Браун">
+          <h3>Мила Браун</h3>
+          <div class="role">основатель клуба</div>
+          <a class="ig" href="https://www.instagram.com/milabrown.pro/" target="_blank" rel="noopener">@milabrown.pro</a>
+        </div>
+        <div class="guide">
+          <img src="img/natalya.jpg" alt="Наталья Калида">
+          <h3>Наталья Калида</h3>
+          <div class="role">проводник</div>
+          <a class="ig" href="https://www.instagram.com/natalyakalida" target="_blank" rel="noopener">@natalyakalida</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider" aria-hidden="true"><span></span><svg><use href="#leaf"/></svg><span></span></div>
+
+  <section id="form">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Будем рады <em>Тебе!</em></h2>
+        <p>Отправь свою заявку на участие в мероприятии. Убедись, что ты выбрала правильное мероприятие.<br>Мы пришлём ссылку для оплаты после регистрации.</p>
+      </div>
+      <div class="form-card" id="formCard">
+        <form id="clubForm" novalidate>
+          <div class="field"><label for="fName">Твоё имя *</label><input id="fName" name="name" autocomplete="name" required></div>
+          <div class="field"><label for="fEmail">Твой email *</label><input id="fEmail" name="email" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="fPhone">Твой телефон *</label><input id="fPhone" name="phone" type="tel" autocomplete="tel" required></div>
+          <div class="field"><label for="fProgram">Выбери программу *</label>
+            <select id="fProgram" name="program" required>
+              <option value="">— выбери —</option>
+              <option>Кундалини-йога и Звуковая ванна (среда)</option>
+              <option>Кундалини-йога и Звуковая ванна (воскресенье)</option>
+              <option>Программа наставничества «Я ЕСТЬ»</option>
+              <option>Сессия с поющими чашами</option>
+            </select>
+          </div>
+          <div class="field"><label for="fMsg">Есть вопросы?</label><textarea id="fMsg" name="msg"></textarea></div>
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn btn-primary" type="submit" id="fSubmit">Хочу участвовать!</button>
+          <div class="form-msg" id="fMsgBox" role="status"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="contacts" class="tint">
+    <div class="wrap">
+      <div class="sec-head"><h2>Контакты</h2></div>
+      <div class="contacts">
+        <a class="c-btn" href="https://t.me/+9cTaJZzyMLQ0NmM0" target="_blank" rel="noopener"><span class="ic" style="background:#2AA3DE"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.4 4.3 2.9 11.4c-1.3.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8L23 5.6c.3-1.3-.5-1.9-1.6-1.3ZM9.6 14.1l9-5.7c.4-.3.8-.1.5.2l-7.7 6.9-.3 3.3-1.5-4.7Z"/></svg></span><span>Telegram<small>группа клуба</small></span></a>
+        <a class="c-btn" href="https://wa.me/19849006575" target="_blank" rel="noopener"><span class="ic" style="background:#3FBF5F"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3a2.9 2.9 0 0 0-.9 2.2 5 5 0 0 0 1 2.7 11.5 11.5 0 0 0 4.4 3.9c1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.3Z"/></svg></span><span>WhatsApp<small>+1 984 900 6575</small></span></a>
+        <a class="c-btn" href="https://www.instagram.com/serenity_moon_circle" target="_blank" rel="noopener"><span class="ic" style="background:linear-gradient(135deg,#F2A23A,#D3418B 55%,#7B4CC2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></span><span>Instagram<small>@serenity_moon_circle</small></span></a>
+      </div>
+      <div class="c-extra">
+        Сотрудничество и партнёрство: <a href="mailto:milabrown.pro@gmail.com">milabrown.pro@gmail.com</a><br>
+        SERENITY WORLD · 187 Wind Chime Court, Suite #202, Raleigh, NC 27615
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <img src="img/logo.png" alt="Serenity Moon">
+  <div>Serenity Moon — Женский Клуб · <a href="https://marathon.serenitymoonevents.com">Марафон «Начни сегодня!»</a></div>
+  <div style="margin-top:6px">© 2026 Serenity World</div>
+</footer>
+
+<script>
+(function(){
+  var API = "https://platform.serenitymoonevents.com/club/register";
+  var sel = document.getElementById("fProgram");
+  document.querySelectorAll("[data-program]").forEach(function(a){
+    a.addEventListener("click", function(){ sel.value = a.getAttribute("data-program"); });
+  });
+  var form = document.getElementById("clubForm"), box = document.getElementById("fMsgBox"), btn = document.getElementById("fSubmit");
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    box.className = "form-msg"; box.textContent = "";
+    var el = form.elements, name = el.name.value.trim(), email = el.email.value.trim(), phone = el.phone.value.trim();
+    if(!name || !phone || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !sel.value){
+      box.className = "form-msg err"; box.textContent = "Пожалуйста, заполни имя, email, телефон и выбери программу."; return;
+    }
+    btn.disabled = true; btn.textContent = "Отправляю…";
+    fetch(API, {method:"POST", body:new FormData(form)})
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok || !j.ok) throw new Error(j.error||r.status); return j; }); })
+      .then(function(){
+        document.getElementById("formCard").innerHTML = '<div class="form-done"><div class="ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div><h3>Спасибо!</h3><p style="color:var(--ink-soft)">Заявка отправлена. Мы свяжемся с тобой и пришлём ссылку для оплаты.</p></div>';
+      })
+      .catch(function(){
+        btn.disabled = false; btn.textContent = "Хочу участвовать!";
+        box.className = "form-msg err"; box.textContent = "Не получилось отправить заявку. Попробуй ещё раз или напиши нам в Telegram.";
+      });
+  });
+})();
+</script>
+</body>
+</html>

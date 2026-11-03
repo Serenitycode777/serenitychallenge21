@@ -139,6 +139,13 @@ async def init_db(app):
         UNIQUE(user_id, note_date)
     )""")
 
+    # ---- заявки с сайта клуба serenitymoonevents.com (вкладка «CRM main» в админке) ----
+    await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS club_signups (
+        id SERIAL PRIMARY KEY, name TEXT, email TEXT, email_norm TEXT, phone TEXT,
+        program TEXT, message TEXT, note TEXT DEFAULT '', done BOOLEAN DEFAULT FALSE,
+        created DOUBLE PRECISION
+    )""")
+
     # ---- глобальные настройки платформы (ключ-значение) — напр. "cabinet_opens_at" (unix-время,
     # разовое открытие доступа всем оплатившим разом, см. 2026-10-13 решение в памяти проекта) ----
     await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS settings (
@@ -4320,6 +4327,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
     <div class="tab" data-tab="t-calendar">Календарь</div>
     <div class="tab" data-tab="t-events">Мероприятия</div>
     <div class="tab" data-tab="t-participants">CRM</div>
+    <div class="tab" data-tab="t-club">CRM main</div>
   </div>
 
   <div id="t-progress" style="display:none">
@@ -4627,6 +4635,30 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       </div>
     </div>
   </div>
+
+  <div id="t-club" style="display:none">
+    <div class="crm-wrap">
+      <div class="crm-top"><h1>Заявки с сайта клуба</h1></div>
+      <div class="crm-stats">
+        <div class="crm-stat"><div class="l">всего</div><div class="v" id="clubTotal">0</div></div>
+        <div class="crm-stat"><div class="l">новые</div><div class="v wait" id="clubNew">0</div></div>
+        <div class="crm-stat"><div class="l">связались</div><div class="v paid" id="clubDone">0</div></div>
+      </div>
+      <div class="crm-toolbar">
+        <div class="crm-search"><input type="text" id="clubSearch" placeholder="имя, почта, телефон…"></div>
+        <div class="crm-chips" id="clubProgChips"></div>
+      </div>
+      <div class="crm-mobile-wrap">
+        <table class="crm-table">
+          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Программа</th><th>Вопрос</th><th>Дата</th><th>Заметка</th><th style="text-align:center">Связались</th><th></th></tr></thead>
+          <tbody id="clubBody"></tbody>
+        </table>
+      </div>
+      <div class="crm-bottom-actions">
+        <a href="/admin/export-club.csv" class="primary" target="_blank">скачать CSV</a>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="crm-modal-overlay" id="crmAddOverlay">
@@ -4810,14 +4842,15 @@ document.getElementById("emSave").addEventListener("click", async ()=>{
   }catch(_){}
 });
 
-const TABS = ["t-progress","t-content","t-calendar","t-events","t-participants"];
+const TABS = ["t-progress","t-content","t-calendar","t-events","t-participants","t-club"];
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
     t.classList.add("active");
     TABS.forEach(id=>{ document.getElementById(id).style.display = (id===t.dataset.tab) ? "" : "none"; });
-    document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress");
+    document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress" || t.dataset.tab==="t-club");
     if(t.dataset.tab==="t-participants") loadParticipants();
+    if(t.dataset.tab==="t-club") loadClub();
     if(t.dataset.tab==="t-progress") loadProgress();
     if(t.dataset.tab==="t-calendar") loadEmails();
   });
@@ -5848,6 +5881,55 @@ async function apiFetch(path, opts){
   return res.status === 204 ? null : res.json();
 }
 
+let CLUB = [], clubProg = "all";
+function clubEsc(t){ return String(t==null?"":t).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+async function loadClub(){
+  const body = document.getElementById("clubBody");
+  body.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">загрузка…</td></tr>`;
+  try{ CLUB = await apiFetch("/api/admin/club-signups"); }catch(e){ CLUB = []; }
+  renderClub();
+}
+function renderClub(){
+  document.getElementById("clubTotal").textContent = CLUB.length;
+  document.getElementById("clubNew").textContent = CLUB.filter(r=>!r.done).length;
+  document.getElementById("clubDone").textContent = CLUB.filter(r=>r.done).length;
+  const progs = [...new Set(CLUB.map(r=>r.program||"–"))];
+  if(clubProg!=="all" && !progs.includes(clubProg)) clubProg = "all";
+  const chips = document.getElementById("clubProgChips");
+  chips.innerHTML = `<div class="crm-chip${clubProg==="all"?" on":""}" data-cp="all">все программы</div>` +
+    progs.map(p=>`<div class="crm-chip${clubProg===p?" on":""}" data-cp="${clubEsc(p)}">${clubEsc(p)}</div>`).join("");
+  chips.querySelectorAll("[data-cp]").forEach(c=>c.addEventListener("click", ()=>{ clubProg = c.dataset.cp; renderClub(); }));
+  const q = document.getElementById("clubSearch").value.trim().toLowerCase();
+  const shown = CLUB.filter(r=>(clubProg==="all" || (r.program||"–")===clubProg) &&
+    (!q || [r.name,r.email,r.phone].some(v=>(v||"").toLowerCase().includes(q))));
+  const body = document.getElementById("clubBody");
+  body.innerHTML = shown.length ? shown.map((r,i)=>`<tr>
+      <td>${i+1}</td>
+      <td class="nm">${clubEsc(r.name||"–")}<span class="em">${clubEsc(r.email||"")}</span></td>
+      <td>${clubEsc(r.phone||"–")}</td>
+      <td>${clubEsc(r.program||"–")}</td>
+      <td style="max-width:240px;white-space:pre-wrap">${clubEsc(r.message||"–")}</td>
+      <td>${fmtDT(r.created)}</td>
+      <td><input class="crm-note" data-cnote="${r.id}" value="${clubEsc(r.note||"")}" placeholder="заметка…"></td>
+      <td style="text-align:center"><input type="checkbox" class="crm-free" data-cdone="${r.id}" ${r.done?"checked":""} title="связались"></td>
+      <td style="text-align:right"><button class="crm-del" data-cdel="${r.id}">удалить</button></td>
+    </tr>`).join("") : `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">${CLUB.length ? "ничего не нашлось" : "пока нет заявок с сайта клуба"}</td></tr>`;
+  body.querySelectorAll("[data-cnote]").forEach(inp=>inp.addEventListener("change", async ()=>{
+    try{ await apiFetch("/api/admin/club-signups/"+inp.dataset.cnote, {method:"PUT", body: JSON.stringify({note: inp.value})});
+      const r = CLUB.find(x=>String(x.id)===inp.dataset.cnote); if(r) r.note = inp.value; showToast("Заметка сохранена ✓"); }catch(e){}
+  }));
+  body.querySelectorAll("[data-cdone]").forEach(cb=>cb.addEventListener("change", async ()=>{
+    try{ await apiFetch("/api/admin/club-signups/"+cb.dataset.cdone, {method:"PUT", body: JSON.stringify({done: cb.checked})});
+      const r = CLUB.find(x=>String(x.id)===cb.dataset.cdone); if(r) r.done = cb.checked; renderClub(); }catch(e){ cb.checked = !cb.checked; }
+  }));
+  body.querySelectorAll("[data-cdel]").forEach(b=>b.addEventListener("click", async ()=>{
+    if(!(await askConfirm("Удалить эту заявку?"))) return;
+    try{ await apiFetch("/api/admin/club-signups/"+b.dataset.cdel, {method:"DELETE"});
+      CLUB = CLUB.filter(x=>String(x.id)!==b.dataset.cdel); renderClub(); }catch(e){}
+  }));
+}
+document.getElementById("clubSearch").addEventListener("input", renderClub);
+
 function fmtDT(ts){
   if(!ts) return "–";
   const d = new Date(ts * 1000);
@@ -6095,6 +6177,29 @@ async def register(request):
         await send_payment_qr_email(email, name, method)
     except Exception as e:
         print(f"[ПРЕДУПРЕЖДЕНИЕ] не удалось отправить дубль qr на почту: {e}")
+    return web.json_response({"ok": True})
+
+
+async def club_register(request):
+    """Форма записи с сайта клуба (serenitymoonevents.com): name, email, phone, program, msg."""
+    try:
+        data = await request.post()
+    except Exception:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    if str(data.get("website", "")).strip():  # скрытое поле-ловушка для ботов
+        return web.json_response({"ok": True})
+    name = str(data.get("name", "")).strip()[:200]
+    email = str(data.get("email", "")).strip()[:200]
+    phone = str(data.get("phone", "")).strip()[:60]
+    program = str(data.get("program", "")).strip()[:200]
+    msg = str(data.get("msg", "")).strip()[:3000]
+    if not email or "@" not in email or not program:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    await DB_POOL.execute(
+        "INSERT INTO club_signups (name, email, email_norm, phone, program, message, created) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7)",
+        name, email, normalize_email(email), phone, program, msg, time.time(),
+    )
     return web.json_response({"ok": True})
 
 
@@ -6931,6 +7036,47 @@ async def api_signup_confirm(request):
     return web.json_response(_signup_json(row))
 
 
+async def api_club_list(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    rows = await DB_POOL.fetch("SELECT * FROM club_signups ORDER BY created DESC")
+    return web.json_response([dict(r) for r in rows])
+
+
+async def api_club_update(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    rid = int(request.match_info["id"])
+    data = await request.json()
+    if "note" in data:
+        await DB_POOL.execute("UPDATE club_signups SET note=$2 WHERE id=$1", rid, str(data.get("note") or "").strip())
+    if "done" in data:
+        await DB_POOL.execute("UPDATE club_signups SET done=$2 WHERE id=$1", rid, bool(data.get("done")))
+    return web.json_response({"ok": True})
+
+
+async def api_club_delete(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    await DB_POOL.execute("DELETE FROM club_signups WHERE id=$1", int(request.match_info["id"]))
+    return web.json_response({"ok": True})
+
+
+async def admin_export_club(request):
+    if not authed(request):
+        raise web.HTTPFound("/admin/login")
+    rows = await DB_POOL.fetch("SELECT * FROM club_signups ORDER BY created DESC")
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["#", "имя", "email", "телефон", "программа", "вопрос", "заметка", "связались", "дата"])
+    for i, r in enumerate(rows, start=1):
+        w.writerow([i, r["name"] or "", r["email"] or "", r["phone"] or "", r["program"] or "", r["message"] or "",
+                    r["note"] or "", "да" if r["done"] else "",
+                    time.strftime("%Y-%m-%d %H:%M", time.localtime(r["created"])) if r["created"] else ""])
+    return web.Response(body=("\ufeff" + buf.getvalue()).encode("utf-8"), content_type="text/csv",
+                        headers={"Content-Disposition": "attachment; filename=crm-main.csv"})
+
+
 async def api_signups_emails_bulk(request):
     """Ставит/снимает галочку «Emails» сразу у нескольких заявок CRM."""
     if not admin_token_ok(request):
@@ -7577,7 +7723,7 @@ async def cors_middleware(request, handler):
         resp = web.Response()
     else:
         resp = await handler(request)
-    if request.path == "/register":
+    if request.path in ("/register", "/club/register"):
         resp.headers["Access-Control-Allow-Origin"] = "*"
         resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
         resp.headers["Access-Control-Allow-Headers"] = "*"
@@ -7601,11 +7747,14 @@ def make_app():
     app.add_routes([
         web.options("/register", cors_preflight),
         web.post("/register", register),
+        web.options("/club/register", cors_preflight),
+        web.post("/club/register", club_register),
         web.post("/webhook/stripe", stripe_webhook),
         web.get("/admin", admin),
         web.get("/admin/login", admin_login_page),
         web.post("/admin/login", admin_login_post),
         web.get("/admin/export.csv", admin_export),
+        web.get("/admin/export-club.csv", admin_export_club),
         web.get("/admin/export-progress.csv", admin_export_progress),
         web.get("/admin/logout", admin_logout),
         web.get("/health", health),
@@ -7645,6 +7794,9 @@ def make_app():
         web.post("/api/admin/signups/{id}/confirm", api_signup_confirm),
         web.post("/api/admin/signups/{id}/note", api_signup_note),
         web.put("/api/admin/signups-emails", api_signups_emails_bulk),
+        web.get("/api/admin/club-signups", api_club_list),
+        web.put("/api/admin/club-signups/{id}", api_club_update),
+        web.delete("/api/admin/club-signups/{id}", api_club_delete),
         web.delete("/api/admin/signups/{id}", api_signup_delete),
         web.get("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
         web.post("/api/admin/settings/cabinet-opens", api_settings_cabinet_opens),
