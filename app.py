@@ -7899,6 +7899,34 @@ async def health(request):
     return web.Response(text="ok")
 
 
+EVENTS_HOSTS = ("serenitymoonevents.com", "www.serenitymoonevents.com")
+EVENTS_DIR = HERE / "club"
+EVENTS_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml"}
+
+
+@web.middleware
+async def events_host_middleware(request, handler):
+    """serenitymoonevents.com (сайт SM EVENTS) отдаётся этим же сервером: на этом домене
+    только сама страница club/index.html и её картинки, никакого кабинета/админки."""
+    host = (request.host or "").split(":")[0].lower()
+    if host not in EVENTS_HOSTS:
+        return await handler(request)
+    if host.startswith("www."):
+        raise web.HTTPMovedPermanently("https://serenitymoonevents.com" + request.path_qs)
+    if request.path == "/club/register":
+        return await handler(request)
+    if request.path.startswith("/img/"):
+        f = (EVENTS_DIR / "img" / Path(request.path).name)
+        if f.suffix.lower() in EVENTS_TYPES and f.is_file():
+            return web.Response(body=f.read_bytes(), content_type=EVENTS_TYPES[f.suffix.lower()],
+                                headers={"Cache-Control": "public, max-age=86400"})
+        raise web.HTTPNotFound()
+    if request.path not in ("/", "/index.html"):
+        raise web.HTTPFound("/")
+    return web.Response(text=(EVENTS_DIR / "index.html").read_text(encoding="utf-8"), content_type="text/html",
+                        headers={"Cache-Control": "no-cache"})
+
+
 @web.middleware
 async def cors_middleware(request, handler):
     """Лендинг (gh-pages / свой домен) и сервер – разные источники для браузера,
@@ -7926,7 +7954,7 @@ def make_app():
         raise SystemExit("Нет PLATFORM_SECRET в .env – см. .env.example")
     if not ADMIN_PASSWORD:
         print("[ПРЕДУПРЕЖДЕНИЕ] ADMIN_PASSWORD не задан – вход в /admin не сработает, см. .env.example")
-    app = web.Application(middlewares=[cors_middleware], client_max_size=15 * 1024 * 1024)
+    app = web.Application(middlewares=[events_host_middleware, cors_middleware], client_max_size=15 * 1024 * 1024)
     app.on_startup.append(init_db)
     app.on_startup.append(start_email_scheduler)
     app.on_cleanup.append(stop_email_scheduler)
