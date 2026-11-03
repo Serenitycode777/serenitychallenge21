@@ -4207,6 +4207,15 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .crm-modal-head h3{font-size:15px;margin:0;font-weight:650}
 .crm-modal-x{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:4px}
 .crm-addbody{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.club-up-btn{border:1.3px solid var(--lav);background:var(--surface);color:var(--lav-ink);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.club-up-btn:hover{background:var(--lav);color:#fff}
+.club-drop{border:1.5px dashed var(--line);border-radius:12px;padding:20px;text-align:center;font-size:12.5px;color:var(--ink-soft);cursor:pointer}
+.club-drop b{color:var(--lav-ink)}
+.club-map{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;font-size:12.5px;margin:14px 0}
+.club-map select{border:1.3px solid var(--sage);border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:inherit}
+.club-prev{font-size:11.5px;border-collapse:collapse;width:100%;margin-bottom:12px}
+.club-prev td,.club-prev th{border-top:1px solid var(--line);padding:5px 6px;text-align:left;color:var(--ink-soft)}
+.club-go{background:var(--lav);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer;font-family:inherit}
 .crm-addbody label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--ink-soft)}
 .crm-addbody input,.crm-addbody select{border:1.3px solid var(--sage);background:var(--surface);border-radius:8px;padding:7px 9px;font-size:13px;font-family:inherit}
 .crm-addbody button{background:var(--lav);color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;cursor:pointer}
@@ -4638,7 +4647,12 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 
   <div id="t-club" style="display:none">
     <div class="crm-wrap">
-      <div class="crm-top"><h1>Заявки с сайта клуба</h1></div>
+      <div class="crm-top"><h1>Заявки с сайта клуба</h1>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="club-up-btn" id="clubImportOpen" type="button">⬆ загрузить таблицу</button>
+          <button class="crm-add-btn" id="clubAddOpen" title="добавить человека">+</button>
+        </div>
+      </div>
       <div class="crm-stats">
         <div class="crm-stat"><div class="l">всего</div><div class="v" id="clubTotal">0</div></div>
         <div class="crm-stat"><div class="l">новые</div><div class="v wait" id="clubNew">0</div></div>
@@ -4674,6 +4688,38 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
       <label>Сумма<input type="text" id="caAmount" placeholder="33" style="width:70px"></label>
       <label>Заметка<input type="text" id="caNote"></label>
       <button id="caAdd">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div class="crm-modal-overlay" id="clubAddOverlay">
+  <div class="crm-modal">
+    <div class="crm-modal-head"><h3>Добавить человека в CRM main</h3><button class="crm-modal-x" data-close="clubAddOverlay" type="button">✕</button></div>
+    <div class="crm-addbody">
+      <label>Имя<input type="text" id="clName"></label>
+      <label>Email<input type="text" id="clEmail"></label>
+      <label>Телефон<input type="text" id="clPhone"></label>
+      <label>Программа<input type="text" id="clProgram" list="clProgList"></label>
+      <datalist id="clProgList"></datalist>
+      <label style="flex-basis:100%">Вопрос / комментарий<input type="text" id="clMsg"></label>
+      <label style="flex-basis:100%">Заметка<input type="text" id="clNote"></label>
+      <button id="clAdd" type="button">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<div class="crm-modal-overlay" id="clubImportOverlay">
+  <div class="crm-modal" style="max-width:640px">
+    <div class="crm-modal-head"><h3>Загрузить таблицу в CRM main</h3><button class="crm-modal-x" data-close="clubImportOverlay" type="button">✕</button></div>
+    <input type="file" id="clubFile" accept=".xlsx,.xls,.csv,.numbers" hidden>
+    <div class="club-drop" id="clubDrop">перетащи файл сюда или <b>выбери на компьютере</b><br>Excel (.xlsx, .xls) или CSV · первая строка – названия колонок</div>
+    <div id="clubImportStep" hidden>
+      <div class="club-map" id="clubMap"></div>
+      <div style="overflow:auto"><table class="club-prev" id="clubPrev"></table></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="clubImportInfo" style="font-size:12.5px;color:var(--ink-soft)"></span>
+        <button class="club-go" id="clubImportGo" type="button">Загрузить</button>
+      </div>
     </div>
   </div>
 </div>
@@ -5929,6 +5975,102 @@ function renderClub(){
   }));
 }
 document.getElementById("clubSearch").addEventListener("input", renderClub);
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", ()=>document.getElementById(b.dataset.close).classList.remove("open")));
+["clubAddOverlay","clubImportOverlay"].forEach(id=>document.getElementById(id).addEventListener("click", e=>{ if(e.target.id===id) e.currentTarget.classList.remove("open"); }));
+const CLUB_PROGRAMS = ["Кундалини-йога и Звуковая ванна (среда, 7:30 pm)","Программа наставничества «Я ЕСТЬ»","Сессия с поющими чашами","Марафон «Начни сегодня!»"];
+document.getElementById("clubAddOpen").addEventListener("click", ()=>{
+  const progs = [...new Set(CLUB_PROGRAMS.concat(CLUB.map(r=>r.program).filter(Boolean)))];
+  document.getElementById("clProgList").innerHTML = progs.map(p=>`<option value="${clubEsc(p)}">`).join("");
+  ["clName","clEmail","clPhone","clProgram","clMsg","clNote"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("clubAddOverlay").classList.add("open");
+  setTimeout(()=>document.getElementById("clName").focus(), 50);
+});
+document.getElementById("clAdd").addEventListener("click", async ()=>{
+  const v = id=>document.getElementById(id).value.trim();
+  const body = {name:v("clName"), email:v("clEmail"), phone:v("clPhone"), program:v("clProgram"), message:v("clMsg"), note:v("clNote")};
+  if(!body.name && !body.email && !body.phone){ showToast("впиши хотя бы имя, email или телефон"); return; }
+  try{
+    const row = await apiFetch("/api/admin/club-signups", {method:"POST", body: JSON.stringify(body)});
+    CLUB.unshift(row); renderClub();
+    document.getElementById("clubAddOverlay").classList.remove("open");
+    showToast("Добавлено в CRM main ✓");
+  }catch(e){}
+});
+
+/* ---- загрузка таблицы (Excel / CSV) ---- */
+const CLUB_FIELDS = [["name","Имя"],["email","Email"],["phone","Телефон"],["program","Программа"],["message","Вопрос / комментарий"],["note","Заметка"]];
+const CLUB_GUESS = {name:/(^|\\s)(имя|фио|name|full ?name|участниц)/i, email:/(e-?mail|почта|мейл)/i, phone:/(тел|phone|номер|whats)/i,
+  program:/(программ|мероприят|event|program|курс)/i, message:/(вопрос|коммент|message|сообщен)/i, note:/(заметк|note|примеч)/i};
+let clubSheet = null;  // {head:[], rows:[[]]}
+function loadXLSX(){
+  return new Promise((ok, bad)=>{
+    if(window.XLSX) return ok();
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload = ()=>ok(); sc.onerror = ()=>bad(new Error("xlsx"));
+    document.head.appendChild(sc);
+  });
+}
+document.getElementById("clubImportOpen").addEventListener("click", ()=>{
+  clubSheet = null; document.getElementById("clubImportStep").hidden = true;
+  document.getElementById("clubDrop").innerHTML = "перетащи файл сюда или <b>выбери на компьютере</b><br>Excel (.xlsx, .xls) или CSV · первая строка – названия колонок";
+  document.getElementById("clubImportOverlay").classList.add("open");
+});
+const clubDrop = document.getElementById("clubDrop");
+clubDrop.addEventListener("click", ()=>document.getElementById("clubFile").click());
+clubDrop.addEventListener("dragover", e=>e.preventDefault());
+clubDrop.addEventListener("drop", e=>{ e.preventDefault(); if(e.dataTransfer.files[0]) readClubFile(e.dataTransfer.files[0]); });
+document.getElementById("clubFile").addEventListener("change", e=>{ if(e.target.files[0]) readClubFile(e.target.files[0]); e.target.value=""; });
+async function readClubFile(file){
+  clubDrop.textContent = "читаю «"+file.name+"»…";
+  try{
+    await loadXLSX();
+    const wb = XLSX.read(await file.arrayBuffer(), {type:"array"});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:"", raw:false}).filter(r=>r.some(c=>String(c).trim()));
+    if(aoa.length < 2){ clubDrop.innerHTML = "в файле не нашлось строк с людьми – <b>выбрать другой файл</b>"; return; }
+    clubSheet = {head: aoa[0].map(h=>String(h).trim()), rows: aoa.slice(1)};
+    clubDrop.innerHTML = "файл: <b>"+clubEsc(file.name)+"</b> · "+clubSheet.rows.length+" строк (заменить – выбери другой)";
+    renderClubMap();
+  }catch(e){
+    clubDrop.innerHTML = "не получилось прочитать файл – сохрани его как .xlsx или .csv и <b>попробуй ещё раз</b>";
+  }
+}
+function renderClubMap(){
+  const head = clubSheet.head, used = new Set();
+  const opts = sel=>`<option value="">— не загружать —</option>`+head.map((h,i)=>`<option value="${i}"${sel===i?" selected":""}>${clubEsc(h||("колонка "+(i+1)))}</option>`).join("");
+  document.getElementById("clubMap").innerHTML = CLUB_FIELDS.map(([k,l])=>{
+    let g = head.findIndex((h,i)=>!used.has(i) && CLUB_GUESS[k].test(h));
+    if(g>=0) used.add(g);
+    return `<span>${l}</span><select data-map="${k}">${opts(g)}</select>`;
+  }).join("");
+  document.querySelectorAll("[data-map]").forEach(s=>s.addEventListener("change", renderClubPrev));
+  document.getElementById("clubImportStep").hidden = false;
+  renderClubPrev();
+}
+function clubMapped(){
+  const m = {}; document.querySelectorAll("[data-map]").forEach(s=>{ if(s.value!=="") m[s.dataset.map] = +s.value; });
+  return clubSheet.rows.map(r=>{ const o = {}; Object.entries(m).forEach(([k,i])=>o[k] = String(r[i]==null?"":r[i]).trim()); return o; })
+    .filter(o=>o.name || o.email || o.phone);
+}
+function renderClubPrev(){
+  const rows = clubMapped(), cols = CLUB_FIELDS.filter(([k])=>document.querySelector(`[data-map="${k}"]`).value!=="");
+  document.getElementById("clubPrev").innerHTML = `<tr>${cols.map(([,l])=>`<th>${l}</th>`).join("")}</tr>` +
+    rows.slice(0,5).map(o=>`<tr>${cols.map(([k])=>`<td>${clubEsc(o[k]||"–")}</td>`).join("")}</tr>`).join("");
+  document.getElementById("clubImportInfo").textContent = rows.length ? `будет загружено до ${rows.length} человек (первые 5 – выше); у кого email уже есть в CRM main – пропустим` : "выбери, в какой колонке имя, email или телефон";
+  document.getElementById("clubImportGo").disabled = !rows.length;
+}
+document.getElementById("clubImportGo").addEventListener("click", async ()=>{
+  const rows = clubMapped(); if(!rows.length) return;
+  const btn = document.getElementById("clubImportGo"); btn.disabled = true; btn.textContent = "загружаю…";
+  try{
+    const r = await apiFetch("/api/admin/club-signups/import", {method:"POST", body: JSON.stringify({rows})});
+    document.getElementById("clubImportOverlay").classList.remove("open");
+    showToast("Загружено: "+r.added+(r.skipped ? " · пропущено (уже есть / пустые): "+r.skipped : ""));
+    await loadClub();
+  }catch(e){}
+  btn.disabled = false; btn.textContent = "Загрузить";
+});
 
 function fmtDT(ts){
   if(!ts) return "–";
@@ -7043,6 +7185,51 @@ async def api_club_list(request):
     return web.json_response([dict(r) for r in rows])
 
 
+def _club_row(d):
+    g = lambda k, n: str(d.get(k) or "").strip()[:n]
+    return (g("name", 200), g("email", 200), g("phone", 60), g("program", 200), g("message", 3000), g("note", 1000))
+
+
+async def api_club_add(request):
+    """Добавить одну заявку вручную (вкладка «CRM main»)."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    name, email, phone, program, msg, note = _club_row(await request.json())
+    if not (name or email or phone):
+        return web.json_response({"error": "name, email or phone required"}, status=400)
+    row = await DB_POOL.fetchrow(
+        "INSERT INTO club_signups (name, email, email_norm, phone, program, message, note, created) "
+        "VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *",
+        name, email, normalize_email(email), phone, program, msg, note, time.time())
+    return web.json_response(dict(row), status=201)
+
+
+async def api_club_import(request):
+    """Загрузка таблицы людей в «CRM main». Повторы (тот же email, уже есть в CRM main) пропускаются."""
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    data = await request.json()
+    rows = data.get("rows") or []
+    existing = {r["email_norm"] for r in await DB_POOL.fetch(
+        "SELECT email_norm FROM club_signups WHERE COALESCE(email_norm,'') <> ''")}
+    added = skipped = 0
+    now = time.time()
+    for i, d in enumerate(rows[:5000]):
+        name, email, phone, program, msg, note = _club_row(d)
+        en = normalize_email(email)
+        if not (name or email or phone) or (en and en in existing):
+            skipped += 1
+            continue
+        await DB_POOL.execute(
+            "INSERT INTO club_signups (name, email, email_norm, phone, program, message, note, created) "
+            "VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+            name, email, en, phone, program, msg, note, now - i * 0.001)
+        if en:
+            existing.add(en)
+        added += 1
+    return web.json_response({"ok": True, "added": added, "skipped": skipped})
+
+
 async def api_club_update(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
@@ -7795,6 +7982,8 @@ def make_app():
         web.post("/api/admin/signups/{id}/note", api_signup_note),
         web.put("/api/admin/signups-emails", api_signups_emails_bulk),
         web.get("/api/admin/club-signups", api_club_list),
+        web.post("/api/admin/club-signups", api_club_add),
+        web.post("/api/admin/club-signups/import", api_club_import),
         web.put("/api/admin/club-signups/{id}", api_club_update),
         web.delete("/api/admin/club-signups/{id}", api_club_delete),
         web.delete("/api/admin/signups/{id}", api_signup_delete),
