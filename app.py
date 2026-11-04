@@ -604,7 +604,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sys)}
 h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;margin:0;text-wrap:balance}
 .eyebrow{font-family:var(--font-head);font-style:italic;font-size:13px;color:var(--lav-ink);margin:0 0 4px}
 
-.app{max-width:460px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;position:relative}
+.app{max-width:460px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;position:relative;z-index:1}
+/* сакральная геометрия тонкими зелёными линиями – фон страниц «Сегодня» и «Прогресс» */
+#geoBg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
+body.bg-geo #geoBg{display:block}
+#geoBg svg{position:absolute;fill:none;stroke:#6A9993;stroke-width:1;vector-effect:non-scaling-stroke;opacity:.22}
+@media (min-width:900px){ body.bg-geo main{background:transparent} }
 .app[hidden]{display:none}
 .topbar{padding:10px 18px 6px;padding-top:calc(10px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 .topbar .mark{width:30px;height:30px;object-fit:contain}
@@ -1432,6 +1437,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 
 <div class="authscreen" id="authLoading" hidden><p class="auth-loading">Загружаем кабинет…</p></div>
 
+<div id="geoBg" aria-hidden="true"></div>
 <div class="app" id="mainApp" hidden>
   <nav class="sidebar">
     <div class="brand">
@@ -2086,6 +2092,60 @@ function openOverlay(title, eyebrow){
 
 /* ---------- навигация: централизованный state + персистентность ---------- */
 const TAB_KEY = "serenityActiveTab";
+/* ---- фон: меркаба, цветок жизни, тор, куб Метатрона ---- */
+function geoFlower(r){ // цветок жизни: 19 кругов + внешний контур
+  const c = [[0,0]];
+  for(let ring=1; ring<=2; ring++){
+    for(let k=0; k<6; k++){
+      const a = Math.PI/3*k, b = Math.PI/3*(k+2);
+      for(let j=0; j<ring; j++){
+        c.push([r*(ring*Math.cos(a) + j*Math.cos(b)), r*(ring*Math.sin(a) + j*Math.sin(b))]);
+      }
+    }
+  }
+  return c.map(p=>`<circle cx="${p[0].toFixed(2)}" cy="${p[1].toFixed(2)}" r="${r}"/>`).join("") + `<circle cx="0" cy="0" r="${3*r}"/>`;
+}
+function geoMetatron(r){ // 13 кругов + все соединяющие линии
+  const pts = [[0,0]];
+  for(let k=0;k<6;k++){ const a=Math.PI/3*k+Math.PI/6; pts.push([2*r*Math.cos(a),2*r*Math.sin(a)]); }
+  for(let k=0;k<6;k++){ const a=Math.PI/3*k+Math.PI/6; pts.push([4*r*Math.cos(a),4*r*Math.sin(a)]); }
+  let out = pts.map(p=>`<circle cx="${p[0].toFixed(2)}" cy="${p[1].toFixed(2)}" r="${r}"/>`).join("");
+  for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++)
+    out += `<line x1="${pts[i][0].toFixed(2)}" y1="${pts[i][1].toFixed(2)}" x2="${pts[j][0].toFixed(2)}" y2="${pts[j][1].toFixed(2)}"/>`;
+  return out;
+}
+function geoMerkaba(r){ // звёздный тетраэдр: два треугольника + внутренние рёбра
+  const tri = off => [0,1,2].map(k=>{ const a=-Math.PI/2+off+k*2*Math.PI/3; return [r*Math.cos(a), r*Math.sin(a)]; });
+  const A = tri(0), B = tri(Math.PI);
+  const poly = P => `<polygon points="${P.map(p=>p[0].toFixed(2)+","+p[1].toFixed(2)).join(" ")}"/>`;
+  let out = poly(A) + poly(B);
+  A.concat(B).forEach(p=>{ out += `<line x1="0" y1="0" x2="${p[0].toFixed(2)}" y2="${p[1].toFixed(2)}"/>`; });
+  out += `<circle cx="0" cy="0" r="${r}"/>`;
+  return out;
+}
+function geoTorus(r){ // тор: 24 круга вокруг центра
+  let out = "";
+  for(let k=0;k<24;k++){ const a=Math.PI*2*k/24; out += `<circle cx="${(r*0.5*Math.cos(a)).toFixed(2)}" cy="${(r*0.5*Math.sin(a)).toFixed(2)}" r="${(r*0.5).toFixed(2)}"/>`; }
+  return out + `<circle cx="0" cy="0" r="${r}"/>`;
+}
+let geoDrawn = false;
+function drawGeoBg(){
+  if(geoDrawn) return; geoDrawn = true;
+  const box = document.getElementById("geoBg"); if(!box) return;
+  const shapes = [ // [фигура, размер px, left, top, поворот]
+    [geoFlower(33), 260, "72%", "-4%", 0],
+    [geoMetatron(20), 240, "-6%", "22%", 15],
+    [geoMerkaba(100), 210, "70%", "48%", 0],
+    [geoTorus(100), 230, "4%", "66%", 0],
+    [geoFlower(33), 120, "40%", "86%", 30],
+    [geoMerkaba(100), 110, "8%", "2%", 20],
+    [geoMetatron(20), 130, "84%", "82%", 0],
+    [geoTorus(100), 110, "48%", "30%", 0]
+  ];
+  box.innerHTML = shapes.map(([g,size,l,t,rot])=>{
+    return `<svg viewBox="-110 -110 220 220" style="left:${l};top:${t};width:${(size/4.3).toFixed(1)}vmin;height:${(size/4.3).toFixed(1)}vmin;transform:rotate(${rot}deg)">${g}</svg>`;
+  }).join("");
+}
 function setActiveTab(tab, opts){
   opts = opts || {};
   const screen = document.getElementById("tab-"+tab);
@@ -2098,6 +2158,8 @@ function setActiveTab(tab, opts){
   document.querySelectorAll(".screen").forEach(s=>s.hidden = true);
   screen.hidden = false;
   document.body.classList.toggle("bg-green", ["materials","schedule","profile"].includes(tab));
+  document.body.classList.toggle("bg-geo", tab === "today" || tab === "home");
+  if(tab === "today" || tab === "home") drawGeoBg();
   if(opts.persist !== false){
     try{ localStorage.setItem(TAB_KEY, tab); }catch(e){}
     try{
