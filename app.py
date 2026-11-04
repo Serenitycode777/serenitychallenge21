@@ -1011,11 +1011,22 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   font-weight:600;border-radius:4px 12px 12px 12px;padding:10px 8px;min-height:42px;border:none;
   box-shadow:0 6px 14px -8px rgba(30,52,50,.45)}
 /* «ушко» папки сверху слева */
-.chip.folder::before{content:"";position:absolute;left:0;top:-7px;width:44%;height:9px;background:inherit;
-  border-radius:7px 9px 0 0;clip-path:polygon(0 0,82% 0,100% 100%,0 100%)}
-.chip.folder.active{background:#5C4A6E;color:#fff;box-shadow:0 8px 18px -8px rgba(40,25,55,.6)}
+.chip.folder{border:1px solid #E2C46E}
+.chip.folder::before{content:"";position:absolute;left:-1px;top:-8px;width:44%;height:9px;background:inherit;
+  border:1px solid #E2C46E;border-bottom:none;border-radius:7px 9px 0 0}
+.chip.folder.active,.chip.folder.active::before{border-color:#C9A13F}
+.chip.folder.active{background:linear-gradient(135deg,#F3DC94 0%,#E2BE62 45%,#C9A13F 100%);color:#4A3560;
+  box-shadow:0 8px 20px -8px rgba(110,80,20,.65),inset 0 1px 0 rgba(255,255,255,.6)}
+.chip.folder.active::before{background:#F0D88C}
+/* фиолетовый перелив по золоту */
+.chip.folder.active::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(110deg,rgba(150,110,205,0) 28%,rgba(150,110,205,.6) 42%,rgba(255,255,255,.5) 50%,rgba(150,110,205,.6) 58%,rgba(150,110,205,0) 72%);
+  background-size:300% 100%;animation:folderShimmer 3.2s ease-in-out infinite}
+.chip.folder.active[data-f="__fav__"] svg{color:#B3415A}
+@keyframes folderShimmer{0%{background-position:100% 0}60%,100%{background-position:0% 0}}
+@media (prefers-reduced-motion:reduce){.chip.folder.active::after{animation:none;opacity:.6}}
 .chip.folder[data-f="__fav__"] svg{width:15px;height:15px;flex-shrink:0;color:#D9707A}
-.chip.folder.active[data-f="__fav__"] svg{color:#fff}
+
 .mcard{background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;padding:16px;cursor:pointer;
   display:flex;gap:14px;align-items:flex-start}
 .mcard[hidden]{display:none}
