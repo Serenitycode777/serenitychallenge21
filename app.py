@@ -608,7 +608,13 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 /* сакральная геометрия тонкими зелёными линиями – фон страниц «Сегодня» и «Прогресс» */
 #geoBg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;display:none}
 body.bg-geo #geoBg{display:block}
-#geoBg svg{position:absolute;fill:none;stroke:#6A9993;stroke-width:1;vector-effect:non-scaling-stroke;opacity:.22}
+#geoBg svg{position:absolute;fill:none;stroke:#6A9993;stroke-width:1;vector-effect:non-scaling-stroke;opacity:.2}
+#geoBg .geo-shape{animation:geoDrift var(--dur,60s) ease-in-out infinite alternate;transform-origin:50% 50%}
+#geoBg .geo-wave{left:0;width:100%;opacity:.16}
+#geoBg .geo-wave path{animation:geoWave 26s ease-in-out infinite alternate}
+@keyframes geoDrift{0%{transform:translate(0,0) rotate(var(--r0,0deg)) scale(1)}100%{transform:translate(var(--dx,12px),var(--dy,-16px)) rotate(var(--r1,12deg)) scale(1.04)}}
+@keyframes geoWave{0%{transform:translateX(0)}100%{transform:translateX(-6%)}}
+@media (prefers-reduced-motion:reduce){ #geoBg .geo-shape,#geoBg .geo-wave path{animation:none} }
 @media (min-width:900px){ body.bg-geo main{background:transparent} }
 .app[hidden]{display:none}
 .topbar{padding:10px 18px 6px;padding-top:calc(10px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
@@ -2132,19 +2138,19 @@ let geoDrawn = false;
 function drawGeoBg(){
   if(geoDrawn) return; geoDrawn = true;
   const box = document.getElementById("geoBg"); if(!box) return;
-  const shapes = [ // [фигура, размер px, left, top, поворот]
-    [geoFlower(33), 260, "72%", "-4%", 0],
-    [geoMetatron(20), 240, "-6%", "22%", 15],
-    [geoMerkaba(100), 210, "70%", "48%", 0],
-    [geoTorus(100), 230, "4%", "66%", 0],
-    [geoFlower(33), 120, "40%", "86%", 30],
-    [geoMerkaba(100), 110, "8%", "2%", 20],
-    [geoMetatron(20), 130, "84%", "82%", 0],
-    [geoTorus(100), 110, "48%", "30%", 0]
+  // 4 фигуры, уходящие за края, медленно «дышат» и плывут; плюс две плавные волны
+  const shapes = [ // [фигура, размер, left, top, поворот от/до, сдвиг, длительность, прозрачность]
+    [geoFlower(33),   330, "62%", "-14%", 0,  14, "14px","18px", 70, .22],
+    [geoMetatron(20), 250, "-16%", "30%", 10, 26, "18px","-12px", 80, .16],
+    [geoTorus(100),   300, "60%", "62%", 0,  20, "-16px","-14px", 90, .18],
+    [geoMerkaba(100), 140, "12%", "78%", 15, 35, "10px","-10px", 65, .14]
   ];
-  box.innerHTML = shapes.map(([g,size,l,t,rot])=>{
-    return `<svg viewBox="-110 -110 220 220" style="left:${l};top:${t};width:${(size/4.3).toFixed(1)}vmin;height:${(size/4.3).toFixed(1)}vmin;transform:rotate(${rot}deg)">${g}</svg>`;
-  }).join("");
+  const waves = [["28%", "M0,60 C120,10 240,110 360,60 S600,10 720,60 S960,110 1080,60 S1320,10 1440,60"],
+                 ["74%", "M0,50 C160,100 320,0 480,50 S800,100 960,50 S1280,0 1440,50"]];
+  box.innerHTML = waves.map(([t,d])=>`<svg class="geo-wave" viewBox="0 0 1200 120" preserveAspectRatio="none" style="top:${t};height:14vmin"><path d="${d}"/></svg>`).join("") +
+    shapes.map(([g,size,l,t,r0,r1,dx,dy,dur,op])=>
+      `<svg class="geo-shape" viewBox="-110 -110 220 220" style="left:${l};top:${t};width:${(size/4.3).toFixed(1)}vmin;height:${(size/4.3).toFixed(1)}vmin;opacity:${op};--r0:${r0}deg;--r1:${r1}deg;--dx:${dx};--dy:${dy};--dur:${dur}s">${g}</svg>`
+    ).join("");
 }
 function setActiveTab(tab, opts){
   opts = opts || {};
