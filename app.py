@@ -619,6 +619,11 @@ body.bg-green{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 1
 body.bg-green .topbar .name,body.bg-green .page-title,body.bg-green .sectitle{color:#fff}
 body.bg-green .name small{color:rgba(255,255,255,.8)}
 body.bg-green .mlist-title span,body.bg-green .flabel{color:#fff}
+body.bg-green .folder-back{color:#fff}
+body.bg-green .folder-back + .mcard h3{color:#fff}
+body.bg-green .folder-back + .mcard .topics,body.bg-green .folder-back + .mcard .foot span{color:rgba(255,255,255,.92)}
+body.bg-green .folder-back + .mcard .dot:empty{background:rgba(255,255,255,.18)}
+body.bg-green #tab-materials > .note,body.bg-green #matList > .note,body.bg-green #tab-materials p.note{color:rgba(255,255,255,.9)}
 body.bg-green .mlist-title::before,body.bg-green .mlist-title::after{background:rgba(255,255,255,.45)}
 body.bg-green #logoutBtn{color:#fff;border-color:rgba(255,255,255,.6);background:transparent}
 .page-title{font-family:var(--font-head);font-weight:600;font-size:34px;color:var(--sage-ink);
