@@ -4221,6 +4221,15 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .crm-addbody button{background:var(--lav);color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;cursor:pointer}
 .crm-bottom-actions{display:flex;justify-content:flex-end;margin-top:16px}
 .crm-bottom-actions a{font-size:12.5px;font-weight:600;text-decoration:none;color:var(--lav-ink);cursor:pointer}
+/* фон админки – фирменный зелёный; всё, что лежит прямо на фоне, – белым */
+body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixed;min-height:100vh}
+.top .name,.top .logout{color:#fff}
+.top .mark{background:#fff;color:var(--sage-ink)}
+.tabs{background:rgba(255,255,255,.22)}
+.tab{color:#fff}
+.tab.active{background:#fff;color:var(--sage-ink)}
+.crm-top h1{color:#fff}
+.crm-bottom-actions a{color:#fff;text-decoration:underline;text-underline-offset:3px}
 .crm-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:12.8px;box-shadow:var(--shadow)}
 .crm-table th{text-align:left;padding:10px 12px;background:var(--surface-2);font-size:11.5px;font-weight:650;color:var(--ink-soft)}
 .crm-table td{padding:10px 12px;border-top:1px solid var(--line);color:var(--ink-soft);vertical-align:middle}
