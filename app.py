@@ -618,6 +618,7 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 body.bg-green{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixed}
 body.bg-green .topbar .name,body.bg-green .page-title,body.bg-green .sectitle{color:#fff}
 body.bg-green .name small{color:rgba(255,255,255,.8)}
+@media (min-width:900px){ body.bg-green main{background:transparent} }
 body.bg-green .mlist-title span,body.bg-green .flabel{color:#fff}
 body.bg-green .folder-back{color:#fff}
 body.bg-green .folder-back + .mcard h3{color:#fff}
