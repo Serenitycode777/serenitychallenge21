@@ -1020,7 +1020,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .chip.folder.active::before{background:#F0D88C}
 /* фиолетовый перелив по золоту */
 .chip.folder.active::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:linear-gradient(110deg,rgba(150,110,205,0) 28%,rgba(150,110,205,.6) 42%,rgba(255,255,255,.5) 50%,rgba(150,110,205,.6) 58%,rgba(150,110,205,0) 72%);
+  background:linear-gradient(110deg,rgba(150,110,205,0) 28%,rgba(150,110,205,.42) 42%,rgba(255,255,255,.4) 50%,rgba(150,110,205,.42) 58%,rgba(150,110,205,0) 72%);
   background-size:300% 100%;animation:folderShimmer 3.2s ease-in-out infinite}
 .chip.folder.active[data-f="__fav__"] svg{color:#B3415A}
 @keyframes folderShimmer{0%{background-position:100% 0}60%,100%{background-position:0% 0}}
