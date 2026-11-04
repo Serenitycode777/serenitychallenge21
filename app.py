@@ -2099,17 +2099,21 @@ function openOverlay(title, eyebrow){
 /* ---------- навигация: централизованный state + персистентность ---------- */
 const TAB_KEY = "serenityActiveTab";
 /* ---- фон: меркаба, цветок жизни, тор, куб Метатрона ---- */
-function geoFlower(r){ // цветок жизни: 19 кругов + внешний контур
+let geoClipN = 0;
+function geoFlower(r){ // полный цветок жизни: сетка кругов, обрезанная внешним кругом радиуса 3r
   const c = [[0,0]];
-  for(let ring=1; ring<=2; ring++){
+  for(let ring=1; ring<=4; ring++){
     for(let k=0; k<6; k++){
-      const a = Math.PI/3*k, b = Math.PI/3*(k+2);
+      const a = Math.PI/3*k + Math.PI/6, b = Math.PI/3*(k+2) + Math.PI/6;
       for(let j=0; j<ring; j++){
         c.push([r*(ring*Math.cos(a) + j*Math.cos(b)), r*(ring*Math.sin(a) + j*Math.sin(b))]);
       }
     }
   }
-  return c.map(p=>`<circle cx="${p[0].toFixed(2)}" cy="${p[1].toFixed(2)}" r="${r}"/>`).join("") + `<circle cx="0" cy="0" r="${3*r}"/>`;
+  const id = "geoFol" + (++geoClipN), R = 3*r;
+  return `<defs><clipPath id="${id}"><circle cx="0" cy="0" r="${R}"/></clipPath></defs>` +
+    `<g clip-path="url(#${id})">` + c.map(p=>`<circle cx="${p[0].toFixed(2)}" cy="${p[1].toFixed(2)}" r="${r}"/>`).join("") + `</g>` +
+    `<circle cx="0" cy="0" r="${R}"/>`;
 }
 function geoMetatron(r){ // 13 кругов + все соединяющие линии
   const pts = [[0,0]];
