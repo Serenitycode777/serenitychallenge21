@@ -2100,20 +2100,17 @@ function openOverlay(title, eyebrow){
 const TAB_KEY = "serenityActiveTab";
 /* ---- фон: меркаба, цветок жизни, тор, куб Метатрона ---- */
 let geoClipN = 0;
-function geoFlower(r){ // полный цветок жизни: сетка кругов, обрезанная внешним кругом радиуса 3r
-  const c = [[0,0]];
-  for(let ring=1; ring<=4; ring++){
-    for(let k=0; k<6; k++){
-      const a = Math.PI/3*k + Math.PI/6, b = Math.PI/3*(k+2) + Math.PI/6;
-      for(let j=0; j<ring; j++){
-        c.push([r*(ring*Math.cos(a) + j*Math.cos(b)), r*(ring*Math.sin(a) + j*Math.sin(b))]);
-      }
-    }
-  }
-  const id = "geoFol" + (++geoClipN), R = 3*r;
-  return `<defs><clipPath id="${id}"><circle cx="0" cy="0" r="${R}"/></clipPath></defs>` +
-    `<g clip-path="url(#${id})">` + c.map(p=>`<circle cx="${p[0].toFixed(2)}" cy="${p[1].toFixed(2)}" r="${r}"/>`).join("") + `</g>` +
-    `<circle cx="0" cy="0" r="${R}"/>`;
+function geoFlower(r){ // классический цветок жизни: 19 кругов, лепестки по краю дорисованы дугами следующего кольца
+  const ring = n => { const c = []; if(!n) return [[0,0]];
+    for(let k=0; k<6; k++){ const a = Math.PI/3*k + Math.PI/6, b = Math.PI/3*(k+2) + Math.PI/6;
+      for(let j=0; j<n; j++) c.push([r*(n*Math.cos(a) + j*Math.cos(b)), r*(n*Math.sin(a) + j*Math.sin(b))]); }
+    return c; };
+  const inner = ring(0).concat(ring(1), ring(2)), outer = ring(3);
+  const circ = p => `<circle cx="${p[0].toFixed(2)}" cy="${p[1].toFixed(2)}" r="${r}"/>`;
+  const id = "geoFol" + (++geoClipN);
+  return `<defs><clipPath id="${id}">${inner.map(circ).join("")}</clipPath></defs>` +
+    inner.map(circ).join("") + `<g clip-path="url(#${id})">${outer.map(circ).join("")}</g>` +
+    `<circle cx="0" cy="0" r="${3*r}"/>`;
 }
 function geoMetatron(r){ // 13 кругов + все соединяющие линии
   const pts = [[0,0]];
