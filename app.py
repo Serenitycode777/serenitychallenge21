@@ -610,11 +610,8 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 body.bg-geo #geoBg{display:block}
 #geoBg svg{position:absolute;fill:none;stroke:#6A9993;stroke-width:1;vector-effect:non-scaling-stroke;opacity:.2}
 #geoBg .geo-shape{animation:geoDrift var(--dur,60s) ease-in-out infinite alternate;transform-origin:50% 50%}
-#geoBg .geo-wave{left:0;width:100%;opacity:.16}
-#geoBg .geo-wave path{animation:geoWave 26s ease-in-out infinite alternate}
 @keyframes geoDrift{0%{transform:translate(0,0) rotate(var(--r0,0deg)) scale(1)}100%{transform:translate(var(--dx,12px),var(--dy,-16px)) rotate(var(--r1,12deg)) scale(1.04)}}
-@keyframes geoWave{0%{transform:translateX(0)}100%{transform:translateX(-6%)}}
-@media (prefers-reduced-motion:reduce){ #geoBg .geo-shape,#geoBg .geo-wave path{animation:none} }
+@media (prefers-reduced-motion:reduce){ #geoBg .geo-shape{animation:none} }
 @media (min-width:900px){ body.bg-geo main{background:transparent} }
 .app[hidden]{display:none}
 .topbar{padding:10px 18px 6px;padding-top:calc(10px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
@@ -2135,23 +2132,29 @@ function geoTorus(r){ // тор: 24 круга вокруг центра
   for(let k=0;k<24;k++){ const a=Math.PI*2*k/24; out += `<circle cx="${(r*0.5*Math.cos(a)).toFixed(2)}" cy="${(r*0.5*Math.sin(a)).toFixed(2)}" r="${(r*0.5).toFixed(2)}"/>`; }
   return out + `<circle cx="0" cy="0" r="${r}"/>`;
 }
-let geoDrawn = false;
+let geoDrawn = "";
 function drawGeoBg(){
-  if(geoDrawn) return; geoDrawn = true;
+  const desk = window.matchMedia && matchMedia("(min-width:900px)").matches, mode = desk ? "d" : "m";
+  if(geoDrawn === mode) return; geoDrawn = mode;
   const box = document.getElementById("geoBg"); if(!box) return;
-  // 3 фигуры (цветок жизни, куб Метатрона, тор), уходящие за края, медленно «дышат» и плывут; плюс две плавные волны
-  const shapes = [ // [фигура, размер, left, top, поворот от/до, сдвиг, длительность, прозрачность]
-    [geoFlower(33),   330, "62%", "-14%", 0,  14, "14px","18px", 70, .22],
-    [geoMetatron(20), 250, "-16%", "30%", 10, 26, "18px","-12px", 80, .16],
-    [geoTorus(100),   300, "60%", "62%", 0,  20, "-16px","-14px", 90, .18]
+  // [фигура, размер (vmin), left, top, поворот от/до, сдвиг x/y, длительность, прозрачность]
+  const shapes = desk ? [ // компьютер: больше фигур, меньше размер, левее не заходим (там меню)
+    [geoFlower(33),   34, "21%", "3%",  0,  12, "12px","16px", 70, .2],
+    [geoMetatron(20), 30, "79%", "6%",  8,  24, "-14px","12px", 80, .17],
+    [geoTorus(100),   32, "70%", "57%", 0,  18, "-14px","-12px", 90, .17],
+    [geoMetatron(20), 22, "23%", "60%", 20, 36, "10px","-12px", 75, .15],
+    [geoFlower(33),   20, "50%", "78%", 10, 24, "12px","-8px", 85, .15],
+    [geoTorus(100),   18, "88%", "36%", 0,  14, "-8px","10px", 65, .14]
+  ] : [ // телефон: 3 крупные фигуры
+    [geoFlower(33),   77, "62%", "-14%", 0,  14, "14px","18px", 70, .22],
+    [geoMetatron(20), 58, "-16%", "30%", 10, 26, "18px","-12px", 80, .16],
+    [geoTorus(100),   70, "60%", "62%", 0,  20, "-16px","-14px", 90, .18]
   ];
-  const waves = [["28%", "M0,60 C120,10 240,110 360,60 S600,10 720,60 S960,110 1080,60 S1320,10 1440,60"],
-                 ["74%", "M0,50 C160,100 320,0 480,50 S800,100 960,50 S1280,0 1440,50"]];
-  box.innerHTML = waves.map(([t,d])=>`<svg class="geo-wave" viewBox="0 0 1200 120" preserveAspectRatio="none" style="top:${t};height:14vmin"><path d="${d}"/></svg>`).join("") +
-    shapes.map(([g,size,l,t,r0,r1,dx,dy,dur,op])=>
-      `<svg class="geo-shape" viewBox="-110 -110 220 220" style="left:${l};top:${t};width:${(size/4.3).toFixed(1)}vmin;height:${(size/4.3).toFixed(1)}vmin;opacity:${op};--r0:${r0}deg;--r1:${r1}deg;--dx:${dx};--dy:${dy};--dur:${dur}s">${g}</svg>`
-    ).join("");
+  box.innerHTML = shapes.map(([g,size,l,t,r0,r1,dx,dy,dur,op])=>
+    `<svg class="geo-shape" viewBox="-110 -110 220 220" style="left:${l};top:${t};width:${size}vmin;height:${size}vmin;opacity:${op};--r0:${r0}deg;--r1:${r1}deg;--dx:${dx};--dy:${dy};--dur:${dur}s">${g}</svg>`
+  ).join("");
 }
+window.addEventListener("resize", ()=>{ if(document.body.classList.contains("bg-geo")) drawGeoBg(); });
 function setActiveTab(tab, opts){
   opts = opts || {};
   const screen = document.getElementById("tab-"+tab);
