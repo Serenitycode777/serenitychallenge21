@@ -614,6 +614,13 @@ h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.01em;marg
 .marathon-eyebrow span{display:inline-block;padding:7px 18px;border-radius:999px;
   background:linear-gradient(90deg,var(--lav),var(--sage));box-shadow:var(--shadow);
   font-family:var(--sys);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff}
+/* Материалы, Расписание и Профиль – на фирменном зелёном фоне */
+body.bg-green{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixed}
+body.bg-green .topbar .name,body.bg-green .page-title,body.bg-green .sectitle{color:#fff}
+body.bg-green .name small{color:rgba(255,255,255,.8)}
+body.bg-green .mlist-title span,body.bg-green .flabel{color:#fff}
+body.bg-green .mlist-title::before,body.bg-green .mlist-title::after{background:rgba(255,255,255,.45)}
+body.bg-green #logoutBtn{color:#fff;border-color:rgba(255,255,255,.6);background:transparent}
 .page-title{font-family:var(--font-head);font-weight:600;font-size:34px;color:var(--sage-ink);
   margin:0 auto 6px;text-wrap:balance;text-align:center;text-transform:uppercase}
 .cal-card{padding:16px 14px 14px;max-width:380px;margin:0 auto 10px}
@@ -2071,6 +2078,7 @@ function setActiveTab(tab, opts){
   });
   document.querySelectorAll(".screen").forEach(s=>s.hidden = true);
   screen.hidden = false;
+  document.body.classList.toggle("bg-green", ["materials","schedule","profile"].includes(tab));
   if(opts.persist !== false){
     try{ localStorage.setItem(TAB_KEY, tab); }catch(e){}
     try{
