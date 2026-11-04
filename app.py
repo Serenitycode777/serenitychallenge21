@@ -1002,13 +1002,18 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   cursor:pointer;margin:2px 0 8px}
 .filter-row{display:flex;flex-direction:column;gap:10px;margin:18px 0}
 .filter-row .chipset{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:10px}
+#folderChips{gap:14px 6px;padding-top:7px}
 .flabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);width:100%}
 .chip{font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 13px;cursor:pointer;font-family:var(--sys)}
 .chip.active{background:var(--lav);border-color:var(--lav);color:#fff}
-.chip.folder{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;font-size:13px;
-  font-weight:600;border-radius:14px;padding:14px 10px;min-height:46px}
-.chip.folder.active{background:linear-gradient(135deg,var(--lav),var(--sage));border-color:transparent;color:#fff}
+.chip.folder{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;font-size:13px;
+  font-weight:600;border-radius:4px 12px 12px 12px;padding:10px 8px;min-height:42px;border:none;
+  box-shadow:0 6px 14px -8px rgba(30,52,50,.45)}
+/* «ушко» папки сверху слева */
+.chip.folder::before{content:"";position:absolute;left:0;top:-7px;width:44%;height:9px;background:inherit;
+  border-radius:7px 9px 0 0;clip-path:polygon(0 0,82% 0,100% 100%,0 100%)}
+.chip.folder.active{background:#5C4A6E;color:#fff;box-shadow:0 8px 18px -8px rgba(40,25,55,.6)}
 .chip.folder[data-f="__fav__"] svg{width:15px;height:15px;flex-shrink:0;color:#D9707A}
 .chip.folder.active[data-f="__fav__"] svg{color:#fff}
 .mcard{background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;padding:16px;cursor:pointer;
