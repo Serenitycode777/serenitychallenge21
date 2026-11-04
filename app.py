@@ -3660,7 +3660,7 @@ function renderEvents(){
       <div class="evt-date c-${col}"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
       <div class="evt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg></div>
       <div class="evt-body"><span class="evt-tag">Zoom-встреча</span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':mskToEt(e.time||'')}</div></div>
-      ${clickable?`<span class="evt-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg>Открыть Zoom</span>`:''}
+      ${clickable?`<span class="evt-go">Открыть Zoom</span>`:''}
     </${tag}>`;
   }).join("");
 
