@@ -1018,13 +1018,10 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .chip.folder.active{background:linear-gradient(135deg,#F3DC94 0%,#E2BE62 45%,#C9A13F 100%);color:#4A3560;
   box-shadow:0 8px 20px -8px rgba(110,80,20,.65),inset 0 1px 0 rgba(255,255,255,.6)}
 .chip.folder.active::before{background:#F0D88C}
-/* фиолетовый перелив по золоту */
+/* лёгкий фиолетовый градиент по золоту (без анимации) */
 .chip.folder.active::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:linear-gradient(110deg,rgba(150,110,205,0) 28%,rgba(150,110,205,.42) 42%,rgba(255,255,255,.4) 50%,rgba(150,110,205,.42) 58%,rgba(150,110,205,0) 72%);
-  background-size:300% 100%;animation:folderShimmer 3.2s ease-in-out infinite}
+  background:linear-gradient(135deg,rgba(150,110,205,0) 35%,rgba(150,110,205,.30) 100%)}
 .chip.folder.active[data-f="__fav__"] svg{color:#B3415A}
-@keyframes folderShimmer{0%{background-position:100% 0}60%,100%{background-position:0% 0}}
-@media (prefers-reduced-motion:reduce){.chip.folder.active::after{animation:none;opacity:.6}}
 .chip.folder[data-f="__fav__"] svg{width:15px;height:15px;flex-shrink:0;color:#D9707A}
 
 .mcard{background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px -4px rgba(51,46,61,.18);border-radius:14px;padding:16px;cursor:pointer;
