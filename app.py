@@ -4348,7 +4348,7 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .em-to-wrap{margin:-4px 0 10px 54px}
 .em-to-btn{border:none;background:none;color:var(--sage-ink);font-size:12px;font-weight:600;cursor:pointer;padding:2px 0;font-family:inherit}
 .em-to-list{margin-top:6px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);max-height:260px;overflow:auto}
-.em-to-row{display:grid;grid-template-columns:26px minmax(0,1fr) minmax(0,1.4fr) auto;gap:8px;align-items:center;padding:6px 10px;font-size:12px;border-top:1px solid var(--line)}
+.em-to-row{display:grid;grid-template-columns:26px minmax(0,1fr) minmax(0,1.4fr) 64px;gap:8px;align-items:center;padding:6px 10px;font-size:12px;border-top:1px solid var(--line)}
 .em-to-row:first-child{border-top:none}
 .em-to-row .n{color:var(--ink-soft)}
 .em-to-row .nm{font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
