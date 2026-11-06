@@ -133,6 +133,8 @@ async def init_db(app):
         total_count INTEGER DEFAULT 0, sent_at DOUBLE PRECISION, created DOUBLE PRECISION, error TEXT
     )""")
     await DB_POOL.execute("ALTER TABLE scheduled_emails ADD COLUMN IF NOT EXISTS recipients TEXT")
+    # фактический список получательниц отправленного письма: [{name, email, ok}]
+    await DB_POOL.execute("ALTER TABLE scheduled_emails ADD COLUMN IF NOT EXISTS sent_to TEXT")
     await DB_POOL.execute("""CREATE TABLE IF NOT EXISTS day_notes (
         id SERIAL PRIMARY KEY, user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
         note_date DATE NOT NULL, text TEXT NOT NULL DEFAULT '', updated DOUBLE PRECISION,
@@ -169,6 +171,7 @@ async def init_db(app):
     await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS photo_url TEXT")
     await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS date_label TEXT DEFAULT ''")
     await DB_POOL.execute("ALTER TABLE mila_events ADD COLUMN IF NOT EXISTS place_label TEXT DEFAULT ''")
+    await backfill_sent_to()
 
 
 
@@ -387,6 +390,40 @@ async def _email_audience_rows(audience: str, recipients=None):
     return await DB_POOL.fetch(q)
 
 
+async def backfill_sent_to():
+    """Для писем, отправленных до появления sent_to, восстанавливаем список: выбранные вручную
+    получательницы, иначе – аудитория на момент отправки (кто был в базе к тому времени)."""
+    rows = await DB_POOL.fetch("SELECT * FROM scheduled_emails WHERE status='sent' AND sent_to IS NULL")
+    for row in rows:
+        try:
+            chosen = json.loads(row["recipients"]) if row["recipients"] else None
+        except Exception:
+            chosen = None
+        cutoff = row["sent_at"] or row["send_at"] or time.time()
+        if chosen is not None:
+            people = await _chosen_rows(chosen)
+        elif row["audience"] == "news":
+            people = await DB_POOL.fetch(
+                "SELECT DISTINCT ON (email_norm) name, email FROM profiles WHERE news=TRUE AND COALESCE(email,'')<>'' "
+                "AND created <= $1 ORDER BY email_norm, created DESC", cutoff)
+        else:
+            base = "SELECT DISTINCT ON (email_norm) name, email FROM signups WHERE COALESCE(email,'')<>'' AND created <= $1 "
+            aud = row["audience"]
+            if aud in ("free", "emails"):
+                q = base + f"AND {aud}=TRUE "
+            elif aud == "paid":
+                q = base + "AND status='оплачено' "
+            elif aud == "waiting":
+                q = base + ("AND email_norm NOT IN (SELECT email_norm FROM signups WHERE status='оплачено' "
+                            "AND email_norm IS NOT NULL AND created <= $1) ")
+            else:
+                q = base
+            people = await DB_POOL.fetch(q + "ORDER BY email_norm, id DESC", cutoff)
+        sent_to = [{"name": (p["name"] or ""), "email": p["email"], "ok": True} for p in people]
+        await DB_POOL.execute("UPDATE scheduled_emails SET sent_to=$2 WHERE id=$1",
+                              row["id"], json.dumps(sent_to, ensure_ascii=False))
+
+
 async def process_due_emails():
     rows = await DB_POOL.fetch(
         "UPDATE scheduled_emails SET status='sending' WHERE id IN "
@@ -400,6 +437,7 @@ async def process_due_emails():
             chosen = None
         recipients = await _email_audience_rows(row["audience"], chosen)
         ok_n, fail_n, last_err = 0, 0, ""
+        sent_to = []
         await DB_POOL.execute("UPDATE scheduled_emails SET total_count=$2 WHERE id=$1", row["id"], len(recipients))
         for r in recipients:
             values = {"имя": (r["name"] or "").strip() or "дорогая участница", "ссылка": CHANNEL_INVITE_LINK or ""}
@@ -409,10 +447,12 @@ async def process_due_emails():
             else:
                 fail_n += 1
                 last_err = err
+            sent_to.append({"name": (r["name"] or ""), "email": r["email"], "ok": bool(ok)})
             await asyncio.sleep(0.6)  # лимит Resend – не больше 2 писем в секунду
         await DB_POOL.execute(
-            "UPDATE scheduled_emails SET status=$2, sent_count=$3, failed_count=$4, sent_at=$5, error=$6 WHERE id=$1",
+            "UPDATE scheduled_emails SET status=$2, sent_count=$3, failed_count=$4, sent_at=$5, error=$6, sent_to=$7 WHERE id=$1",
             row["id"], "sent" if ok_n or not fail_n else "failed", ok_n, fail_n, time.time(), last_err or None,
+            json.dumps(sent_to, ensure_ascii=False),
         )
 
 
@@ -4305,6 +4345,15 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .crm-modal-head h3{font-size:15px;margin:0;font-weight:650}
 .crm-modal-x{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:4px}
 .crm-addbody{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.em-to-wrap{margin:-4px 0 10px 54px}
+.em-to-btn{border:none;background:none;color:var(--sage-ink);font-size:12px;font-weight:600;cursor:pointer;padding:2px 0;font-family:inherit}
+.em-to-list{margin-top:6px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);max-height:260px;overflow:auto}
+.em-to-row{display:grid;grid-template-columns:26px minmax(0,1fr) minmax(0,1.4fr) auto;gap:8px;align-items:center;padding:6px 10px;font-size:12px;border-top:1px solid var(--line)}
+.em-to-row:first-child{border-top:none}
+.em-to-row .n{color:var(--ink-soft)}
+.em-to-row .nm{font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.em-to-row .em{color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.em-to-row.fail .x{color:#B3415A;font-weight:600}
 .club-up-btn{border:1.3px solid var(--lav);background:var(--surface);color:var(--lav-ink);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
 .club-up-btn:hover{background:var(--lav);color:#fff}
 .club-drop{border:1.5px dashed var(--line);border-radius:12px;padding:20px;text-align:center;font-size:12.5px;color:var(--ink-soft);cursor:pointer}
@@ -4933,8 +4982,15 @@ function renderEmails(){
       <span class="em-st ${m.status}">${st}</span>
       ${m.status==='scheduled'?`<button class="em-now" data-emnow="${m.id}" type="button">отправить сейчас</button><button class="evbtn" data-emedit="${m.id}" title="изменить">✎</button>`:''}
       ${m.status!=='sending'?`<button class="evbtn" data-emdel="${m.id}" title="удалить">✕</button>`:''}
-    </div>`; }).join("") : `<div class="note">пока нет запланированных писем – добавь первое ниже</div>`;
+    </div>${(m.sent_to && m.sent_to.length) ? `<div class="em-to-wrap">
+      <button class="em-to-btn" data-emto="${m.id}" type="button">кому отправлено (${m.sent_to.length}) ▾</button>
+      <div class="em-to-list" id="emTo${m.id}" hidden>${m.sent_to.map((p,i)=>`<div class="em-to-row${p.ok?'':' fail'}"><span class="n">${i+1}</span><span class="nm">${emEsc(p.name||"–")}</span><span class="em">${emEsc(p.email)}</span>${p.ok?'':'<span class="x">не ушло</span>'}</div>`).join("")}</div>
+    </div>` : ''}`; }).join("") : `<div class="note">пока нет запланированных писем – добавь первое ниже</div>`;
   list.querySelectorAll("[data-emedit]").forEach(b=>b.addEventListener("click", ()=>emStartEdit(+b.dataset.emedit)));
+  list.querySelectorAll("[data-emto]").forEach(b=>b.addEventListener("click", ()=>{
+    const box = document.getElementById("emTo"+b.dataset.emto); box.hidden = !box.hidden;
+    b.textContent = b.textContent.replace(/[▾▴]/, box.hidden ? "▾" : "▴");
+  }));
   list.querySelectorAll("[data-emdel]").forEach(b=>b.addEventListener("click", async ()=>{
     if(!(await askConfirm("Удалить это письмо?"))) return;
     try{ await apiFetch("/api/admin/emails/scheduled/"+b.dataset.emdel, {method:"DELETE"}); if(emEditingId===+b.dataset.emdel) emResetForm(); await loadEmails(); showToast("Письмо удалено"); }catch(_){}
@@ -7089,6 +7145,7 @@ def _sched_json(r):
         "sent_count": r["sent_count"] or 0, "failed_count": r["failed_count"] or 0, "total_count": r["total_count"] or 0,
         "sent_local": _ts_to_local(r["sent_at"]) if r["sent_at"] else None, "error": r["error"] or "",
         "recipients": json.loads(r["recipients"]) if r["recipients"] else None,
+        "sent_to": json.loads(r["sent_to"]) if ("sent_to" in r.keys() and r["sent_to"]) else None,
     }
 
 
