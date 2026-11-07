@@ -3713,15 +3713,31 @@ function evtDateParts(iso){
   const [y,m,dd] = iso.split("-").map(Number);
   return {dom: dd, mon: RU_MONTHS_SHORT[m-1]};
 }
-function mskToEt(raw){
-  if(!raw) return raw;
-  const re = /(\\d{1,2}):(\\d{2})(?:\\s*[-–]\\s*(\\d{1,2}):(\\d{2}))?/;
-  const m = raw.match(re);
+/* время эфиров вводится в админке по Нью-Йорку – показываем его в часовом поясе того, кто открыл кабинет */
+function nyWallToUtc(y,mo,d,h,mi){
+  const want = Date.UTC(y,mo-1,d,h,mi); let t = want;
+  const fmt = new Intl.DateTimeFormat("en-US",{timeZone:"America/New_York",hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+  for(let k=0;k<3;k++){
+    const p = fmt.formatToParts(new Date(t)), g = n=>Number((p.find(x=>x.type===n)||{}).value);
+    t += want - Date.UTC(g("year"), g("month")-1, g("day"), g("hour")%24, g("minute"));
+  }
+  return new Date(t);
+}
+function evtLocalTime(raw, dateIso){
+  if(!raw || !dateIso) return raw || "";
+  const m = raw.match(/(\\d{1,2})[:.](\\d{2})(?:\\s*[-–—]\\s*(\\d{1,2})[:.](\\d{2}))?/);
   if(!m) return raw;
-  const shift = (h,mi)=>{ let t = h*60+mi - 7*60; t = ((t % 1440)+1440)%1440; return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"); };
-  let out = shift(Number(m[1]), Number(m[2]));
-  if(m[3]!==undefined) out += "–"+shift(Number(m[3]), Number(m[4]));
-  return out;
+  const [y,mo,d] = dateIso.split("-").map(Number);
+  const loc = (window.SM_LANG === "en") ? "en-US" : "ru-RU";
+  const hm = dt => dt.toLocaleTimeString(loc,{hour:"2-digit",minute:"2-digit",hour12:false});
+  const a = nyWallToUtc(y,mo,d,Number(m[1]),Number(m[2]));
+  let out = hm(a);
+  if(m[3] !== undefined) out += "–" + hm(nyWallToUtc(y,mo,d,Number(m[3]),Number(m[4])));
+  let tz = "";
+  try{ tz = (new Intl.DateTimeFormat(loc,{timeZoneName:"short"}).formatToParts(a).find(x=>x.type==="timeZoneName")||{}).value || ""; }catch(e){}
+  const localIso = a.getFullYear()+"-"+String(a.getMonth()+1).padStart(2,"0")+"-"+String(a.getDate()).padStart(2,"0");
+  const dayNote = localIso !== dateIso ? ", " + a.toLocaleDateString(loc,{day:"numeric",month:"short"}) : "";
+  return out + (tz ? " (" + tz + dayNote + ")" : (dayNote ? " (" + dayNote.slice(2) + ")" : ""));
 }
 function evtColor(i){ return "e"+(i%7); }
 function renderCalendar(){
@@ -3771,7 +3787,7 @@ function renderEvents(){
     return `<${tag} class="evt-row ${isPast?'past':''}"${attrs}>
       <div class="evt-date c-${col}"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
       <div class="evt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg></div>
-      <div class="evt-body"><span class="evt-tag">Zoom-встреча</span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':mskToEt(e.time||'')}</div></div>
+      <div class="evt-body"><span class="evt-tag">Zoom-встреча</span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':evtLocalTime(e.time||'', e.date)}</div></div>
       ${clickable?`<span class="evt-go">Открыть Zoom</span>`:''}
     </${tag}>`;
   }).join("");
@@ -3780,7 +3796,7 @@ function renderEvents(){
   const alertEl = document.getElementById("todayEventAlert");
   alertEl.hidden = !todayEv;
   if(todayEv){
-    document.getElementById("todayEventTxt").innerHTML = `сегодня${todayEv.time?(' в '+mskToEt(todayEv.time)):''} – <b>${todayEv.title}</b>`;
+    document.getElementById("todayEventTxt").innerHTML = `сегодня${todayEv.time?(' в '+evtLocalTime(todayEv.time, todayEv.date)):''} – <b>${todayEv.title}</b>`;
   }
 }
 
