@@ -4362,6 +4362,9 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .crm-modal-x{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;padding:4px}
 .crm-addbody{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
 .em-to-wrap{margin:-4px 0 10px 54px}
+.em-text-box{margin-top:6px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px 14px;font-size:13px;line-height:1.55;color:var(--ink)}
+.em-text-subj{font-weight:600;margin-bottom:8px}
+.em-text-body{white-space:pre-wrap;color:var(--ink-soft)}
 .em-to-btn{border:none;background:none;color:var(--sage-ink);font-size:12px;font-weight:600;cursor:pointer;padding:2px 0;font-family:inherit}
 .em-to-list{margin-top:6px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);max-height:260px;overflow:auto}
 .em-to-row{display:grid;grid-template-columns:26px minmax(0,1fr) minmax(0,1.4fr) 64px;gap:8px;align-items:center;padding:6px 10px;font-size:12px;border-top:1px solid var(--line)}
@@ -4998,11 +5001,17 @@ function renderEmails(){
       <span class="em-st ${m.status}">${st}</span>
       ${m.status==='scheduled'?`<button class="em-now" data-emnow="${m.id}" type="button">отправить сейчас</button><button class="evbtn" data-emedit="${m.id}" title="изменить">✎</button>`:''}
       ${m.status!=='sending'?`<button class="evbtn" data-emdel="${m.id}" title="удалить">✕</button>`:''}
-    </div>${(m.sent_to && m.sent_to.length) ? `<div class="em-to-wrap">
-      <button class="em-to-btn" data-emto="${m.id}" type="button">кому отправлено (${m.sent_to.length}) ▾</button>
-      <div class="em-to-list" id="emTo${m.id}" hidden>${m.sent_to.map((p,i)=>`<div class="em-to-row${p.ok?'':' fail'}"><span class="n">${i+1}</span><span class="nm">${emEsc(p.name||"–")}</span><span class="em">${emEsc(p.email)}</span>${p.ok?'':'<span class="x">не ушло</span>'}</div>`).join("")}</div>
+    </div>${(m.status==='sent' || m.status==='failed' || (m.sent_to && m.sent_to.length)) ? `<div class="em-to-wrap">
+      <button class="em-to-btn" data-emtext="${m.id}" type="button">текст письма ▾</button>
+      ${(m.sent_to && m.sent_to.length) ? `<button class="em-to-btn" data-emto="${m.id}" type="button" style="margin-left:16px">кому отправлено (${m.sent_to.length}) ▾</button>` : ''}
+      <div class="em-text-box" id="emText${m.id}" hidden><div class="em-text-subj">Тема: ${emEsc(m.subject)}</div><div class="em-text-body">${emEsc(m.body||"")}</div></div>
+      ${(m.sent_to && m.sent_to.length) ? `<div class="em-to-list" id="emTo${m.id}" hidden>${m.sent_to.map((p,i)=>`<div class="em-to-row${p.ok?'':' fail'}"><span class="n">${i+1}</span><span class="nm">${emEsc(p.name||"–")}</span><span class="em">${emEsc(p.email)}</span>${p.ok?'':'<span class="x">не ушло</span>'}</div>`).join("")}</div>` : ''}
     </div>` : ''}`; }).join("") : `<div class="note">пока нет запланированных писем – добавь первое ниже</div>`;
   list.querySelectorAll("[data-emedit]").forEach(b=>b.addEventListener("click", ()=>emStartEdit(+b.dataset.emedit)));
+  list.querySelectorAll("[data-emtext]").forEach(b=>b.addEventListener("click", ()=>{
+    const box = document.getElementById("emText"+b.dataset.emtext); box.hidden = !box.hidden;
+    b.textContent = b.textContent.replace(/[▾▴]/, box.hidden ? "▾" : "▴");
+  }));
   list.querySelectorAll("[data-emto]").forEach(b=>b.addEventListener("click", ()=>{
     const box = document.getElementById("emTo"+b.dataset.emto); box.hidden = !box.hidden;
     b.textContent = b.textContent.replace(/[▾▴]/, box.hidden ? "▾" : "▴");
