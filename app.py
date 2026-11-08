@@ -4835,7 +4835,7 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
       <div class="crm-stats">
         <div class="crm-stat"><div class="l">всего</div><div class="v" id="clubTotal">0</div></div>
         <div class="crm-stat"><div class="l">новые</div><div class="v wait" id="clubNew">0</div></div>
-        <div class="crm-stat"><div class="l">связались</div><div class="v paid" id="clubDone">0</div></div>
+        <div class="crm-stat"><div class="l">news1</div><div class="v paid" id="clubDone">0</div></div>
       </div>
       <div class="crm-toolbar">
         <div class="crm-search"><input type="text" id="clubSearch" placeholder="имя, почта, телефон…"></div>
@@ -4843,7 +4843,7 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
       </div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Программа</th><th>Вопрос</th><th>Дата</th><th>Заметка</th><th style="text-align:center">Связались</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Программа</th><th>Вопрос</th><th>Дата</th><th>Заметка</th><th style="text-align:center">news1</th><th></th></tr></thead>
           <tbody id="clubBody"></tbody>
         </table>
       </div>
@@ -6149,7 +6149,7 @@ function renderClub(){
       <td style="max-width:240px;white-space:pre-wrap">${clubEsc(r.message||"–")}</td>
       <td>${fmtDT(r.created)}</td>
       <td><input class="crm-note" data-cnote="${r.id}" value="${clubEsc(r.note||"")}" placeholder="заметка…"></td>
-      <td style="text-align:center"><input type="checkbox" class="crm-free" data-cdone="${r.id}" ${r.done?"checked":""} title="связались"></td>
+      <td style="text-align:center"><input type="checkbox" class="crm-free" data-cdone="${r.id}" ${r.done?"checked":""} title="news1"></td>
       <td style="text-align:right"><button class="crm-del" data-cdel="${r.id}">удалить</button></td>
     </tr>`).join("") : `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">${CLUB.length ? "ничего не нашлось" : "пока нет заявок с сайта клуба"}</td></tr>`;
   body.querySelectorAll("[data-cnote]").forEach(inp=>inp.addEventListener("change", async ()=>{
@@ -7448,7 +7448,7 @@ async def admin_export_club(request):
     rows = await DB_POOL.fetch("SELECT * FROM club_signups ORDER BY created DESC")
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(["#", "имя", "email", "телефон", "программа", "вопрос", "заметка", "связались", "дата"])
+    w.writerow(["#", "имя", "email", "телефон", "программа", "вопрос", "заметка", "news1", "дата"])
     for i, r in enumerate(rows, start=1):
         w.writerow([i, r["name"] or "", r["email"] or "", r["phone"] or "", r["program"] or "", r["message"] or "",
                     r["note"] or "", "да" if r["done"] else "",
