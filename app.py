@@ -989,6 +989,12 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 @media (min-width:900px){
   .share-out img{width:260px;display:block;margin:0 auto}
 }
+/* окно «поделиться»: выше, картинка ужимается по высоте экрана – кнопка «Поделиться в чат» всегда видна */
+.share-panel{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
+#shareOverlayBody{padding:14px 18px 0;overflow-y:auto}
+.share-out img{display:block;margin:0 auto;width:auto;max-width:100%;object-fit:contain;
+  max-height:calc(100vh - 170px - env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 170px - env(safe-area-inset-bottom,0px))}
+#shareOverlay{padding:12px}
 .evening-rem{display:flex;gap:10px;border:1.5px dashed var(--line);border-radius:14px;padding:13px 15px;margin-top:14px}
 .evening-rem svg{width:17px;height:17px;color:var(--sage-ink);flex-shrink:0;margin-top:1px}
 .evening-rem .lead{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px}
@@ -1826,7 +1832,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
   <div id="infoOverlayBody"></div>
 </div></div>
 
-<div class="overlay" id="shareOverlay"><div class="panel info-panel">
+<div class="overlay" id="shareOverlay"><div class="panel info-panel share-panel">
   <button class="close-x info-close" id="closeShareOverlay" type="button">&#10005;</button>
   <div id="shareOverlayBody"></div>
 </div></div>
