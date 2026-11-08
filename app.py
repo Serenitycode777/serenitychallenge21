@@ -3629,24 +3629,28 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
     </div>`;
   document.getElementById("shareOverlay").classList.add("open");
 
-  document.getElementById("shareToChatBtn").addEventListener("click", ()=>{
+  // делимся сразу в наш Telegram-чат: картинка копируется в буфер, чат открывается – остаётся вставить
+  const blobP = new Promise(res=>c.toBlob(bl=>res(bl), "image/png"));
+  const openChat = ()=>{ const w = window.open(TG_CHAT_URL, "_blank"); if(!w) location.href = TG_CHAT_URL; };
+  document.getElementById("shareToChatBtn").addEventListener("click", async ()=>{
     playPopSound();
     const chatBtn = document.getElementById("shareToChatBtn");
-    c.toBlob(async (blob)=>{
-      if(!blob) return;
-      const file = new File([blob], "day-"+TODAY+".png", {type:"image/png"});
-      if(navigator.canShare && navigator.canShare({files:[file]})){
-        try{
-          await navigator.share({files:[file], title:"Serenity Moon", text:T("Мой день "+TODAY+" марафона «Начни сегодня!»")});
-          return;
-        }catch(e){ /* отменено или не удалось — переходим к запасному варианту */ }
+    let copied = false;
+    try{
+      if(navigator.clipboard && window.ClipboardItem){
+        await navigator.clipboard.write([new ClipboardItem({"image/png": blobP})]);
+        copied = true;
       }
-      const a=document.createElement("a");
-      a.href=c.toDataURL("image/png"); a.download="day-"+TODAY+".png";
+    }catch(e){ copied = false; }
+    if(!copied){
+      const blob = await blobP; if(!blob) return;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "day-"+TODAY+".png";
       document.body.appendChild(a); a.click(); a.remove();
-      chatBtn.textContent="Картинка сохранена, открываю чат…";
-      setTimeout(()=>{ window.open(TG_CHAT_URL, "_blank"); chatBtn.textContent="Поделиться в чат"; }, 400);
-    }, "image/png");
+    }
+    chatBtn.textContent = copied ? T("Картинка скопирована – вставь её в чат") : T("Картинка сохранена – прикрепи её в чате");
+    openChat();
+    setTimeout(()=>{ chatBtn.textContent = T("Поделиться в чат"); }, 4000);
   });
 });
 document.getElementById("closeShareOverlay").addEventListener("click", ()=>{ document.getElementById("shareOverlay").classList.remove("open"); playPopSound(); });
