@@ -273,6 +273,7 @@ EMAIL_AUDIENCES = {
     "all": "все из CRM",
     "free": "Free",
     "news": "News (галочка в «Участницах»)",
+    "news1": "news1 (галочка в CRM main)",
     "emails": "Emails (галочка в CRM)",
 }
 
@@ -359,16 +360,27 @@ async def _chosen_rows(recipients):
     for r in await DB_POOL.fetch("SELECT email_norm, name FROM profiles WHERE email_norm = ANY($1::text[])", chosen):
         if r["name"] and r["email_norm"] not in names:
             names[r["email_norm"]] = r["name"]
+    for r in await DB_POOL.fetch("SELECT email_norm, name FROM club_signups WHERE email_norm = ANY($1::text[]) ORDER BY id", chosen):
+        if r["name"] and r["email_norm"] not in names:
+            names[r["email_norm"]] = r["name"]
     return [{"name": names.get(n, ""), "email": n} for n in chosen]
 
 
 async def _email_audience_rows(audience: str, recipients=None):
-    if audience in ("free", "news", "emails") and recipients is not None:
+    if audience in ("free", "news", "news1", "emails") and recipients is not None:
         return await _chosen_rows(recipients)
     if audience == "news":
         rows = await DB_POOL.fetch(
             "SELECT DISTINCT ON (email_norm) name, email FROM profiles "
             "WHERE news=TRUE AND COALESCE(email,'') <> '' ORDER BY email_norm, created DESC")
+        if recipients is not None:
+            chosen = {normalize_email(e) for e in recipients}
+            rows = [r for r in rows if normalize_email(r["email"]) in chosen]
+        return rows
+    if audience == "news1":
+        rows = await DB_POOL.fetch(
+            "SELECT DISTINCT ON (email_norm) name, email FROM club_signups "
+            "WHERE done=TRUE AND COALESCE(email,'') <> '' ORDER BY email_norm, id DESC")
         if recipients is not None:
             chosen = {normalize_email(e) for e in recipients}
             rows = [r for r in rows if normalize_email(r["email"]) in chosen]
@@ -4914,7 +4926,8 @@ document.addEventListener("keydown", e=>{
 
 /* ---------- письма участницам ---------- */
 let EMAILS = {system:[], scheduled:[], counts:{}, audiences:{}, test_to:""};
-const EM_PICK = {  // аудитории, где можно выбрать конкретных получательниц
+const EM_PICK = {
+  news1: "в CRM main пока никто не отмечен галочкой news1 – поставь её в колонке news1",  // аудитории, где можно выбрать конкретных получательниц
   free: "в CRM пока никто не отмечен как Free – поставь галочку в колонке Free",
   news: "в «Участницах» пока никто не отмечен галочкой News – поставь её в колонке News",
   emails: "в CRM пока никто не отмечен галочкой Emails – поставь её в колонке Emails"
@@ -7193,9 +7206,10 @@ async def api_emails_list(request):
     free_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("free")]
     news_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("news")]
     emails_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("emails")]
+    news1_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("news1")]
     return web.json_response({
         "system": system, "scheduled": [_sched_json(r) for r in rows], "counts": counts, "free_list": free_list,
-        "pick_lists": {"free": free_list, "news": news_list, "emails": emails_list},
+        "pick_lists": {"free": free_list, "news": news_list, "news1": news1_list, "emails": emails_list},
         "audiences": EMAIL_AUDIENCES, "test_to": MAIL_REPLY_TO or "", "tz": MARATHON_TZ,
         "mail_ready": bool(RESEND_API_KEY and MAIL_FROM),
     })
@@ -7231,7 +7245,7 @@ def _sched_payload(data):
     except Exception:
         send_at = None
     recipients = None
-    if audience in ("free", "news", "emails"):
+    if audience in ("free", "news", "news1", "emails"):
         recipients = [str(e).strip() for e in (data.get("recipients") or []) if str(e).strip()]
         if not recipients:
             send_at = None
