@@ -2332,6 +2332,23 @@ const TG_CHAT_URL = "https://t.me/+b1UKYlrCL5o5YWY0";
 // Telegram links: one source for all «Канал»/«Чат» buttons (Today + Progress) – change only TG_CHANNEL_URL / TG_CHAT_URL
 document.querySelectorAll('[data-tg="channel"]').forEach(a=>a.href = TG_CHANNEL_URL);
 document.querySelectorAll('[data-tg="chat"]').forEach(a=>a.href = TG_CHAT_URL);
+const TG_IS_PHONE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+function openTgChat(){
+  const inv = (TG_CHAT_URL.split("/+")[1]||"").split("?")[0];
+  if(TG_IS_PHONE && inv){
+    let left = false;
+    const onHide = ()=>{ if(document.hidden) left = true; };
+    document.addEventListener("visibilitychange", onHide);
+    location.href = "tg://join?invite=" + inv;
+    setTimeout(()=>{ document.removeEventListener("visibilitychange", onHide); if(!left && !document.hidden) location.href = TG_CHAT_URL; }, 1600);
+    return;
+  }
+  const w = window.open(TG_CHAT_URL, "_blank"); if(!w) location.href = TG_CHAT_URL;
+}
+document.querySelectorAll('[data-tg="chat"]').forEach(a=>a.addEventListener("click", e=>{
+  if(!TG_IS_PHONE) return;  // на компьютере – обычная ссылка
+  e.preventDefault(); openTgChat();
+}));
 let TODAY = 1, TODAY_RAW = 1;
 let HABITS = [];
 let HABIT_IDS = [];
@@ -3654,7 +3671,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
 
   // делимся сразу в наш Telegram-чат: картинка копируется в буфер, чат открывается – остаётся вставить
   const blobP = new Promise(res=>c.toBlob(bl=>res(bl), "image/png"));
-  const openChat = ()=>{ const w = window.open(TG_CHAT_URL, "_blank"); if(!w) location.href = TG_CHAT_URL; };
+  const openChat = ()=>openTgChat();
   const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
   document.getElementById("saveCardHint").hidden = !isIOS;
   document.getElementById("saveCardBtn").addEventListener("click", async ()=>{
