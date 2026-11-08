@@ -990,8 +990,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   .share-out img{width:260px;display:block;margin:0 auto}
 }
 /* окно «поделиться»: выше, картинка ужимается по высоте экрана – кнопка «Поделиться в чат» всегда видна */
-.share-panel{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
-#shareOverlayBody{padding:14px 18px 0;overflow-y:auto}
+.panel.info-panel.share-panel{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
+#shareOverlayBody{padding:14px 18px 0;overflow-y:auto;flex:1 1 auto;min-height:0}
 .share-out img{display:block;margin:0 auto;width:auto;max-width:100%;object-fit:contain;
   max-height:calc(100vh - 170px - env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 170px - env(safe-area-inset-bottom,0px))}
 #shareOverlay{padding:12px}
