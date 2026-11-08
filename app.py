@@ -3701,6 +3701,7 @@ const BOOKMARK_SVG_OUTLINE = `<svg viewBox="0 0 24 24" fill="none" stroke="curre
 const BOOKMARK_SVG_FILLED = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20.5s-7.5-4.6-9.8-9.3C.7 7.8 2.4 4.5 5.7 4c2-.3 3.8.7 4.8 2.3C11.5 4.7 13.3 3.7 15.3 4c3.3.5 5 3.8 3.5 7.2C16.5 15.9 12 20.5 12 20.5Z"/></svg>`;
 const MAT_NEW_MS = 72*3600*1000;
 function matIsNew(m){
+  if(m.type==="audio") return false;
   if(matClosed(m) || !(m.day===null || m.day<=TODAY)) return false;
   let since = m.created ? m.created*1000 : 0;
   if(m.day!==null && m.day!==undefined) since = Math.max(since, dayToDate(m.day).getTime());
