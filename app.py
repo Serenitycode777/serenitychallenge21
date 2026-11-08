@@ -216,7 +216,8 @@ async def load_materials_from_db() -> dict:
         {"id": str(m["id"]), "author": m["folder_id"], "title": m["title"],
          "type": m["format"] or "link", "tags": _jsonb(m["tags"]) or [], "day": m["day"],
          "close_day": m["close_day"] if "close_day" in m.keys() else None,
-         "lang": (m["lang"] or "") if "lang" in m.keys() else "", "url": m["url"] or "#"}
+         "lang": (m["lang"] or "") if "lang" in m.keys() else "", "url": m["url"] or "#",
+         "created": m["created"]}
         for m in materials
     ]
     return {"marathon_start": await get_marathon_start(), "timezone": MARATHON_TZ, "authors": authors, "materials": mats}
@@ -3698,11 +3699,20 @@ function isFavorite(id){ return !!FAVORITES[String(id)]; }
 function toggleFavorite(id){ id=String(id); if(FAVORITES[id]) delete FAVORITES[id]; else FAVORITES[id]=true; saveFavorites(); }
 const BOOKMARK_SVG_OUTLINE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20.5s-7.5-4.6-9.8-9.3C.7 7.8 2.4 4.5 5.7 4c2-.3 3.8.7 4.8 2.3C11.5 4.7 13.3 3.7 15.3 4c3.3.5 5 3.8 3.5 7.2C16.5 15.9 12 20.5 12 20.5Z"/></svg>`;
 const BOOKMARK_SVG_FILLED = `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 20.5s-7.5-4.6-9.8-9.3C.7 7.8 2.4 4.5 5.7 4c2-.3 3.8.7 4.8 2.3C11.5 4.7 13.3 3.7 15.3 4c3.3.5 5 3.8 3.5 7.2C16.5 15.9 12 20.5 12 20.5Z"/></svg>`;
+const MAT_NEW_MS = 72*3600*1000;
+function matIsNew(m){
+  if(matClosed(m) || !(m.day===null || m.day<=TODAY)) return false;
+  let since = m.created ? m.created*1000 : 0;
+  if(m.day!==null && m.day!==undefined) since = Math.max(since, dayToDate(m.day).getTime());
+  if(!since) return m.day===TODAY;
+  const age = Date.now() - since;
+  return age >= 0 && age < MAT_NEW_MS;
+}
 function matClosed(m){ return m.close_day!=null && m.close_day < TODAY_RAW; }
 function mItemHtml(m,i){
   const closed = matClosed(m);
   const unlocked = !closed && (m.day===null||m.day<=TODAY);
-  const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
+  const newBadge = matIsNew(m) ? `<span class="mat-new">Новое</span>` : "";
   const typeLbl = TYPE_LABEL[m.type]||TYPE_LABEL.link;
   const metaHtml = unlocked
     ? `${ICONS[m.type]||ICONS.pdf}<span>${typeLbl}${m.type==="pdf"?" · скачать":""}</span>`
@@ -3886,7 +3896,7 @@ function openMaterial(key){
     const status = closed ? `<span class="mat-status locked">${ICONS.lock} закрыто</span>`
       : m.day===null ? `<span class="mat-status open">Открыто</span>`
       : unlocked ? `<span class="mat-status open">Открыто ${fmtDateRu(dayToDate(m.day))}</span>` : `<span class="mat-status locked">${ICONS.lock} с ${fmtDateRu(dayToDate(m.day))}</span>`;
-    const newBadge = m.day===TODAY ? `<span class="mat-new">Новое</span>` : "";
+    const newBadge = matIsNew(m) ? `<span class="mat-new">Новое</span>` : "";
     return `<div class="mat ${unlocked?'':'is-locked'}" ${unlocked?`data-i="${i}" style="cursor:pointer"`:""}><div class="mat-icon">${ICONS[m.type]||ICONS.pdf}</div>
       <div class="mat-body"><div class="mat-title">${m.title}${newBadge}</div><div class="mat-tags">#${(m.tags||[]).join(' #')}</div></div>${status}</div>`;
   }).join("");
