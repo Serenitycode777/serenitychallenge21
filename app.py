@@ -1013,7 +1013,8 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-icon{width:32px;height:32px;border-radius:50%;background:rgba(170,157,184,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .evt-icon svg{width:15px;height:15px;color:#6E4FA0}
 .evt-body{flex:1;min-width:0}
-.evt-tag{display:block;font-size:10.5px;color:var(--ink-soft);margin-bottom:1px}
+.evt-tag{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink-soft);margin-bottom:1px}
+.evt-tag svg{width:13px;height:13px;flex-shrink:0;color:#6E4FA0}
 .evt-ttl{font-size:13.5px;font-weight:600}
 .evt-meta{font-size:11px;color:var(--ink-soft);margin-top:1px}
 .evt-go{display:inline-flex;align-items:center;gap:5px;color:var(--sage-ink);background:#fff;border:1.5px solid var(--sage);font-size:12px;font-weight:600;border-radius:999px;padding:8px 14px;flex-shrink:0;white-space:nowrap}
@@ -3860,8 +3861,7 @@ function renderEvents(){
     const col = evtColor(i);
     return `<${tag} class="evt-row ${isPast?'past':''}"${attrs}>
       <div class="evt-date c-${col}"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
-      <div class="evt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg></div>
-      <div class="evt-body"><span class="evt-tag">Zoom-встреча</span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':evtLocalTime(e.time||'', e.date)}</div></div>
+      <div class="evt-body"><span class="evt-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg><span>${e.type || "Zoom-встреча"}</span></span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':evtLocalTime(e.time||'', e.date)}</div></div>
       ${clickable?`<span class="evt-go">Открыть Zoom</span>`:''}
     </${tag}>`;
   }).join("");
