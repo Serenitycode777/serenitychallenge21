@@ -2295,6 +2295,7 @@ async function trySilentRefresh(){
 async function apiFetch(url, opts, _retried){
   opts = opts || {};
   const headers = Object.assign({}, opts.headers, {"Authorization": "Bearer " + (getToken()||"")});
+  try{ const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; if(tz) headers["X-TZ"] = tz; }catch(e){}
   let body = opts.body;
   if(body && typeof body !== "string" && !(body instanceof FormData)){ body = JSON.stringify(body); headers["Content-Type"] = "application/json"; }
   const resp = await fetch(url, Object.assign({}, opts, {headers, body}));
@@ -6796,6 +6797,19 @@ async def _supabase_user_from_token(token: str):
             return await resp.json()
 
 
+def user_tz(request) -> str:
+    """Часовой пояс участницы из заголовка X-TZ (его шлёт кабинет); если нет или неверный – MARATHON_TZ.
+    День 1 начинается в полночь 9 ноября по её местному времени, где бы она ни была."""
+    tz = (request.headers.get("X-TZ") or "").strip()
+    if tz and len(tz) < 64:
+        try:
+            ZoneInfo(tz)
+            return tz
+        except Exception:
+            pass
+    return MARATHON_TZ
+
+
 async def require_cabinet_user(request):
     """Возвращает supabase-пользователя (dict с id/email) по Bearer-токену, либо None."""
     auth_header = request.headers.get("Authorization", "")
@@ -6948,7 +6962,7 @@ async def api_cabinet_note_upsert(request):
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", note_date):
         return web.json_response({"ok": False, "error": "bad_request"}, status=400)
     d = datetime.strptime(note_date, "%Y-%m-%d").date()
-    if d > datetime.now(ZoneInfo(MARATHON_TZ)).date():
+    if d > datetime.now(ZoneInfo(user_tz(request))).date():
         return web.json_response({"ok": False, "error": "future_date"}, status=400)
     await _ensure_profile_row(user)
     if not text:
@@ -7041,7 +7055,8 @@ async def api_cabinet_bootstrap(request):
     notes = [{"date": r["note_date"].isoformat(), "text": r["text"]} for r in note_rows]
 
     marathon_start = await get_marathon_start()
-    today = marathon_day_today(marathon_start, MARATHON_TZ)
+    utz = user_tz(request)
+    today = marathon_day_today(marathon_start, utz)
     materials_data = await load_materials_from_db()
 
     cal_rows = await DB_POOL.fetch("SELECT * FROM calendar_events ORDER BY date")
@@ -7056,7 +7071,7 @@ async def api_cabinet_bootstrap(request):
 
     return web.json_response({
         "ok": True, "profile": profile, "habits": habits, "logs": logs, "today": today,
-        "today_date": datetime.now(ZoneInfo(MARATHON_TZ)).date().isoformat(), "tz": MARATHON_TZ,
+        "today_date": datetime.now(ZoneInfo(utz)).date().isoformat(), "tz": utz,
         "marathon_start": marathon_start, "mastermind": mastermind,
         "authors": materials_data["authors"], "materials": materials_data["materials"], "events": events,
         "mila_events": mila_events, "notes": notes,
@@ -7898,7 +7913,7 @@ async def api_cabinet_material_link(request):
     row = await DB_POOL.fetchrow("SELECT * FROM materials WHERE id=$1", mat_id)
     if not row:
         return web.json_response({"ok": False, "error": "not_found"}, status=404)
-    today = marathon_day_today(await get_marathon_start(), MARATHON_TZ)
+    today = marathon_day_today(await get_marathon_start(), user_tz(request))
     if row["day"] is not None and row["day"] > today:
         return web.json_response({"ok": False, "error": "locked"}, status=403)
     if row.get("close_day") is not None and row["close_day"] < today:
