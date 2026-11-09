@@ -20,7 +20,7 @@ import os
 import re
 import time
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -3049,6 +3049,7 @@ function initNotes(){
   renderNotes();
 }
 function saveTodayLog(closedOverride){
+  if(TODAY_RAW < 1) return;  // марафон ещё не начался – не записываем пробные отметки в день 1
   const dateStr = dateForDay(TODAY);
   const habits_done = {};
   HABIT_IDS.forEach((id,i)=>{ habits_done[id] = !!liveChecked[i]; });
@@ -3304,7 +3305,8 @@ function habitScheduleLabel(name){
 function renderProgress(){
   let perfectDays = 0;
   if(HABITS.length){
-    for(let d=1; d<=TODAY; d++){ const _t = scheduledCountForDay(d); if(_t>0 && doneCountForDay(d) >= _t) perfectDays++; }
+    const lastDay = Math.min(21, TODAY_RAW);
+    for(let d=1; d<=lastDay; d++){ const _t = scheduledCountForDay(d); if(_t>0 && doneCountForDay(d) >= _t) perfectDays++; }
   }
 
   document.getElementById("diamondVal").textContent = perfectDays + mastermindBonus();
@@ -6990,6 +6992,15 @@ async def api_cabinet_log_upsert(request):
     closed = bool(data.get("closed", False))
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", log_date) or not isinstance(habits_done, dict):
         return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    try:
+        d_log = datetime.strptime(log_date, "%Y-%m-%d").date()
+    except ValueError:
+        return web.json_response({"ok": False, "error": "bad_request"}, status=400)
+    m_start = date.fromisoformat(await get_marathon_start())
+    if d_log < m_start or d_log > m_start + timedelta(days=20):
+        return web.json_response({"ok": False, "error": "outside_marathon"}, status=400)
+    if d_log > datetime.now(ZoneInfo(user_tz(request))).date():
+        return web.json_response({"ok": False, "error": "future_date"}, status=400)
     closed_at = time.time() if closed else None
     meta = data.get("meta")
     meta_json = json.dumps(meta) if isinstance(meta, dict) else None
@@ -7179,6 +7190,7 @@ async def admin_export_progress(request):
     if not authed(request):
         raise web.HTTPFound("/admin/login")
     profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind, last_seen FROM profiles ORDER BY created DESC")
+    m_start = date.fromisoformat(await get_marathon_start())
     signup_rows = await DB_POOL.fetch("SELECT email_norm, instagram FROM signups WHERE instagram IS NOT NULL AND instagram <> ''")
     telegram_by_email = {r["email_norm"]: r["instagram"] for r in signup_rows}
     headers = ["#", "имя", "email", "телеграм", "привычек", "% выполнения", "бриллиантов", "мастермайндов", "была в кабинете"]
@@ -7189,7 +7201,8 @@ async def admin_export_progress(request):
         uid = p["id"]
         habit_count = await DB_POOL.fetchval("SELECT COUNT(*) FROM habit_selections WHERE user_id=$1", uid) or 0
         logs = await DB_POOL.fetch(
-            "SELECT log_date, habits_done FROM daily_logs WHERE user_id=$1 ORDER BY log_date", uid
+            "SELECT log_date, habits_done FROM daily_logs WHERE user_id=$1 AND log_date BETWEEN $2 AND $3 ORDER BY log_date",
+            uid, m_start, m_start + timedelta(days=20)
         )
         perfect_days = 0
         pct_sum = 0.0
@@ -7387,6 +7400,7 @@ async def api_admin_participants(request):
     if not admin_token_ok(request):
         return web.json_response({"error": "unauthorized"}, status=401)
     profiles = await DB_POOL.fetch("SELECT id, name, email, mastermind, last_seen, news FROM profiles ORDER BY created DESC")
+    m_start = date.fromisoformat(await get_marathon_start())
     signup_rows = await DB_POOL.fetch("SELECT email_norm, instagram FROM signups WHERE instagram IS NOT NULL AND instagram <> ''")
     telegram_by_email = {r["email_norm"]: r["instagram"] for r in signup_rows}
     result = []
@@ -7394,7 +7408,8 @@ async def api_admin_participants(request):
         uid = p["id"]
         habit_count = await DB_POOL.fetchval("SELECT COUNT(*) FROM habit_selections WHERE user_id=$1", uid) or 0
         logs = await DB_POOL.fetch(
-            "SELECT log_date, habits_done FROM daily_logs WHERE user_id=$1 ORDER BY log_date", uid
+            "SELECT log_date, habits_done FROM daily_logs WHERE user_id=$1 AND log_date BETWEEN $2 AND $3 ORDER BY log_date",
+            uid, m_start, m_start + timedelta(days=20)
         )
         perfect_days = 0
         pct_sum = 0.0
