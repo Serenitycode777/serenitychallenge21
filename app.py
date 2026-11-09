@@ -1888,7 +1888,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
     <div class="hm-qty">
       <div class="hm-qty-line" id="habitMinutesLine">
         <span class="lbl">сколько минут занимает</span>
-        <input class="hm-unit-input" id="habitMinutesInput" type="number" inputmode="numeric" min="0" placeholder="мин.">
+        <input class="hm-unit-input" id="habitMinutesInput" type="number" inputmode="numeric" min="0" placeholder="0 мин.">
       </div>
       <div class="hm-qty-head" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
         <div>
@@ -2452,6 +2452,8 @@ function unitMinuteMultiplier(u){
 }
 function habitMinutes(name){
   const meta = findHabitMeta(name);
+  const own = habitConfig[name];
+  if(own && own.minutesSet) return Math.max(0, Number(own.minutes) || 0);
   if(meta && meta.noTime) return 0;
   const cfg = habitConfig[name] || defaultHabitConfig();
   const mult = unitMinuteMultiplier(cfg.unit);
@@ -3351,7 +3353,7 @@ function renderHabitModalQty(){
   document.getElementById("habitQtyToggle").classList.toggle("on", hmState.qtyOn);
   document.getElementById("habitQtyExpand").classList.toggle("collapsed", !hmState.qtyOn);
   document.getElementById("habitTargetVal").value = hmState.target;
-  document.getElementById("habitMinutesInput").value = hmState.minutes || "";
+  document.getElementById("habitMinutesInput").value = (hmState.minutes === "" || hmState.minutes == null) ? "" : String(hmState.minutes);
 }
 function openHabitModal(opts){
   hmState = opts || {mode:"checklist"};
@@ -3364,7 +3366,7 @@ function openHabitModal(opts){
   document.getElementById("habitNameInput").value = (window.T ? T(name) : name);
   const cfg = (name && habitConfig[name]) ? habitConfig[name] : defaultHabitConfigFor(name);
   hmState.days = [...cfg.days]; hmState.qtyOn = cfg.qtyOn; hmState.target = cfg.target;
-  hmState.minutes = cfg.minutes || (name ? habitMinutes(name) : 5);
+  hmState.minutes = name ? habitMinutes(name) : "";
   hmState.unit = cfg.unit || "";
   renderHabitModalDays(); renderHabitModalQty();
   document.getElementById("habitDeleteBtn").style.display = isEdit ? "" : "none";
@@ -3410,7 +3412,7 @@ document.getElementById("habitTargetVal").addEventListener("input", e=>{
 });
 document.getElementById("habitTargetVal").addEventListener("blur", renderHabitModalQty);
 document.getElementById("habitMinutesInput").addEventListener("input", e=>{
-  hmState.minutes = Math.max(0, parseInt(e.target.value, 10) || 0);
+  hmState.minutes = e.target.value.trim() === "" ? "" : Math.max(0, parseInt(e.target.value, 10) || 0);
 });
 document.getElementById("addHabitBtn").addEventListener("click", openHabitPicker);
 document.getElementById("habitModalClose").addEventListener("click", ()=>{ closeHabitModal(); playPopSound(); });
@@ -3424,7 +3426,7 @@ document.getElementById("habitSaveBtn").addEventListener("click", ()=>{
   if(!name) return;
   playPopSound();
   const unit = hmState.unit || "";
-  const newCfg = {days:[...hmState.days], qtyOn:hmState.qtyOn, target:hmState.target, unit, minutes:hmState.minutes || 0};
+  const newCfg = {days:[...hmState.days], qtyOn:hmState.qtyOn, target:hmState.target, unit, minutes:(hmState.minutes === "" ? 0 : (Number(hmState.minutes) || 0)), minutesSet:true};
   if(hmState.name && hmState.name !== name) delete habitConfig[hmState.name];
   habitConfig[name] = newCfg;
   if(hmState.mode === "checklist"){
