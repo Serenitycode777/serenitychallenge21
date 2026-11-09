@@ -3199,6 +3199,9 @@ function startOnboarding(){
   openOverlay("Выбери свои первые привычки", "Добро пожаловать в Serenity Moon 🌙");
   renderPicker();
 }
+function isOwnHabit(name){
+  return !!(pickSelection.includes(name) && habitConfig[name] && habitConfig[name].custom);
+}
 function chipHtml(name){
   const on = pickSelection.includes(name);
   return `<div class="habchip ${on?'checked':''}" data-h="${name}">
@@ -3238,9 +3241,9 @@ function renderPicker(){
     <p>Помни: лучше меньше, но регулярно! 💚</p>
     </div>`;
   Object.entries(CATALOG).forEach(([cat,items])=>{
-    html += `<div class="pickcat"><h4>${cat}</h4><div class="chipgrid">${items.map(h=>chipHtml(h.name)).join("")}</div></div>`;
+    html += `<div class="pickcat"><h4>${cat}</h4><div class="chipgrid">${items.filter(h=>!isOwnHabit(h.name)).map(h=>chipHtml(h.name)).join("")}</div></div>`;
   });
-  const customOnes = pickSelection.filter(h=>!findHabitMeta(h));
+  const customOnes = pickSelection.filter(h=>!findHabitMeta(h) || isOwnHabit(h));
   html += `<div class="pickcat"><h4>Свои привычки</h4>
     <div class="chipgrid" id="customList">${customOnes.map(chipHtml).join("")}</div>
     <button class="addhabit-btn" id="customAddBtn" type="button">+ добавить свою привычку</button>
@@ -3368,6 +3371,7 @@ function openHabitModal(opts){
   hmState.days = [...cfg.days]; hmState.qtyOn = cfg.qtyOn; hmState.target = cfg.target;
   hmState.minutes = name ? habitMinutes(name) : "";
   hmState.unit = cfg.unit || "";
+  hmState.prevCustom = !!(name && habitConfig[name] && habitConfig[name].custom);
   renderHabitModalDays(); renderHabitModalQty();
   document.getElementById("habitDeleteBtn").style.display = isEdit ? "" : "none";
   document.getElementById("habitModalWarn").hidden = true;
@@ -3429,6 +3433,11 @@ document.getElementById("habitSaveBtn").addEventListener("click", ()=>{
   const newCfg = {days:[...hmState.days], qtyOn:hmState.qtyOn, target:hmState.target, unit, minutes:(hmState.minutes === "" ? 0 : (Number(hmState.minutes) || 0)), minutesSet:true};
   if(hmState.name && hmState.name !== name) delete habitConfig[hmState.name];
   habitConfig[name] = newCfg;
+  if(findHabitMeta(name)){
+    const def = defaultHabitConfigFor(name);
+    const sig = c => JSON.stringify([[...(c.days||[])].sort(), !!c.qtyOn, c.qtyOn ? Number(c.target)||0 : 0, Number(c.minutes)||0]);
+    if((hmState.prevCustom && hmState.name === name) || sig(newCfg) !== sig(def)) newCfg.custom = true;
+  }
   if(hmState.mode === "checklist"){
     if(typeof hmState.index === "number"){
       HABITS[hmState.index] = name;
@@ -3439,7 +3448,7 @@ document.getElementById("habitSaveBtn").addEventListener("click", ()=>{
     renderChecklist(); renderHeat(); renderProgress();
     persistHabits();
   } else if(hmState.mode === "picker"){
-    if(hmState.name && hmState.name !== name){
+    if(hmState.name && hmState.name !== name && pickSelection.includes(hmState.name)){
       pickSelection = pickSelection.map(x => x === hmState.name ? name : x);
     } else if(!pickSelection.includes(name)){
       if(pickSelection.length >= MAX_HABITS){ document.getElementById("habitModalWarn").hidden = false; return; }
@@ -3465,6 +3474,7 @@ document.getElementById("habitDeleteBtn").addEventListener("click", ()=>{
     renderPicker();
   }
   if(name && everDone && !pastHabits.includes(name)) pastHabits.push(name);
+  if(name && hmState.mode === "picker" && habitConfig[name]) delete habitConfig[name];
   renderProgress();
   syncHabitsCount();
   closeHabitModal();
