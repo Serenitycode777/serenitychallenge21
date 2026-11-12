@@ -4600,6 +4600,7 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
     <div class="tab" data-tab="t-events">Мероприятия</div>
     <div class="tab" data-tab="t-participants">CRM</div>
     <div class="tab" data-tab="t-club">CRM main</div>
+    <div class="tab" data-tab="t-fullmoon">Full moon</div>
   </div>
 
   <div id="t-progress" style="display:none">
@@ -4936,6 +4937,27 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
       </div>
     </div>
   </div>
+
+  <div id="t-fullmoon" style="display:none">
+    <div class="crm-wrap">
+      <div class="crm-top"><h1>Full moon</h1></div>
+      <div class="crm-stats">
+        <div class="crm-stat"><div class="l">всего</div><div class="v" id="fmTotal">0</div></div>
+        <div class="crm-stat"><div class="l">картой</div><div class="v" id="fmCard">0</div></div>
+        <div class="crm-stat"><div class="l">Venmo / Zelle</div><div class="v wait" id="fmVZ">0</div></div>
+      </div>
+      <div class="crm-toolbar">
+        <div class="crm-search"><input type="text" id="fmSearch" placeholder="имя, почта, телефон…"></div>
+        <div class="crm-chips" id="fmProgChips"></div>
+      </div>
+      <div class="crm-mobile-wrap">
+        <table class="crm-table">
+          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Оплата</th><th>Telegram</th><th>Вопрос</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
+          <tbody id="fmBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="crm-modal-overlay" id="crmAddOverlay">
@@ -5165,15 +5187,16 @@ document.getElementById("emSave").addEventListener("click", async ()=>{
   }catch(_){}
 });
 
-const TABS = ["t-progress","t-content","t-calendar","t-events","t-participants","t-club"];
+const TABS = ["t-progress","t-content","t-calendar","t-events","t-participants","t-club","t-fullmoon"];
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
     t.classList.add("active");
     TABS.forEach(id=>{ document.getElementById(id).style.display = (id===t.dataset.tab) ? "" : "none"; });
-    document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress" || t.dataset.tab==="t-club");
+    document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress" || t.dataset.tab==="t-club" || t.dataset.tab==="t-fullmoon");
     if(t.dataset.tab==="t-participants") loadParticipants();
     if(t.dataset.tab==="t-club") loadClub();
+    if(t.dataset.tab==="t-fullmoon") loadFullmoon();
     if(t.dataset.tab==="t-progress") loadProgress();
     if(t.dataset.tab==="t-calendar") loadEmails();
   });
@@ -6210,8 +6233,56 @@ async function loadClub(){
   const body = document.getElementById("clubBody");
   body.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">загрузка…</td></tr>`;
   try{ CLUB = await apiFetch("/api/admin/club-signups"); }catch(e){ CLUB = []; }
+  CLUB = CLUB.filter(r=>!isFullMoon(r));
   renderClub();
 }
+/* ---- папка Full moon: заявки на круги в полнолуние (программа содержит «полнолуни» / full moon) ---- */
+function isFullMoon(r){ return /полнолуни|full\\s*moon/i.test(r.program||""); }
+let FM = [], fmProg = "all";
+function fmField(msg, key){ const m = String(msg||"").match(new RegExp("^"+key+":\\\\s*(.+)$","mi")); return m ? m[1].trim() : ""; }
+function fmRest(msg){ return String(msg||"").split("\\n").filter(l=>!/^(Оплата|Telegram):/i.test(l.trim())).join("\\n").trim(); }
+async function loadFullmoon(){
+  const body = document.getElementById("fmBody");
+  body.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">загрузка…</td></tr>`;
+  try{ FM = (await apiFetch("/api/admin/club-signups")).filter(isFullMoon); }catch(e){ FM = []; }
+  renderFullmoon();
+}
+function renderFullmoon(){
+  const progs = [...new Set(FM.map(r=>r.program||"–"))];
+  if(fmProg!=="all" && !progs.includes(fmProg)) fmProg = "all";
+  const chips = document.getElementById("fmProgChips");
+  chips.innerHTML = progs.length > 1 ? (`<div class="crm-chip${fmProg==="all"?" on":""}" data-fp="all">все круги</div>` +
+    progs.map(p=>`<div class="crm-chip${fmProg===p?" on":""}" data-fp="${clubEsc(p)}">${clubEsc(p)}</div>`).join("")) : "";
+  chips.querySelectorAll("[data-fp]").forEach(c=>c.addEventListener("click", ()=>{ fmProg = c.dataset.fp; renderFullmoon(); }));
+  const inProg = FM.filter(r=>fmProg==="all" || (r.program||"–")===fmProg);
+  document.getElementById("fmTotal").textContent = inProg.length;
+  document.getElementById("fmCard").textContent = inProg.filter(r=>/карта|stripe/i.test(fmField(r.message,"Оплата"))).length;
+  document.getElementById("fmVZ").textContent = inProg.filter(r=>/venmo|zelle/i.test(fmField(r.message,"Оплата"))).length;
+  const q = document.getElementById("fmSearch").value.trim().toLowerCase();
+  const shown = inProg.filter(r=>!q || [r.name,r.email,r.phone].some(v=>(v||"").toLowerCase().includes(q)));
+  const body = document.getElementById("fmBody");
+  body.innerHTML = shown.length ? shown.map((r,i)=>`<tr>
+      <td>${i+1}</td>
+      <td class="nm">${clubEsc(r.name||"–")}<span class="em">${clubEsc(r.email||"")}</span></td>
+      <td>${clubEsc(r.phone||"–")}</td>
+      <td>${clubEsc(fmField(r.message,"Оплата")||"–")}</td>
+      <td>${clubEsc(fmField(r.message,"Telegram")||"–")}</td>
+      <td style="max-width:240px;white-space:pre-wrap">${clubEsc(fmRest(r.message)||"–")}</td>
+      <td>${fmtDT(r.created)}</td>
+      <td><input class="crm-note" data-fnote="${r.id}" value="${clubEsc(r.note||"")}" placeholder="заметка…"></td>
+      <td style="text-align:right"><button class="crm-del" data-fdel="${r.id}">удалить</button></td>
+    </tr>`).join("") : `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">${FM.length ? "ничего не нашлось" : "пока нет заявок на круг в полнолуние"}</td></tr>`;
+  body.querySelectorAll("[data-fnote]").forEach(inp=>inp.addEventListener("change", async ()=>{
+    try{ await apiFetch("/api/admin/club-signups/"+inp.dataset.fnote, {method:"PUT", body: JSON.stringify({note: inp.value})});
+      const r = FM.find(x=>String(x.id)===inp.dataset.fnote); if(r) r.note = inp.value; showToast("Заметка сохранена ✓"); }catch(e){}
+  }));
+  body.querySelectorAll("[data-fdel]").forEach(b=>b.addEventListener("click", async ()=>{
+    if(!(await askConfirm("Удалить эту заявку?"))) return;
+    try{ await apiFetch("/api/admin/club-signups/"+b.dataset.fdel, {method:"DELETE"});
+      FM = FM.filter(x=>String(x.id)!==b.dataset.fdel); renderFullmoon(); }catch(e){}
+  }));
+}
+document.getElementById("fmSearch").addEventListener("input", renderFullmoon);
 function renderClub(){
   document.getElementById("clubTotal").textContent = CLUB.length;
   document.getElementById("clubNew").textContent = CLUB.filter(r=>!r.done).length;
