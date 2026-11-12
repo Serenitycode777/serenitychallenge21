@@ -1029,6 +1029,27 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-date.c-e5,.cal-day.ev.c-e5 span,.cal-dot.c-e5{background:linear-gradient(135deg,#86B0A9,#9A86B4)}
 .evt-date.c-e6,.cal-day.ev.c-e6 span,.cal-dot.c-e6{background:linear-gradient(135deg,#7FA8A1,#D2B57A)}
 .evt-row.past{opacity:.5}
+.evt-bell{flex:none;width:30px;height:30px;border-radius:50%;background:#D6453D;color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 4px rgba(214,69,61,.16);animation:bellRing 2.4s ease-in-out infinite;transform-origin:50% 15%}
+.evt-bell svg{width:16px;height:16px}
+.evt-bell-badge{position:absolute;top:-9px;right:-9px;width:26px;height:26px;border:2px solid #fff}
+.evt-bell-badge svg{width:14px;height:14px}
+.evt-row.is-soon{border-color:#E9A39E;box-shadow:0 0 0 3px rgba(214,69,61,.10),var(--shadow)}
+.evt-soon-txt{display:block;font-size:11px;font-weight:700;color:#C23A33;margin-top:2px}
+@keyframes bellRing{0%,60%,100%{transform:rotate(0)}8%{transform:rotate(14deg)}16%{transform:rotate(-12deg)}24%{transform:rotate(9deg)}32%{transform:rotate(-6deg)}40%{transform:rotate(3deg)}}
+.evt-toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translate(-50%,-140%);z-index:60;width:calc(100% - 24px);max-width:440px;
+  display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid #E9A39E;border-radius:18px;padding:12px 12px 12px 14px;
+  box-shadow:0 18px 40px -16px rgba(0,0,0,.35);transition:transform .35s cubic-bezier(.2,.9,.3,1.2)}
+.evt-toast.show{transform:translate(-50%,0)}
+.evt-toast .evt-bell{width:40px;height:40px}
+.evt-toast .evt-bell svg{width:20px;height:20px}
+.evt-toast-body{flex:1;min-width:0;font-size:13px;line-height:1.35;color:var(--ink)}
+.evt-toast-body b{display:block;font-size:14px}
+.evt-toast-go{flex:none;border:1.5px solid #D79F42;border-radius:999px;padding:9px 13px;font-size:12px;font-weight:700;text-decoration:none;font-family:inherit}
+.evt-row.is-soon .evt-go,.evt-toast-go{background:linear-gradient(135deg,#FDF0CB 0%,#F0C869 55%,#D79F42 100%);color:#3D2F10;border-color:#D79F42;animation:goldFlash 1.4s ease-in-out infinite}
+@keyframes goldFlash{0%,100%{box-shadow:0 0 0 0 rgba(240,200,105,.0);filter:brightness(1)}50%{box-shadow:0 0 0 6px rgba(240,200,105,.45),0 0 18px 2px rgba(215,159,66,.55);filter:brightness(1.12)}}
+.evt-toast-x{flex:none;background:none;border:none;color:var(--ink-soft);font-size:16px;cursor:pointer;padding:4px}
+@media (prefers-reduced-motion:reduce){ .evt-bell,.evt-row.is-soon .evt-go,.evt-toast-go{animation:none} .evt-toast{transition:none} }
 .evt-alert{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:12px;
   padding:9px 12px;margin:0 0 14px;box-shadow:var(--shadow)}
 .evt-alert-dot{width:7px;height:7px;border-radius:50%;background:var(--sage);flex-shrink:0}
@@ -2589,6 +2610,7 @@ function renderMilaEvents(){
 function initCabinetUI(){
   buildMaterialsState();
   renderHeat(); renderChecklist(); renderMaterials(); renderProgress(); renderEvents(); renderProfileTile(); renderMilaEvents();
+  setTimeout(checkEventReminders, 800);
   syncHabitsCount();
   setActiveTab(initialTab, {persist:false});
   if(HABITS.length === 0) startOnboarding();
@@ -3863,6 +3885,99 @@ document.getElementById("calNextBtn").addEventListener("click", ()=>{
   calViewMonth++; if(calViewMonth>11){ calViewMonth=0; calViewYear++; }
   renderCalendar();
 });
+const EVT_BELL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
+const EVT_SOON_MIN = 30;
+function evtKey(e){ return (e.date||"")+"|"+(e.time||"")+"|"+(e.title||""); }
+function evtRange(e){ // [начало, конец] в мс; время в админке – по Нью-Йорку; без конца считаем 1,5 часа
+  if(!e || !e.date || !e.time) return null;
+  const m = String(e.time).match(/(\\d{1,2})[:.](\\d{2})(?:\\s*[-–—]\\s*(\\d{1,2})[:.](\\d{2}))?/);
+  if(!m) return null;
+  const [y,mo,d] = e.date.split("-").map(Number);
+  const a = nyWallToUtc(y,mo,d,Number(m[1]),Number(m[2])).getTime();
+  let b = m[3] !== undefined ? nyWallToUtc(y,mo,d,Number(m[3]),Number(m[4])).getTime() : a + 90*60000;
+  if(b <= a) b = a + 90*60000;
+  return [a, b];
+}
+function evtStatus(e){ // {soon:минуты до начала} | {live:true} | null
+  const r = evtRange(e); if(!r) return null;
+  const now = Date.now();
+  if(now >= r[0] && now < r[1]) return {live:true};
+  const mins = Math.ceil((r[0]-now)/60000);
+  if(r[0] > now && mins <= EVT_SOON_MIN) return {soon:mins};
+  return null;
+}
+function evtSoonText(st){
+  if(st.live) return "🔴 идёт сейчас";
+  return st.soon <= 1 ? "начинается через минуту" : "начинается через " + st.soon + " мин";
+}
+function playEventChime(){ // мягкий колокольчик: два тихих тона
+  try{
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if(!AudioCtx) return false;
+    if(!_popCtx) _popCtx = new AudioCtx();
+    if(_popCtx.state === "suspended") _popCtx.resume();
+    if(_popCtx.state !== "running") return false;
+    const t0 = _popCtx.currentTime + 0.02;
+    [[880,0],[1318.5,0.32]].forEach(([f,dt])=>{
+      const o = _popCtx.createOscillator(), g = _popCtx.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(f, t0+dt);
+      g.gain.setValueAtTime(0.0001, t0+dt);
+      g.gain.exponentialRampToValueAtTime(0.12, t0+dt+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+dt+1.4);
+      o.connect(g); g.connect(_popCtx.destination);
+      o.start(t0+dt); o.stop(t0+dt+1.5);
+    });
+    return true;
+  }catch(err){ return false; }
+}
+function _evtSeen(k){ try{ return localStorage.getItem("smEvtChime:"+k) === "1"; }catch(err){ return false; } }
+function _evtMarkSeen(k){ try{ localStorage.setItem("smEvtChime:"+k, "1"); }catch(err){} }
+let _evtToastKey = null, _chimePending = false;
+function showEventToast(e, st){
+  let t = document.getElementById("evtToast");
+  if(!t){ t = document.createElement("div"); t.id = "evtToast"; t.className = "evt-toast"; t.setAttribute("role","alert"); document.body.appendChild(t); }
+  t.innerHTML = `<div class="evt-bell">${EVT_BELL_SVG}</div>
+    <div class="evt-toast-body"><b>${st.live ? "Эфир уже идёт" : "Скоро эфир!"}</b>${e.title} – ${evtSoonText(st)}</div>
+    ${e.link ? `<a class="evt-toast-go" href="${e.link}" target="_blank" rel="noopener">Открыть Zoom</a>` : ""}
+    <button class="evt-toast-x" type="button" aria-label="закрыть">✕</button>`;
+  t.querySelector(".evt-toast-x").addEventListener("click", ()=>{ t.classList.remove("show"); });
+  requestAnimationFrame(()=>t.classList.add("show"));
+  _evtToastKey = evtKey(e);
+}
+function checkEventReminders(){
+  if(!STATE || !document.getElementById("mainApp") || document.getElementById("mainApp").hidden) return;
+  const events = STATE.events || [];
+  let hit = null;
+  for(const e of events){ const st = evtStatus(e); if(st && st.soon !== undefined){ hit = [e, st]; break; } }
+  if(!hit){ for(const e of events){ const st = evtStatus(e); if(st){ hit = [e, st]; break; } } }
+  // обновляем отметки «через N мин» в списке
+  let needRender = false;
+  document.querySelectorAll("#eventsList [data-evkey]").forEach(row=>{
+    const e = events.find(x=>evtKey(x)===row.dataset.evkey); if(!e) return;
+    const st = evtStatus(e), has = row.classList.contains("is-soon");
+    if(!!st !== has){ needRender = true; return; }
+    const txt = row.querySelector(".evt-soon-txt"); if(st && txt) txt.textContent = evtSoonText(st);
+  });
+  if(needRender) renderEvents();
+  const t = document.getElementById("evtToast");
+  if(!hit){ if(t) t.classList.remove("show"); _evtToastKey = null; return; }
+  const [e, st] = hit, k = evtKey(e);
+  if(_evtToastKey !== k || (t && t.classList.contains("show"))) showEventToast(e, st);
+  if(!_evtSeen(k)){
+    if(playEventChime()) _evtMarkSeen(k);
+    else _chimePending = true; // браузер не даёт звук до первого касания – сыграем при нём
+  }
+}
+["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev, ()=>{
+  if(!_chimePending) return;
+  _chimePending = false;
+  const events = (STATE && STATE.events) || [];
+  const e = events.find(x=>{ const st = evtStatus(x); return st && !_evtSeen(evtKey(x)); });
+  if(e && playEventChime()) _evtMarkSeen(evtKey(e));
+}, true));
+setInterval(checkEventReminders, 30000);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) checkEventReminders(); });
+
 function renderEvents(){
   const events = STATE.events || [];
   renderCalendar();
@@ -3873,9 +3988,10 @@ function renderEvents(){
     const tag = clickable ? "a" : "div";
     const attrs = clickable ? ` href="${e.link}" target="_blank" rel="noopener"` : "";
     const col = evtColor(i);
-    return `<${tag} class="evt-row ${isPast?'past':''}"${attrs}>
-      <div class="evt-date c-${col}"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div></div>
-      <div class="evt-body"><span class="evt-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg><span>${e.type || "Zoom-встреча"}</span></span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':evtLocalTime(e.time||'', e.date)}</div></div>
+    const st = evtStatus(e);
+    return `<${tag} class="evt-row ${isPast?'past':''} ${st?'is-soon':''}"${attrs} data-evkey="${evtKey(e)}">
+      <div class="evt-date c-${col}" style="position:relative"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div>${st?`<div class="evt-bell evt-bell-badge" aria-hidden="true">${EVT_BELL_SVG}</div>`:''}</div>
+      <div class="evt-body"><span class="evt-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg><span>${e.type || "Zoom-встреча"}</span></span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?'прошёл · запись скоро':evtLocalTime(e.time||'', e.date)}</div>${st?`<span class="evt-soon-txt">${evtSoonText(st)}</span>`:''}</div>
       ${clickable?`<span class="evt-go">Открыть Zoom</span>`:''}
     </${tag}>`;
   }).join("");
