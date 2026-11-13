@@ -1047,7 +1047,7 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 .evt-date.c-e6,.cal-day.ev.c-e6 span,.cal-dot.c-e6{background:linear-gradient(135deg,#7FA8A1,#D2B57A)}
 .evt-row.past{opacity:.85}
 .evt-row.past .evt-date{filter:grayscale(.35);opacity:.8}
-.evt-go.evt-rec{border-color:var(--lav);color:var(--lav-ink)}
+.evt-go.evt-rec{background:var(--sage);border-color:var(--sage);color:#fff}
 .evt-bell{flex:none;width:30px;height:30px;border-radius:50%;background:#D6453D;color:#fff;display:flex;align-items:center;justify-content:center;
   box-shadow:0 0 0 4px rgba(214,69,61,.16);animation:bellRing 2.4s ease-in-out infinite;transform-origin:50% 15%}
 .evt-bell svg{width:16px;height:16px}
