@@ -3194,6 +3194,11 @@ function renderChecklist(){
   HABITS.forEach((_,i)=>{ const _el=document.getElementById("hb"+i); if(_el) _el.addEventListener("change",e=>{
     liveChecked[i]=e.target.checked; playPopSound(); renderChecklist(); renderHeat(); renderProgress();
     saveTodayLog();
+    // все привычки на сегодня отмечены – закрываем день автоматически
+    const _tot = scheduledCountForDay(TODAY);
+    if(e.target.checked && !dayClosed && TODAY_RAW >= 1 && _tot > 0 && doneCountForDay(TODAY) >= _tot){
+      setTimeout(()=>{ if(!dayClosed) document.getElementById("closeDayBtn").click(); }, 600);
+    }
   }); });
   const btn = document.getElementById("closeDayBtn");
   btn.disabled = HABITS.length === 0;
