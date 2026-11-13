@@ -2588,7 +2588,7 @@ function renderMilaEvents(){
   const events = STATE.mila_events || [];
   wrap.innerHTML = events.length ? events.map(e=>{
     const bg = e.photo ? `background-image:url('${e.photo}')` : `background:${COLOR_CSS[e.color] || COLOR_CSS.lav}`;
-    const link = e.link ? `<a href="${e.link}" target="_blank" rel="noopener">Узнать больше →</a>` : "";
+    const link = e.link ? `<a href="${e.link}" target="_blank" data-evlink="${e.link}">Узнать больше →</a>` : "";
     const desc = e.description ? `<p class="desc">${e.description}</p>` : "";
     const dateStr = e.date || e.date_place || "";
     const m = dateStr.match(/^(\\d{1,2})\\s*(.*)$/);
@@ -2610,6 +2610,16 @@ function renderMilaEvents(){
     </div>`;
   }).join("") : `<p class="note" style="margin:8px 0 16px">пока нет мероприятий</p>`;
 }
+// мероприятия Милы: открываем в новой вкладке (окном, которое потом можно закрыть кнопкой «Закрыть» на сайте)
+document.addEventListener("click", e=>{
+  const a = e.target.closest && e.target.closest("a[data-evlink]");
+  if(!a) return;
+  e.preventDefault();
+  let u = a.dataset.evlink;
+  try{ const x = new URL(u, location.href); x.searchParams.set("from","platform"); u = x.toString(); }catch(err){}
+  const w = window.open(u, "_blank");
+  if(!w) location.href = u;
+});
 function initCabinetUI(){
   buildMaterialsState();
   renderHeat(); renderChecklist(); renderMaterials(); renderProgress(); renderEvents(); renderProfileTile(); renderMilaEvents();
