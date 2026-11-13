@@ -147,6 +147,7 @@ async def init_db(app):
         program TEXT, message TEXT, note TEXT DEFAULT '', done BOOLEAN DEFAULT FALSE,
         created DOUBLE PRECISION
     )""")
+    await DB_POOL.execute("ALTER TABLE club_signups ADD COLUMN IF NOT EXISTS fm_news BOOLEAN DEFAULT FALSE")
 
     # ---- глобальные настройки платформы (ключ-значение) — напр. "cabinet_opens_at" (unix-время,
     # разовое открытие доступа всем оплатившим разом, см. 2026-10-13 решение в памяти проекта) ----
@@ -5122,7 +5123,7 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
       </div>
       <div class="crm-mobile-wrap">
         <table class="crm-table">
-          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Оплата</th><th>Telegram</th><th>Вопрос</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Имя</th><th>Телефон</th><th>Оплата</th><th>Telegram</th><th>Вопрос</th><th style="text-align:center">FMnews</th><th>Дата</th><th>Заметка</th><th></th></tr></thead>
           <tbody id="fmBody"></tbody>
         </table>
       </div>
@@ -6430,7 +6431,7 @@ function fmField(msg, key){ const m = String(msg||"").match(new RegExp("^"+key+"
 function fmRest(msg){ return String(msg||"").split("\\n").filter(l=>!/^(Оплата|Telegram):/i.test(l.trim())).join("\\n").trim(); }
 async function loadFullmoon(){
   const body = document.getElementById("fmBody");
-  body.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">загрузка…</td></tr>`;
+  body.innerHTML = `<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--ink-soft)">загрузка…</td></tr>`;
   try{ FM = (await apiFetch("/api/admin/club-signups")).filter(isFullMoon); }catch(e){ FM = []; }
   renderFullmoon();
 }
@@ -6455,10 +6456,15 @@ function renderFullmoon(){
       <td>${clubEsc(fmField(r.message,"Оплата")||"–")}</td>
       <td>${clubEsc(fmField(r.message,"Telegram")||"–")}</td>
       <td style="max-width:240px;white-space:pre-wrap">${clubEsc(fmRest(r.message)||"–")}</td>
+      <td style="text-align:center"><input type="checkbox" class="crm-free" data-fnews="${r.id}" ${r.fm_news?"checked":""} title="FMnews – письмо отправлено"></td>
       <td>${fmtDT(r.created)}</td>
       <td><input class="crm-note" data-fnote="${r.id}" value="${clubEsc(r.note||"")}" placeholder="заметка…"></td>
       <td style="text-align:right"><button class="crm-del" data-fdel="${r.id}">удалить</button></td>
-    </tr>`).join("") : `<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--ink-soft)">${FM.length ? "ничего не нашлось" : "пока нет заявок на круг в полнолуние"}</td></tr>`;
+    </tr>`).join("") : `<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--ink-soft)">${FM.length ? "ничего не нашлось" : "пока нет заявок на круг в полнолуние"}</td></tr>`;
+  body.querySelectorAll("[data-fnews]").forEach(cb=>cb.addEventListener("change", async ()=>{
+    try{ await apiFetch("/api/admin/club-signups/"+cb.dataset.fnews, {method:"PUT", body: JSON.stringify({fm_news: cb.checked})});
+      const r = FM.find(x=>String(x.id)===cb.dataset.fnews); if(r) r.fm_news = cb.checked; showToast(cb.checked ? "FMnews ✓" : "FMnews снято"); }catch(e){ cb.checked = !cb.checked; }
+  }));
   body.querySelectorAll("[data-fnote]").forEach(inp=>inp.addEventListener("change", async ()=>{
     try{ await apiFetch("/api/admin/club-signups/"+inp.dataset.fnote, {method:"PUT", body: JSON.stringify({note: inp.value})});
       const r = FM.find(x=>String(x.id)===inp.dataset.fnote); if(r) r.note = inp.value; showToast("Заметка сохранена ✓"); }catch(e){}
@@ -7995,6 +8001,8 @@ async def api_club_update(request):
         await DB_POOL.execute("UPDATE club_signups SET note=$2 WHERE id=$1", rid, str(data.get("note") or "").strip())
     if "done" in data:
         await DB_POOL.execute("UPDATE club_signups SET done=$2 WHERE id=$1", rid, bool(data.get("done")))
+    if "fm_news" in data:
+        await DB_POOL.execute("UPDATE club_signups SET fm_news=$2 WHERE id=$1", rid, bool(data.get("fm_news")))
     return web.json_response({"ok": True})
 
 
