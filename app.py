@@ -4562,6 +4562,26 @@ h1,h2,h3{margin:0;font-family:var(--font-head);font-weight:600;letter-spacing:-.
 .crm-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap}
 .crm-top h1{font-size:19px;margin:0;font-weight:600}
 .crm-stats{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.ga-empty{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;color:var(--ink-soft);line-height:1.6}
+.ga-live{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.88);margin:0 0 14px}
+.ga-live b{color:#fff}
+.ga-foot{font-size:12px;color:rgba(255,255,255,.8);margin-top:4px}
+.ga-dot{width:9px;height:9px;border-radius:50%;background:#3FA36B;box-shadow:0 0 0 0 rgba(63,163,107,.6);animation:gaPulse 1.8s infinite}
+@keyframes gaPulse{70%{box-shadow:0 0 0 8px rgba(63,163,107,0)}100%{box-shadow:0 0 0 0 rgba(63,163,107,0)}}
+.ga-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px}
+.ga-card h3{margin:0 0 12px;font-size:14px;font-weight:600}
+.ga-chart{display:flex;align-items:flex-end;gap:2px;height:150px;padding-top:6px}
+.ga-chart .b{flex:1;min-width:2px;background:linear-gradient(180deg,var(--lav),#C9BEDD);border-radius:4px 4px 0 0;position:relative}
+.ga-chart .b:hover{filter:brightness(.9)}
+.ga-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);margin-top:6px}
+.ga-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:760px){.ga-grid{grid-template-columns:1fr}}
+.ga-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;margin:0 0 9px;font-size:13px}
+.ga-row .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ga-row .c{font-weight:600}
+.ga-row .bar{grid-column:1 / -1;height:6px;border-radius:6px;background:#EEE9F5;overflow:hidden}
+.ga-row .bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#8E82A3,#D79F42)}
+.ga-note{font-size:12px;color:var(--ink-soft);margin-top:4px}
 .crm-stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:90px;box-shadow:var(--shadow)}
 .crm-stat .l{font-size:11.5px;color:var(--ink-soft)}
 .crm-stat .v{font-size:20px;font-weight:600;margin-top:2px}
@@ -4739,6 +4759,7 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
     <div class="tab" data-tab="t-participants">CRM</div>
     <div class="tab" data-tab="t-club">CRM main</div>
     <div class="tab" data-tab="t-fullmoon">Full moon</div>
+    <div class="tab" data-tab="t-analytics">Аналитика</div>
   </div>
 
   <div id="t-progress" style="display:none">
@@ -5100,6 +5121,18 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
       </div>
     </div>
   </div>
+
+  <div id="t-analytics" style="display:none">
+    <div class="crm-wrap">
+      <div class="crm-top" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h1>Аналитика</h1>
+        <div class="crm-chips" id="gaDays">
+          <div class="crm-chip" data-gd="7">7 дней</div><div class="crm-chip on" data-gd="30">30 дней</div><div class="crm-chip" data-gd="90">90 дней</div>
+        </div>
+      </div>
+      <div id="gaBody"><div class="ga-empty">загрузка…</div></div>
+    </div>
+  </div>
 </div>
 
 <div class="crm-modal-overlay" id="crmAddOverlay">
@@ -5329,16 +5362,17 @@ document.getElementById("emSave").addEventListener("click", async ()=>{
   }catch(_){}
 });
 
-const TABS = ["t-progress","t-content","t-calendar","t-events","t-participants","t-club","t-fullmoon"];
+const TABS = ["t-progress","t-content","t-calendar","t-events","t-participants","t-club","t-fullmoon","t-analytics"];
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
     t.classList.add("active");
     TABS.forEach(id=>{ document.getElementById(id).style.display = (id===t.dataset.tab) ? "" : "none"; });
-    document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress" || t.dataset.tab==="t-club" || t.dataset.tab==="t-fullmoon");
+    document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress" || t.dataset.tab==="t-club" || t.dataset.tab==="t-fullmoon" || t.dataset.tab==="t-analytics");
     if(t.dataset.tab==="t-participants") loadParticipants();
     if(t.dataset.tab==="t-club") loadClub();
     if(t.dataset.tab==="t-fullmoon") loadFullmoon();
+    if(t.dataset.tab==="t-analytics") loadAnalytics();
     if(t.dataset.tab==="t-progress") loadProgress();
     if(t.dataset.tab==="t-calendar") loadEmails();
   });
@@ -6429,6 +6463,58 @@ function renderFullmoon(){
   }));
 }
 document.getElementById("fmSearch").addEventListener("input", renderFullmoon);
+/* ---- Аналитика: данные Google Analytics (G-NJ15PTQFGJ) ---- */
+let gaDays = 30;
+const GA_SRC = {"(direct)":"прямые заходы / ссылки", "google":"Google", "instagram.com":"Instagram", "l.instagram.com":"Instagram", "t.me":"Telegram", "telegram":"Telegram", "facebook.com":"Facebook", "m.facebook.com":"Facebook", "l.facebook.com":"Facebook", "youtube.com":"YouTube"};
+const GA_DEV = {"mobile":"телефон", "desktop":"компьютер", "tablet":"планшет"};
+function gaList(arr, map){
+  if(!arr || !arr.length) return '<div class="ga-note">пока нет данных</div>';
+  const mx = Math.max.apply(null, arr.map(x=>x.v)) || 1;
+  return arr.map(x=>`<div class="ga-row"><span class="n">${clubEsc((map && map[x.k]) || x.k)}</span><span class="c">${x.v}</span><span class="bar"><i style="width:${Math.max(3, Math.round(x.v/mx*100))}%"></i></span></div>`).join("");
+}
+async function loadAnalytics(){
+  const body = document.getElementById("gaBody");
+  body.innerHTML = '<div class="ga-empty">загрузка…</div>';
+  let d;
+  try{ d = await apiFetch("/api/admin/analytics?days=" + gaDays); }catch(e){ body.innerHTML = '<div class="ga-empty">не удалось загрузить</div>'; return; }
+  if(!d.configured){
+    body.innerHTML = '<div class="ga-empty"><b>Google Analytics ещё не подключён к админке.</b><br>Добавь на Render переменные <code>GA_PROPERTY_ID</code> и <code>GA_SA_JSON</code> (ключ сервисного аккаунта с доступом Viewer) – и здесь появится статистика сайтов.</div>';
+    return;
+  }
+  if(d.error){
+    body.innerHTML = '<div class="ga-empty"><b>Google ответил ошибкой:</b><br>' + clubEsc(d.error) + '<br><br>Проверь, что сервисному аккаунту дан доступ Viewer в Analytics и включён Google Analytics Data API.</div>';
+    return;
+  }
+  const s = d.series || [], mx = Math.max.apply(null, s.map(x=>x.u).concat([1]));
+  const fmt = iso => { const p = iso.split("-"); return p[2] + "." + p[1]; };
+  const t = d.totals;
+  body.innerHTML = `
+    <div class="ga-live"><span class="ga-dot"></span>сейчас на сайтах: <b>${d.live}</b></div>
+    <div class="crm-stats">
+      <div class="crm-stat"><div class="l">посетители</div><div class="v">${t.users}</div></div>
+      <div class="crm-stat"><div class="l">новые</div><div class="v">${t.new}</div></div>
+      <div class="crm-stat"><div class="l">визиты</div><div class="v">${t.sessions}</div></div>
+      <div class="crm-stat"><div class="l">просмотры страниц</div><div class="v">${t.views}</div></div>
+    </div>
+    <div class="ga-card"><h3>Посетители по дням</h3>
+      <div class="ga-chart">${s.map(x=>`<div class="b" style="height:${Math.max(2, Math.round(x.u/mx*100))}%" title="${fmt(x.d)}: ${x.u} посет., ${x.v} просм."></div>`).join("")}</div>
+      <div class="ga-axis"><span>${s.length ? fmt(s[0].d) : ""}</span><span>${s.length ? fmt(s[Math.floor(s.length/2)].d) : ""}</span><span>${s.length ? fmt(s[s.length-1].d) : ""}</span></div>
+    </div>
+    <div class="ga-grid">
+      <div class="ga-card"><h3>Сайты · просмотры</h3>${gaList(d.sites)}</div>
+      <div class="ga-card"><h3>Откуда приходят · визиты</h3>${gaList(d.sources, GA_SRC)}</div>
+      <div class="ga-card"><h3>Устройства · посетители</h3>${gaList(d.devices, GA_DEV)}</div>
+      <div class="ga-card"><h3>Страны · посетители</h3>${gaList(d.countries)}</div>
+      <div class="ga-card"><h3>Города · посетители</h3>${gaList(d.cities)}</div>
+      <div class="ga-card"><h3>Популярные страницы</h3>${gaList((d.pages||[]).map(p=>({k: p.site + " · " + p.path, v: p.v})))}</div>
+    </div>
+    <div class="ga-foot">данные Google Analytics, обновляются раз в 10 минут · подробнее – analytics.google.com</div>`;
+}
+document.querySelectorAll("#gaDays [data-gd]").forEach(c=>c.addEventListener("click", ()=>{
+  gaDays = Number(c.dataset.gd);
+  document.querySelectorAll("#gaDays [data-gd]").forEach(x=>x.classList.toggle("on", x===c));
+  loadAnalytics();
+}));
 function renderClub(){
   document.getElementById("clubTotal").textContent = CLUB.length;
   document.getElementById("clubNew").textContent = CLUB.filter(r=>!r.done).length;
@@ -7709,6 +7795,145 @@ async def api_club_list(request):
     return web.json_response([dict(r) for r in rows])
 
 
+# ===== Google Analytics в админке =====
+# env: GA_PROPERTY_ID (число), GA_SA_JSON (ключ сервисного аккаунта целиком, роль Viewer в GA)
+_GA_TOKEN = {"t": None, "exp": 0}
+_GA_CACHE = {}
+
+
+def _b64u(b: bytes) -> str:
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+
+async def _ga_access_token(sess):
+    if _GA_TOKEN["t"] and time.time() < _GA_TOKEN["exp"] - 120:
+        return _GA_TOKEN["t"]
+    from cryptography.hazmat.primitives import serialization, hashes
+    from cryptography.hazmat.primitives.asymmetric import padding
+    sa = json.loads(os.environ.get("GA_SA_JSON", ""))
+    now = int(time.time())
+    head = _b64u(json.dumps({"alg": "RS256", "typ": "JWT"}).encode())
+    claims = _b64u(json.dumps({
+        "iss": sa["client_email"], "scope": "https://www.googleapis.com/auth/analytics.readonly",
+        "aud": "https://oauth2.googleapis.com/token", "iat": now, "exp": now + 3600}).encode())
+    key = serialization.load_pem_private_key(sa["private_key"].encode(), password=None)
+    sig = key.sign((head + "." + claims).encode(), padding.PKCS1v15(), hashes.SHA256())
+    jwt = head + "." + claims + "." + _b64u(sig)
+    async with sess.post("https://oauth2.googleapis.com/token", data={
+            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer", "assertion": jwt}) as r:
+        d = await r.json()
+    if "access_token" not in d:
+        raise RuntimeError("token: " + str(d.get("error_description") or d.get("error") or d)[:200])
+    _GA_TOKEN["t"], _GA_TOKEN["exp"] = d["access_token"], now + int(d.get("expires_in", 3600))
+    return _GA_TOKEN["t"]
+
+
+def _ga_site(host: str, path: str) -> str:
+    host = (host or "").lower()
+    path = (path or "/").lower()
+    if host.startswith("marathon."):
+        return "Марафон ENG" if path.startswith("/eng") else "Марафон"
+    if host.startswith("platform.") or "onrender.com" in host:
+        return "Платформа"
+    if path.startswith("/fullmoon"):
+        return "Full moon"
+    if "serenitymoonevents.com" in host:
+        return "SM Events"
+    return host or "другое"
+
+
+async def api_admin_analytics(request):
+    if not admin_token_ok(request):
+        return web.json_response({"error": "unauthorized"}, status=401)
+    pid = os.environ.get("GA_PROPERTY_ID", "").strip()
+    if not pid or not os.environ.get("GA_SA_JSON", "").strip():
+        return web.json_response({"configured": False})
+    try:
+        days = int(request.query.get("days", "30"))
+    except ValueError:
+        days = 30
+    days = days if days in (7, 30, 90) else 30
+    hit = _GA_CACHE.get(days)
+    if hit and time.time() - hit[0] < 600:
+        return web.json_response(hit[1])
+    rng = [{"startDate": f"{days - 1}daysAgo", "endDate": "today"}]
+
+    def rep(dims, mets, limit=None, order=None):
+        d = {"dateRanges": rng, "dimensions": [{"name": x} for x in dims], "metrics": [{"name": x} for x in mets]}
+        if limit:
+            d["limit"] = limit
+        if order:
+            d["orderBys"] = [order]
+        return d
+
+    def rows(r):
+        return [([v.get("value", "") for v in x.get("dimensionValues", [])],
+                 [float(v.get("value") or 0) for v in x.get("metricValues", [])]) for x in r.get("rows", [])]
+
+    try:
+        async with ClientSession() as sess:
+            tok = await _ga_access_token(sess)
+            hdr = {"Authorization": "Bearer " + tok}
+            base = f"https://analyticsdata.googleapis.com/v1beta/properties/{pid}"
+            body = {"requests": [
+                rep([], ["activeUsers", "sessions", "screenPageViews", "newUsers"]),
+                rep(["date"], ["activeUsers", "sessions", "screenPageViews"]),
+                rep(["hostName", "pagePath"], ["screenPageViews", "activeUsers"], 250,
+                    {"metric": {"metricName": "screenPageViews"}, "desc": True}),
+                rep(["sessionSource"], ["sessions"], 10, {"metric": {"metricName": "sessions"}, "desc": True}),
+                rep(["deviceCategory"], ["activeUsers"]),
+            ]}
+            async with sess.post(base + ":batchRunReports", json=body, headers=hdr) as r:
+                b1 = await r.json()
+            if "reports" not in b1:
+                raise RuntimeError(str((b1.get("error") or {}).get("message") or b1)[:300])
+            body2 = {"requests": [
+                rep(["country"], ["activeUsers"], 10, {"metric": {"metricName": "activeUsers"}, "desc": True}),
+                rep(["city"], ["activeUsers"], 10, {"metric": {"metricName": "activeUsers"}, "desc": True}),
+            ]}
+            async with sess.post(base + ":batchRunReports", json=body2, headers=hdr) as r:
+                b2 = await r.json()
+            live = 0
+            try:
+                async with sess.post(base + ":runRealtimeReport", json={"metrics": [{"name": "activeUsers"}]}, headers=hdr) as r:
+                    rt = await r.json()
+                live = int(float(rt["rows"][0]["metricValues"][0]["value"])) if rt.get("rows") else 0
+            except Exception:
+                live = 0
+    except Exception as e:
+        return web.json_response({"configured": True, "error": str(e)[:300]})
+
+    R0, R1, R2, R3, R4 = b1["reports"]
+    tot = rows(R0)
+    t = tot[0][1] if tot else [0, 0, 0, 0]
+    daily = {d[0]: m for d, m in rows(R1)}
+    start = datetime.now(ZoneInfo("America/New_York")).date() - timedelta(days=days - 1)
+    series = []
+    for i in range(days):
+        k = (start + timedelta(days=i)).strftime("%Y%m%d")
+        m = daily.get(k, [0, 0, 0])
+        series.append({"d": (start + timedelta(days=i)).isoformat(), "u": int(m[0]), "s": int(m[1]), "v": int(m[2])})
+    sites, pages = {}, []
+    for (host, path), (views, users) in rows(R2):
+        name = _ga_site(host, path)
+        sites[name] = sites.get(name, 0) + int(views)
+        if len(pages) < 12:
+            pages.append({"site": name, "path": path, "v": int(views)})
+    out = {
+        "configured": True, "days": days, "live": live,
+        "totals": {"users": int(t[0]), "sessions": int(t[1]), "views": int(t[2]), "new": int(t[3])},
+        "series": series,
+        "sites": sorted([{"k": k, "v": v} for k, v in sites.items()], key=lambda x: -x["v"]),
+        "pages": pages,
+        "sources": [{"k": d[0] or "(direct)", "v": int(m[0])} for d, m in rows(R3)],
+        "devices": [{"k": d[0], "v": int(m[0])} for d, m in rows(R4)],
+        "countries": [{"k": d[0], "v": int(m[0])} for d, m in rows(b2.get("reports", [{}, {}])[0])],
+        "cities": [{"k": d[0], "v": int(m[0])} for d, m in rows(b2.get("reports", [{}, {}])[1])],
+    }
+    _GA_CACHE[days] = (time.time(), out)
+    return web.json_response(out)
+
+
 def _club_row(d):
     g = lambda k, n: str(d.get(k) or "").strip()[:n]
     return (g("name", 200), g("email", 200), g("phone", 60), g("program", 200), g("message", 3000), g("note", 1000))
@@ -8535,6 +8760,7 @@ def make_app():
         web.post("/api/admin/signups/{id}/note", api_signup_note),
         web.put("/api/admin/signups-emails", api_signups_emails_bulk),
         web.get("/api/admin/club-signups", api_club_list),
+        web.get("/api/admin/analytics", api_admin_analytics),
         web.post("/api/admin/club-signups", api_club_add),
         web.post("/api/admin/club-signups/import", api_club_import),
         web.put("/api/admin/club-signups/{id}", api_club_update),
