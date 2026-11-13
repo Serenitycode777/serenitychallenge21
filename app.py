@@ -4640,6 +4640,8 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
 .tabs{background:rgba(255,255,255,.22)}
 .tab{color:#fff}
 .tab.active{background:#fff;color:var(--sage-ink)}
+@media(max-width:1000px){.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.tab{padding:9px 4px;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+@media(max-width:420px){.tab{font-size:11.5px;padding:8px 2px;letter-spacing:-.01em}}
 .crm-top h1{color:#fff}
 .crm-bottom-actions a{color:#fff;text-decoration:underline;text-underline-offset:3px}
 .crm-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:12.8px;box-shadow:var(--shadow)}
