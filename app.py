@@ -278,7 +278,12 @@ EMAIL_AUDIENCES = {
     "news": "News (галочка в «Участницах»)",
     "news1": "news1 (галочка в CRM main)",
     "emails": "Emails (галочка в CRM)",
+    "fm_news": "FMnews (галочка в Full moon)",
+    "fm_all": "все заявки Full moon",
+    "fm_crm": "news1 из CRM main",
+    "fm_emails": "Emails из CRM",
 }
+EMAIL_PICK_AUDIENCES = ("free", "news", "news1", "emails", "fm_news", "fm_all", "fm_crm", "fm_emails")
 
 
 async def get_email_template(key: str):
@@ -370,8 +375,18 @@ async def _chosen_rows(recipients):
 
 
 async def _email_audience_rows(audience: str, recipients=None):
-    if audience in ("free", "news", "news1", "emails") and recipients is not None:
+    if audience in EMAIL_PICK_AUDIENCES and recipients is not None:
         return await _chosen_rows(recipients)
+    if audience in ("fm_news", "fm_all"):
+        q = ("SELECT DISTINCT ON (email_norm) name, email FROM club_signups "
+             "WHERE COALESCE(email,'') <> '' AND program ~* '(олнолуни|full\\s*moon)' ")
+        if audience == "fm_news":
+            q += "AND fm_news=TRUE "
+        return await DB_POOL.fetch(q + "ORDER BY email_norm, id DESC")
+    if audience == "fm_crm":  # те же галочки news1 в CRM main – письмо из папки Full moon
+        audience = "news1"
+    if audience == "fm_emails":  # те же галочки Emails в CRM – письмо из папки Full moon
+        audience = "emails"
     if audience == "news":
         rows = await DB_POOL.fetch(
             "SELECT DISTINCT ON (email_norm) name, email FROM profiles "
@@ -4964,11 +4979,12 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
       <button class="editlink" id="cancelEditEvent" type="button" hidden style="margin-top:8px">Отменить редактирование</button>
     </div>
 
+    <div id="emWrap">
     <div class="card" id="emailsCard">
       <h2>Письма участницам</h2>
-      <div class="hint">письма уходят участницам из CRM с почты платформы; время – по Нью-Йорку</div>
+      <div class="hint" id="emHint">письма уходят участницам из CRM с почты платформы; время – по Нью-Йорку</div>
       <div class="em-warn" id="emMailWarn" hidden>почта платформы не настроена (нет RESEND_API_KEY / MAIL_FROM) – письма не будут отправляться</div>
-      <h3 class="em-h">Автоматические письма</h3>
+      <h3 class="em-h" id="emSysH">Автоматические письма</h3>
       <div id="emSystem"></div>
       <h3 class="em-h">Запланированные письма</h3>
       <div class="evlist" id="emSchedList"></div>
@@ -5000,6 +5016,7 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
       </div>
       <button class="save" id="emSave">Запланировать письмо</button>
       <button class="editlink" id="emCancel" type="button" hidden style="margin-top:8px">Отменить редактирование</button>
+    </div>
     </div>
   </div>
 
@@ -5131,6 +5148,7 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
         <a href="/admin/export-fullmoon.csv" class="primary" target="_blank">скачать CSV</a>
       </div>
     </div>
+    <div id="fmEmailsSlot" style="margin-top:22px"></div>
   </div>
 
   <div id="t-analytics" style="display:none">
@@ -5210,8 +5228,27 @@ const EM_PICK = {
   news1: "в CRM main пока никто не отмечен галочкой news1 – поставь её в колонке news1",  // аудитории, где можно выбрать конкретных получательниц
   free: "в CRM пока никто не отмечен как Free – поставь галочку в колонке Free",
   news: "в «Участницах» пока никто не отмечен галочкой News – поставь её в колонке News",
-  emails: "в CRM пока никто не отмечен галочкой Emails – поставь её в колонке Emails"
+  emails: "в CRM пока никто не отмечен галочкой Emails – поставь её в колонке Emails",
+  fm_news: "в Full moon пока никто не отмечен галочкой FMnews – поставь её в колонке FMnews",
+  fm_all: "пока нет заявок на круг в полнолуние",
+  fm_crm: "в CRM main пока никто не отмечен галочкой news1 – поставь её в колонке news1",
+  fm_emails: "в CRM пока никто не отмечен галочкой Emails – поставь её в колонке Emails"
 };
+/* блок писем один – показываем его в «Календаре» (письма марафона) или в «Full moon» (письма круга) */
+const FM_AUD = ["fm_news","fm_all","fm_crm","fm_emails"];
+let EM_MODE = "main";
+function emAudOk(k){ return (EM_MODE==="fm") === FM_AUD.includes(k); }
+function emMount(mode){
+  const wrap = document.getElementById("emWrap");
+  const slot = mode==="fm" ? document.getElementById("fmEmailsSlot") : document.getElementById("t-calendar");
+  if(wrap.parentNode !== slot) slot.appendChild(wrap);
+  if(EM_MODE !== mode){ EM_MODE = mode; emEditingId = null; emResetForm(); }
+  document.getElementById("emSysH").hidden = mode==="fm";
+  document.getElementById("emSystem").hidden = mode==="fm";
+  document.getElementById("emHint").textContent = mode==="fm"
+    ? "письма участницам круга в полнолуние с почты платформы; время – по Нью-Йорку"
+    : "письма уходят участницам из CRM с почты платформы; время – по Нью-Йорку";
+}
 let emAudience = "paid", emEditingId = null, emRecipients = null;
 const EM_MON = ["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
 function emEsc(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
@@ -5225,7 +5262,8 @@ async function loadEmails(){
   renderEmails();
 }
 function renderEmAud(){
-  document.getElementById("emAudChips").innerHTML = Object.entries(EMAILS.audiences||{}).map(([k,l])=>
+  if(!emAudOk(emAudience)) emAudience = EM_MODE==="fm" ? "fm_news" : "paid";
+  document.getElementById("emAudChips").innerHTML = Object.entries(EMAILS.audiences||{}).filter(([k])=>emAudOk(k)).map(([k,l])=>
     `<div class="tchip${k===emAudience?' on':''}" data-aud="${k}">${l} · ${(EMAILS.counts||{})[k]||0}</div>`).join("");
   document.querySelectorAll("#emAudChips [data-aud]").forEach(c=>c.addEventListener("click", ()=>{
     if(emAudience !== c.dataset.aud){
@@ -5287,7 +5325,7 @@ function renderEmails(){
     box.querySelector(".em-sys-test").addEventListener("click", ()=>emSendTest(box.querySelector(".em-sys-subj").value, box.querySelector(".em-sys-text").value));
   });
   const list = document.getElementById("emSchedList");
-  const rows = EMAILS.scheduled||[];
+  const rows = (EMAILS.scheduled||[]).filter(m=>emAudOk(m.audience));
   list.innerHTML = rows.length ? rows.map(m=>{
     const [d,t] = m.send_local.split("T"); const [y,mo,dd] = d.split("-").map(Number);
     const st = m.status==="sent" ? `отправлено ${m.sent_count} из ${m.total_count}` : m.status==="sending" ? "отправляется…" : m.status==="failed" ? "ошибка" : "запланировано";
@@ -5335,7 +5373,7 @@ async function emSendTest(subject, body){
   }catch(_){}
 }
 function emResetForm(){
-  emEditingId = null; emAudience = "paid"; emRecipients = null;
+  emEditingId = null; emAudience = EM_MODE==="fm" ? "fm_news" : "paid"; emRecipients = null;
   document.getElementById("emSubject").value = ""; document.getElementById("emBody").value = "";
   document.getElementById("emDate").value = ""; document.getElementById("emTime").value = "09:00";
   document.getElementById("emFormTitle").textContent = "Новое письмо";
@@ -5382,10 +5420,10 @@ document.querySelectorAll(".tab").forEach(t=>{
     document.getElementById("shell").classList.toggle("wide", t.dataset.tab==="t-participants" || t.dataset.tab==="t-progress" || t.dataset.tab==="t-club" || t.dataset.tab==="t-fullmoon" || t.dataset.tab==="t-analytics");
     if(t.dataset.tab==="t-participants") loadParticipants();
     if(t.dataset.tab==="t-club") loadClub();
-    if(t.dataset.tab==="t-fullmoon") loadFullmoon();
+    if(t.dataset.tab==="t-fullmoon"){ loadFullmoon(); emMount("fm"); loadEmails(); }
     if(t.dataset.tab==="t-analytics") loadAnalytics();
     if(t.dataset.tab==="t-progress") loadProgress();
-    if(t.dataset.tab==="t-calendar") loadEmails();
+    if(t.dataset.tab==="t-calendar"){ emMount("main"); loadEmails(); }
   });
 });
 
@@ -6466,7 +6504,7 @@ function renderFullmoon(){
     </tr>`).join("") : `<tr><td colspan="10" style="padding:24px;text-align:center;color:var(--ink-soft)">${FM.length ? "ничего не нашлось" : "пока нет заявок на круг в полнолуние"}</td></tr>`;
   body.querySelectorAll("[data-fnews]").forEach(cb=>cb.addEventListener("change", async ()=>{
     try{ await apiFetch("/api/admin/club-signups/"+cb.dataset.fnews, {method:"PUT", body: JSON.stringify({fm_news: cb.checked})});
-      const r = FM.find(x=>String(x.id)===cb.dataset.fnews); if(r) r.fm_news = cb.checked; showToast(cb.checked ? "FMnews ✓" : "FMnews снято"); }catch(e){ cb.checked = !cb.checked; }
+      const r = FM.find(x=>String(x.id)===cb.dataset.fnews); if(r) r.fm_news = cb.checked; showToast(cb.checked ? "FMnews ✓" : "FMnews снято"); if(EM_MODE==="fm") loadEmails(); }catch(e){ cb.checked = !cb.checked; }
   }));
   body.querySelectorAll("[data-fnote]").forEach(inp=>inp.addEventListener("change", async ()=>{
     try{ await apiFetch("/api/admin/club-signups/"+inp.dataset.fnote, {method:"PUT", body: JSON.stringify({note: inp.value})});
@@ -7624,9 +7662,12 @@ async def api_emails_list(request):
     news_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("news")]
     emails_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("emails")]
     news1_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("news1")]
+    fm_news_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("fm_news")]
+    fm_all_list = [{"name": r["name"] or "", "email": r["email"]} for r in await _email_audience_rows("fm_all")]
     return web.json_response({
         "system": system, "scheduled": [_sched_json(r) for r in rows], "counts": counts, "free_list": free_list,
-        "pick_lists": {"free": free_list, "news": news_list, "news1": news1_list, "emails": emails_list},
+        "pick_lists": {"free": free_list, "news": news_list, "news1": news1_list, "emails": emails_list,
+                       "fm_news": fm_news_list, "fm_all": fm_all_list, "fm_crm": news1_list, "fm_emails": emails_list},
         "audiences": EMAIL_AUDIENCES, "test_to": MAIL_REPLY_TO or "", "tz": MARATHON_TZ,
         "mail_ready": bool(RESEND_API_KEY and MAIL_FROM),
     })
@@ -7662,7 +7703,7 @@ def _sched_payload(data):
     except Exception:
         send_at = None
     recipients = None
-    if audience in ("free", "news", "news1", "emails"):
+    if audience in EMAIL_PICK_AUDIENCES:
         recipients = [str(e).strip() for e in (data.get("recipients") or []) if str(e).strip()]
         if not recipients:
             send_at = None
