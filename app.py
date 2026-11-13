@@ -5127,6 +5127,9 @@ body{background:linear-gradient(165deg,#7AA6A0 0%,#6A9993 45%,#5E8C86 100%) fixe
           <tbody id="fmBody"></tbody>
         </table>
       </div>
+      <div class="crm-bottom-actions">
+        <a href="/admin/export-fullmoon.csv" class="primary" target="_blank">скачать CSV</a>
+      </div>
     </div>
   </div>
 
@@ -8028,6 +8031,35 @@ async def admin_export_club(request):
                         headers={"Content-Disposition": "attachment; filename=crm-main.csv"})
 
 
+async def admin_export_fullmoon(request):
+    """CSV папки Full moon: заявки на круги в полнолуние."""
+    if not authed(request):
+        raise web.HTTPFound("/admin/login")
+    rows = await DB_POOL.fetch("SELECT * FROM club_signups ORDER BY created DESC")
+    rows = [r for r in rows if re.search(r"полнолуни|full\s*moon", r["program"] or "", re.I)]
+
+    def field(msg, key):
+        m = re.search(r"^" + key + r":\s*(.+)$", msg or "", re.M | re.I)
+        return m.group(1).strip() if m else ""
+
+    def rest(msg):
+        return "\n".join(l for l in (msg or "").split("\n")
+                         if not re.match(r"^(Оплата|Telegram):", l.strip(), re.I)).strip()
+
+    ny = ZoneInfo("America/New_York")
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["#", "имя", "email", "телефон", "программа", "оплата", "telegram", "вопрос", "FMnews", "заметка", "дата"])
+    for i, r in enumerate(rows, start=1):
+        fm_news = r["fm_news"] if "fm_news" in r.keys() else False
+        w.writerow([i, r["name"] or "", r["email"] or "", r["phone"] or "", r["program"] or "",
+                    field(r["message"], "Оплата"), field(r["message"], "Telegram"), rest(r["message"]),
+                    "да" if fm_news else "", r["note"] or "",
+                    datetime.fromtimestamp(r["created"], ny).strftime("%Y-%m-%d %H:%M") if r["created"] else ""])
+    return web.Response(body=("\ufeff" + buf.getvalue()).encode("utf-8"), content_type="text/csv",
+                        headers={"Content-Disposition": "attachment; filename=full-moon.csv"})
+
+
 async def api_signups_emails_bulk(request):
     """Ставит/снимает галочку «Emails» сразу у нескольких заявок CRM."""
     if not admin_token_ok(request):
@@ -8735,6 +8767,7 @@ def make_app():
         web.post("/admin/login", admin_login_post),
         web.get("/admin/export.csv", admin_export),
         web.get("/admin/export-club.csv", admin_export_club),
+        web.get("/admin/export-fullmoon.csv", admin_export_fullmoon),
         web.get("/admin/export-progress.csv", admin_export_progress),
         web.get("/admin/logout", admin_logout),
         web.get("/health", health),
