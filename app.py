@@ -3951,9 +3951,16 @@ function evtStatus(e){ // {soon:минуты до начала} | {live:true} | 
   if(r[0] > now && mins <= EVT_SOON_MIN) return {soon:mins};
   return null;
 }
+function evtRowStatus(e){ // в расписании: подсветка весь день события, до конца эфира
+  const st = evtStatus(e); if(st) return st;
+  const r = evtRange(e); if(!r || e.date !== TODAY_DATE_ISO) return null;
+  return r[0] > Date.now() ? {soon:Math.ceil((r[0]-Date.now())/60000)} : null;
+}
 function evtSoonText(st){
   if(st.live) return "🔴 идёт сейчас";
-  return st.soon <= 1 ? "начинается через минуту" : "начинается через " + st.soon + " мин";
+  if(st.soon <= 1) return "начинается через минуту";
+  const h = Math.floor(st.soon/60), m = st.soon%60;
+  return "начинается через " + (h ? h + " ч" + (m ? " " + m + " мин" : "") : m + " мин");
 }
 function playEventChime(){ // мягкий колокольчик: два тихих тона
   try{
@@ -4000,7 +4007,7 @@ function checkEventReminders(){
   let needRender = false;
   document.querySelectorAll("#eventsList [data-evkey]").forEach(row=>{
     const e = events.find(x=>evtKey(x)===row.dataset.evkey); if(!e) return;
-    const st = evtStatus(e), has = row.classList.contains("is-soon");
+    const st = evtRowStatus(e), has = row.classList.contains("is-soon");
     if(!!st !== has || evtFinished(e) !== row.classList.contains("past")){ needRender = true; return; }
     const txt = row.querySelector(".evt-soon-txt"); if(st && txt) txt.textContent = evtSoonText(st);
   });
@@ -4035,7 +4042,7 @@ function renderEvents(){
     const tag = clickable ? "a" : "div";
     const attrs = clickable ? ` href="${isPast ? e.record_link : e.link}" target="_blank" rel="noopener"` : (isPast ? ` data-norec="1" style="cursor:pointer"` : "");
     const col = evtColor(i);
-    const st = evtStatus(e);
+    const st = evtRowStatus(e);
     return `<${tag} class="evt-row ${isPast?'past':''} ${st?'is-soon':''}"${attrs} data-evkey="${evtKey(e)}">
       <div class="evt-date c-${col}" style="position:relative"><div class="d">${dp.dom}</div><div class="l">${dp.mon}</div>${st?`<div class="evt-bell evt-bell-badge" aria-hidden="true">${EVT_BELL_SVG}</div>`:''}</div>
       <div class="evt-body"><span class="evt-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3"/></svg><span>${e.type || "Zoom-встреча"}</span></span><div class="evt-ttl">${e.title}</div><div class="evt-meta">${isPast?(rec?'эфир прошёл · запись готова':'эфир прошёл · запись скоро'):evtLocalTime(e.time||'', e.date)}</div>${st?`<span class="evt-soon-txt">${evtSoonText(st)}</span>`:''}</div>
