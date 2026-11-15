@@ -1069,12 +1069,19 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
 @keyframes goldFlash{0%,100%{box-shadow:0 0 0 0 rgba(240,200,105,.0);filter:brightness(1)}50%{box-shadow:0 0 0 6px rgba(240,200,105,.45),0 0 18px 2px rgba(215,159,66,.55);filter:brightness(1.12)}}
 .evt-toast-x{flex:none;background:none;border:none;color:var(--ink-soft);font-size:16px;cursor:pointer;padding:4px}
 @media (prefers-reduced-motion:reduce){ .evt-bell,.evt-row.is-soon .evt-go,.evt-toast-go{animation:none} .evt-toast{transition:none} }
-.evt-alert{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:12px;
-  padding:9px 12px;margin:0 0 14px;box-shadow:var(--shadow)}
-.evt-alert-dot{width:7px;height:7px;border-radius:50%;background:var(--sage);flex-shrink:0}
-.evt-alert-txt{font-size:12px;flex:1}
-.evt-alert-txt b{font-weight:600}
-.evt-alert-tag{font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.evt-alert{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:14px;border-radius:18px;text-decoration:none;color:var(--ink);
+  background:linear-gradient(135deg,#FFF8E8,#FBEBCB);border:1.5px solid #E9C46A;box-shadow:0 12px 26px -16px rgba(176,125,42,.6)}
+.evt-alert[hidden]{display:none}
+.evt-alert-ic{flex:none;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
+  background:#D6453D;box-shadow:0 0 0 4px rgba(214,69,61,.16);animation:bellRing 2.4s ease-in-out infinite;transform-origin:50% 15%}
+.evt-alert-ic svg{width:21px;height:21px}
+.evt-alert-tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.evt-alert-k{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#B07D2A}
+.evt-alert-tx b{font-size:16px;font-weight:700;margin:2px 0;line-height:1.25}
+.evt-alert-w{font-size:13px;color:var(--ink-soft)}
+.evt-alert-go{flex:none;background:#4F7A75;color:#fff;border-radius:999px;padding:10px 14px;font-weight:700;font-size:13px;white-space:nowrap}
+.evt-alert.is-live .evt-alert-go,.evt-alert.is-soon .evt-alert-go{background:linear-gradient(135deg,#FDF0CB 0%,#F0C869 55%,#D79F42 100%);color:#3D2F10;animation:goldFlash 1.4s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){ .evt-alert-ic,.evt-alert-go{animation:none!important} }
 .mat-layout{display:block}
 @media (min-width:900px){
   .mat-layout{display:flex;gap:20px;align-items:flex-start}
@@ -1677,11 +1684,11 @@ a.evt-row{display:flex;text-decoration:none;color:inherit;cursor:pointer}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12c0-4.4 3.8-8 8.5-8s8.5 3.6 8.5 8-3.8 8-8.5 8c-1.1 0-2.2-.2-3.1-.6L4 20l1.1-4.3C4.4 14.6 4 13.3 4 12Z"/></svg>
           Чат</a>
       </div>
-      <div class="evt-alert" id="todayEventAlert" hidden>
-        <span class="evt-alert-dot"></span>
-        <span class="evt-alert-txt" id="todayEventTxt"></span>
-        <span class="evt-alert-tag">Zoom</span>
-      </div>
+      <a class="evt-alert" id="todayEventAlert" target="_blank" rel="noopener" hidden>
+        <span class="evt-alert-ic" id="todayEventIc"></span>
+        <span class="evt-alert-tx"><span class="evt-alert-k" id="todayEventK">Сегодня эфир</span><b id="todayEventTtl"></b><span class="evt-alert-w" id="todayEventW"></span></span>
+        <span class="evt-alert-go" id="todayEventGo">Zoom →</span>
+      </a>
       <div class="habits-card">
         <div class="habits-card-top">
           <h3 id="habitsHeading">Мои привычки</h3>
@@ -3984,6 +3991,7 @@ function showEventToast(e, st){
 }
 function checkEventReminders(){
   if(!STATE || !document.getElementById("mainApp") || document.getElementById("mainApp").hidden) return;
+  updateTodayAlert();
   const events = STATE.events || [];
   let hit = null;
   for(const e of events){ const st = evtStatus(e); if(st && st.soon !== undefined){ hit = [e, st]; break; } }
@@ -4039,12 +4047,30 @@ function renderEvents(){
     playPopSound();
     showInfoSimple("Скоро будет…", "Запись этого эфира появится здесь совсем скоро – загляни чуть позже 💛");
   }));
-  const todayEv = events.find(e=>e.date === TODAY_DATE_ISO);
-  const alertEl = document.getElementById("todayEventAlert");
-  alertEl.hidden = !todayEv;
-  if(todayEv){
-    document.getElementById("todayEventTxt").innerHTML = `сегодня${todayEv.time?(' в '+evtLocalTime(todayEv.time, todayEv.date)):''} – <b>${todayEv.title}</b>`;
+  updateTodayAlert();
+}
+/* плашка «Сегодня эфир» – весь день события, с обратным отсчётом, пока эфир не закончится */
+function updateTodayAlert(){
+  const el = document.getElementById("todayEventAlert"); if(!el) return;
+  const ev = ((STATE && STATE.events) || []).find(e=>e.date === TODAY_DATE_ISO && !evtFinished(e));
+  el.hidden = !ev;
+  if(!ev) return;
+  const r = evtRange(ev), now = Date.now();
+  const live = !!(r && now >= r[0] && now < r[1]);
+  let left = "";
+  if(r && !live){
+    const mins = Math.max(1, Math.ceil((r[0]-now)/60000)), h = Math.floor(mins/60), mm = mins%60;
+    left = "через " + (h ? h + " ч" + (mm ? " " + mm + " мин" : "") : mm + " мин");
   }
+  el.classList.toggle("is-live", live);
+  el.classList.toggle("is-soon", !!(r && !live && (r[0]-now) <= EVT_SOON_MIN*60000));
+  document.getElementById("todayEventIc").innerHTML = EVT_BELL_SVG;
+  document.getElementById("todayEventK").textContent = live ? "🔴 Эфир идёт сейчас" : "Сегодня эфир";
+  document.getElementById("todayEventTtl").textContent = ev.title || "";
+  const time = ev.time ? evtLocalTime(ev.time, ev.date) : "";
+  document.getElementById("todayEventW").textContent = [time, left].filter(Boolean).join(" · ");
+  const go = document.getElementById("todayEventGo");
+  if(ev.link){ el.href = ev.link; go.hidden = false; } else { el.removeAttribute("href"); go.hidden = true; }
 }
 
 function renderMaterials(){
