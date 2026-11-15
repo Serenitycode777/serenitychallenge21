@@ -3305,15 +3305,15 @@ function renderPicker(){
     <p>Перед тем как подтвердить свой выбор, ещё раз просмотри список. Убедись, что количество привычек и время на их выполнение реалистичны для тебя.</p>
     <p>Помни: лучше меньше, но регулярно! 💚</p>
     </div>`;
-  Object.entries(CATALOG).forEach(([cat,items])=>{
-    html += `<div class="pickcat"><h4>${cat}</h4><div class="chipgrid">${items.filter(h=>!isOwnHabit(h.name)).map(h=>chipHtml(h.name)).join("")}</div></div>`;
-  });
   const customOnes = pickSelection.filter(h=>!findHabitMeta(h) || isOwnHabit(h));
   html += `<div class="pickcat"><h4>Свои привычки</h4>
     <div class="chipgrid" id="customList">${customOnes.map(chipHtml).join("")}</div>
     <button class="addhabit-btn" id="customAddBtn" type="button">+ добавить свою привычку</button>
-    </div>
-    <p class="note" id="pickWarn" hidden style="margin:0 0 10px">Выбери хотя бы одну привычку, чтобы сохранить</p>
+    </div>`;
+  Object.entries(CATALOG).forEach(([cat,items])=>{
+    html += `<div class="pickcat"><h4>${cat}</h4><div class="chipgrid">${items.filter(h=>!isOwnHabit(h.name)).map(h=>chipHtml(h.name)).join("")}</div></div>`;
+  });
+  html += `<p class="note" id="pickWarn" hidden style="margin:0 0 10px">Выбери хотя бы одну привычку, чтобы сохранить</p>
     <p class="pick-total" id="pickTotal"></p>
     <button class="savepick" id="savePick">${onboarding ? "Начать марафон 🌙" : "Сохранить"}</button>`;
   document.getElementById("overlayBody").innerHTML = html;
