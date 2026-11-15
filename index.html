@@ -493,15 +493,92 @@ fieldset:has(input[value="Venmo"]:checked) .qr-pick-venmo,fieldset:has(input[val
 </div>
 </section> <div class="sm-divider sm-divider-onto-beige-start" aria-hidden="true"><span class="sm-divider-line"></span><svg class="sm-divider-mark" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 0C12 6.5 17.5 12 24 12C17.5 12 12 17.5 12 24C12 17.5 6.5 12 0 12C6.5 12 12 6.5 12 0Z" fill="#AA9DB8"/></svg><span class="sm-divider-line"></span></div> <section id="program" class="steps-bg has-geo" aria-labelledby="program-title"><svg class="geo geo-l geo-mid" viewBox="0 0 200 200" aria-hidden="true"><use href="#geoFol"/></svg><svg class="geo geo-r geo-bot geo-sm" viewBox="0 0 200 200" aria-hidden="true"><use href="#geoTorus"/></svg> <div class="wrap"> <div class="section-head" style="margin-inline:auto;text-align:center"> <h2 id="program-title">Как устроен марафон</h2> </div>
 
-<div class="experts-grid program-grid" style="margin-top:28px">
-<div class="expert-card"><p><strong>После оплаты</strong>доступ к онлайн-платформе и закрытой Telegram-группе</p></div>
-<div class="expert-card"><p><strong>До старта</strong>выбор своих индивидуальных привычек и действий на 21 день, по 5–20 минут ежедневно</p></div>
-<div class="expert-card"><p><strong>ZOOM встречи с участием экспертов</strong>мастермайнды на актуальные темы по запросу участниц, ответы на вопросы</p></div>
-<div class="expert-card"><p><strong>Йога, медитации, звуковая терапия</strong>видео в записи на платформе Serenity Moon и живые сессии онлайн</p></div>
-<div class="expert-card"><p><strong>2 тренировки в неделю</strong>видео-уроки на 10–20 минут — упражнения для укрепления мышц и развития гибкости</p></div>
-<div class="expert-card"><p><strong>Лекция психолога</strong>нейрофизиология и формирование полезных привычек</p></div>
-<div class="expert-card"><p><strong>21 день вместе!</strong>мотивация, вдохновение, взаимная поддержка и много полезного</p></div>
-<div class="expert-card" style="overflow:hidden"><svg aria-hidden="true" viewBox="0 0 64 64" style="position:absolute;right:10px;top:50%;transform:translateY(-50%) rotate(-8deg);width:92px;height:92px;pointer-events:none;z-index:0" fill="none" stroke="#D9CCEA" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="26" width="44" height="30" rx="3" fill="#F1EAF8"/><rect x="7" y="18" width="50" height="10" rx="2.5" fill="#E9DFF4"/><path d="M32 18v38"/><path d="M32 18c-4-8-15-11-15-4 0 4 8 4 15 4z" fill="#F1EAF8"/><path d="M32 18c4-8 15-11 15-4 0 4-8 4-15 4z" fill="#F1EAF8"/></svg><p style="position:relative;z-index:1"><strong>Подарки и приятные сюрпризы!</strong>розыгрыш призов от наших спонсоров</p></div>
+<style>
+.hw{margin-top:30px;font-family:Montserrat,'Helvetica Neue',Arial,sans-serif}
+.hw *{box-sizing:border-box}
+.hw-steps{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.hw-steps::before{content:"";position:absolute;left:12%;right:12%;top:27px;height:2px;background:linear-gradient(90deg,rgba(253,240,203,.2),#F0C869,rgba(253,240,203,.2))}
+.hw-step{position:relative;text-align:center}
+.hw-num{position:relative;z-index:1;width:56px;height:56px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#FDF0CB,#F0C869 55%,#D79F42);color:#3D2F10;font:700 20px/1 'Cormorant Garamond',Georgia,serif;box-shadow:0 0 0 6px rgba(255,255,255,.25),0 10px 22px -10px rgba(61,47,16,.6)}
+.hw-card{background:#fff;border-radius:22px;padding:18px 16px;box-shadow:0 18px 36px -24px rgba(40,30,60,.55);min-height:132px}
+.hw-card b{display:block;color:#3F6660;font-size:16px;margin-bottom:6px}
+.hw-card span{color:#5c5668;font-size:14px;line-height:1.5}
+.hw-plat{margin-top:34px;display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:center;background:rgba(255,255,255,.96);border-radius:30px;padding:30px 34px;box-shadow:0 26px 50px -28px rgba(40,30,60,.6)}
+.hw-phone{position:relative;width:260px;height:520px;margin:0 auto;border-radius:38px;background:#1f1b29;padding:10px;box-shadow:0 30px 50px -24px rgba(40,30,60,.7)}
+.hw-phone::before{content:"";position:absolute;top:16px;left:50%;transform:translateX(-50%);width:80px;height:20px;border-radius:12px;background:#1f1b29;z-index:2}
+.hw-scr{height:100%;border-radius:30px;overflow:hidden;background:linear-gradient(170deg,#F1EDF5,#EAF2F0);padding:42px 14px 14px;font-size:11px;color:#2E3B3A}
+.hw-scr .t{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.hw-scr .t b{font:700 19px/1 'Cormorant Garamond',Georgia,serif;color:#3F6660}
+.hw-scr .t span{font-size:10px;color:#7a7090}
+.hw-bar{height:7px;border-radius:9px;background:#E3DEEA;overflow:hidden;margin-bottom:10px}.hw-bar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,#AA9DB8,#6A9993)}
+.hw-hab{display:flex;align-items:center;gap:8px;background:#fff;border-radius:12px;padding:8px 9px;margin-bottom:6px;box-shadow:0 4px 10px -8px rgba(0,0,0,.4)}
+.hw-hab .c{width:17px;height:17px;border-radius:6px;border:1.5px solid #B9C9C6;flex:none;display:grid;place-items:center;color:#fff;font-size:11px}
+.hw-hab.on .c{background:#6A9993;border-color:#6A9993}
+.hw-hab.on .n{color:#8a9a98;text-decoration:line-through}
+.hw-hab .m{margin-left:auto;font-size:9.5px;color:#9a90ab}
+.hw-btn{margin:8px 0 10px;text-align:center;border-radius:12px;padding:8px;background:#4F7A75;color:#fff;font-weight:600}
+.hw-map{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;background:#fff;border-radius:12px;padding:8px}
+.hw-map i{aspect-ratio:1;border-radius:4px;background:#ECE8F1}
+.hw-map i.a{background:#C9DCD8}.hw-map i.b{background:#8FB3AD}.hw-map i.c{background:#4F7A75}.hw-map i.d{background:linear-gradient(135deg,#FDF0CB,#F0C869)}
+.hw-dia{display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#fff;border-radius:12px;padding:7px 10px}
+.hw-dia b{color:#B07D2A}
+.hw-info h3{font:600 30px/1.15 'Cormorant Garamond',Georgia,serif;color:#3F6660;margin:0 0 6px;text-transform:none}
+.hw-info p.sub{margin:0 0 18px;color:#6b6375;font-size:15px}
+.hw-feats{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
+.hw-f{display:flex;gap:11px;align-items:flex-start}
+.hw-f .ic{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#EEF5F3,#F4F0F8);color:#4F7A75;font-size:18px}
+.hw-f b{display:block;color:#2E3B3A;font-size:14.5px;margin-bottom:2px}
+.hw-f span{color:#6b6375;font-size:13px;line-height:1.45}
+.hw-inc{margin-top:30px;text-align:center}
+.hw-inc h4{margin:0 0 14px;color:#fff;font:600 24px/1.2 'Cormorant Garamond',Georgia,serif;letter-spacing:.06em;text-transform:uppercase}
+.hw-chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.hw-chip{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:999px;background:rgba(255,255,255,.92);color:#3F6660;font-size:14px;font-weight:600;box-shadow:0 10px 20px -16px rgba(40,30,60,.6)}
+@media(max-width:900px){.hw-steps{grid-template-columns:1fr 1fr}.hw-steps::before{display:none}.hw-plat{grid-template-columns:1fr;padding:24px 18px}.hw-feats{grid-template-columns:1fr}}
+@media(max-width:520px){.hw-steps{grid-template-columns:1fr}.hw-card{min-height:0}}
+</style>
+<div class="hw">
+  <div class="hw-steps">
+    <div class="hw-step"><div class="hw-num">1</div><div class="hw-card"><b>Оплата</b><span>сразу доступ к личному кабинету и закрытой Telegram-группе</span></div></div>
+    <div class="hw-step"><div class="hw-num">2</div><div class="hw-card"><b>Выбор привычек</b><span>1–5 привычек из списка или свои – время и дни выбираешь сама</span></div></div>
+    <div class="hw-step"><div class="hw-num">3</div><div class="hw-card"><b>21 день практики</b><span>отмечаешь привычки в трекере, день закрывается сам, копишь бриллианты</span></div></div>
+    <div class="hw-step"><div class="hw-num">4</div><div class="hw-card"><b>Результат</b><span>карта твоих 21 дней, новые привычки и карточка успеха для чата</span></div></div>
+  </div>
+  <div class="hw-plat">
+    <div class="hw-phone"><div class="hw-scr">
+      <div class="t"><b>Сегодня</b><span>день 5 из 21</span></div>
+      <div class="hw-bar"><i></i></div>
+      <div class="hw-hab on"><span class="c">✓</span><span class="n">Медитация</span><span class="m">10 мин</span></div>
+      <div class="hw-hab on"><span class="c">✓</span><span class="n">Прогулка</span><span class="m">30 мин</span></div>
+      <div class="hw-hab on"><span class="c">✓</span><span class="n">2 л воды</span><span class="m">весь день</span></div>
+      <div class="hw-hab"><span class="c"></span><span class="n">Чтение</span><span class="m">15 мин</span></div>
+      <div class="hw-btn">Закрыть день</div>
+      <div class="hw-map"><i class="c"></i><i class="b"></i><i class="c"></i><i class="a"></i><i class="d"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="hw-dia"><span>Бриллианты</span><b>💎 4</b></div>
+    </div></div>
+    <div class="hw-info">
+      <h3>Твой личный кабинет Serenity Moon</h3>
+      <p class="sub">Всё для марафона – в одном месте, на телефоне и компьютере.</p>
+      <div class="hw-feats">
+        <div class="hw-f"><span class="ic">✓</span><div><b>Интерактивный трекер</b><span>отмечай привычки в один клик, день закрывается сам</span></div></div>
+        <div class="hw-f"><span class="ic">💎</span><div><b>Карта 21 дня и бриллианты</b><span>видишь свой прогресс и радуешься каждому шагу</span></div></div>
+        <div class="hw-f"><span class="ic">🔔</span><div><b>Расписание эфиров</b><span>напоминание за 30 минут и кнопка «Открыть Zoom»</span></div></div>
+        <div class="hw-f"><span class="ic">▶</span><div><b>Записи эфиров</b><span>смотри в удобное время, если пропустила</span></div></div>
+        <div class="hw-f"><span class="ic">📚</span><div><b>Библиотека материалов</b><span>видео, медитации, аудио и PDF от экспертов</span></div></div>
+        <div class="hw-f"><span class="ic">💌</span><div><b>Карточка «поделиться»</b><span>отправь свой результат в чат одним нажатием</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="hw-inc">
+    <h4>Что ещё входит</h4>
+    <div class="hw-chips">
+      <span class="hw-chip">🎥 ZOOM-встречи с экспертами</span>
+      <span class="hw-chip">🧘‍♀️ Йога, медитации, звуковая терапия</span>
+      <span class="hw-chip">💪 2 тренировки в неделю</span>
+      <span class="hw-chip">🧠 Лекция психолога</span>
+      <span class="hw-chip">🤍 Поддержка 21 день</span>
+      <span class="hw-chip">🎁 Подарки и розыгрыши</span>
+    </div>
+  </div>
 </div>
 
 </div> </section> <div class="sm-divider sm-divider-onto-beige-end" aria-hidden="true"><span class="sm-divider-line"></span><svg class="sm-divider-mark" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 0C12 6.5 17.5 12 24 12C17.5 12 12 17.5 12 24C12 17.5 6.5 12 0 12C6.5 12 12 6.5 12 0Z" fill="#AA9DB8"/></svg><span class="sm-divider-line"></span></div> <section id="benefits" class="has-geo" style="background:linear-gradient(180deg,#FDFCFA 0%,#FBF9F6 100%)" aria-labelledby="benefits-title"><svg class="geo geo-r geo-top" viewBox="0 0 200 200" aria-hidden="true"><use href="#geoFol"/></svg> <div class="wrap"> <div class="benefits-head"> <span style="display:inline-block;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--sage-deep);font-weight:600;margin-bottom:10px">Результаты</span> <h2 id="benefits-title">Участие в программе поможет тебе</h2> <ul class="pillars" aria-label="Над чем мы работаем" style="justify-content:flex-start;margin:18px 0 0"><li>Здоровое тело</li><li>Единение с собой</li><li>Спокойный ум</li><li>Внутренний баланс</li></ul> </div> <div class="benefits-grid"> <div class="benefit-card featured" style="background:linear-gradient(140deg,#F2F7F5,#E3EEEA);border:1px solid #D6E4E0"> <span class="benefit-icon benefit-num">01</span> <p>Перейти <strong style="color:var(--sage-deep)">от намерений к действиям</strong> и сформировать 1–3 полезных привычки для тела и души</p> </div> <div class="benefit-card" style="background:linear-gradient(140deg,#F7F4FA,#ECE6F2);border:1px solid #E2DAEA"> <span class="benefit-icon benefit-num">02</span> <p>Завершить <strong style="color:var(--sage-deep)">давно отложенные дела</strong> — например, наконец-то разобрать завалы в шкафах!</p> </div> <div class="benefit-card" style="background:linear-gradient(140deg,#FBF7F2,#F3EBE1);border:1px solid #E9DFD3"> <span class="benefit-icon benefit-num">03</span> <p>Развить последовательность и самодисциплину <strong style="color:var(--sage-deep)">без давления на себя</strong></p> </div> <div class="benefit-card" style="background:linear-gradient(140deg,#FBF7F2,#F3EBE1);border:1px solid #E9DFD3"> <span class="benefit-icon benefit-num">04</span> <p>Снизить повседневный стресс и обрести <strong style="color:var(--sage-deep)">внутренний баланс</strong></p> </div> <div class="benefit-card" style="background:linear-gradient(140deg,#F7F4FA,#ECE6F2);border:1px solid #E2DAEA"> <span class="benefit-icon benefit-num">05</span> <p>Научиться регулярно выделять <strong style="color:var(--sage-deep)">время для себя</strong></p> </div> </div> </div> </section> <!-- nominify end --> </div> </div> </div> </div> <div id="rec4456299103" class="r t-rec" style=" " data-animationappear="off" data-record-type="131"> <!-- T123 --> <div class="t123"> <div class="t-container_100 "> <div class="t-width t-width_100 "> <!-- nominify begin --> <div style="position:relative;background:linear-gradient(180deg,#FBF9F6 0%,var(--mist) 60%,var(--mist) 100%)"> <div class="sm-divider" aria-hidden="true"><span class="sm-divider-line"></span><svg class="sm-divider-mark" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 0C12 6.5 17.5 12 24 12C17.5 12 12 17.5 12 24C12 17.5 6.5 12 0 12C6.5 12 12 6.5 12 0Z" fill="#AA9DB8"/></svg><span class="sm-divider-line"></span></div> <section id="team" class="has-geo" aria-labelledby="team-title"><svg class="geo geo-l geo-top" viewBox="0 0 200 200" aria-hidden="true"><use href="#geoFol"/></svg><svg class="geo geo-r geo-bot geo-sm" viewBox="0 0 200 200" aria-hidden="true"><use href="#geoTorus"/></svg> <div class="wrap"> <div class="section-head" style="margin-inline:auto;text-align:center"> <h2 id="team-title">Ведущие и эксперты марафона</h2> </div> <style>
