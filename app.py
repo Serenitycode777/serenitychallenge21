@@ -2989,7 +2989,12 @@ function openDay(d){
        <button class="btn primary${closed?' is-closed':''}" id="pdCloseBtn" style="width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5 9.5 17 19 7"/></svg>
          ${closed?'День закрыт':'Закрыть день'}
+       </button>
+       <button class="btn ghost" id="pdShareBtn" type="button" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:8px">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="2.3"/><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="19" r="2.3"/><path d="M8 10.8 16 6.2M8 13.2l8 4.6"/></svg>
+         Поделиться
        </button>`;
+    document.getElementById("pdShareBtn").addEventListener("click", ()=>shareDayCard(d));
     LIST.forEach((_,i)=>{
       const _el = document.getElementById("pd"+i); if(!_el) return;
       _el.addEventListener("change", e=>{
@@ -3592,7 +3597,19 @@ async function drawHeroStat(ctx, text, x, baselineY, fontSize, maxW){
     return true;
   }catch(e){ return false; }
 }
-document.getElementById("shareBtn").addEventListener("click", async ()=>{
+/* карточка «поделиться» для любого дня: сегодня – из живого трекера, прошлые дни – из журнала */
+function shareDayData(d){
+  if(d === TODAY){
+    const idx = HABITS.map((h,i)=>i).filter(i=>habitScheduledOn(HABITS[i], TODAY));
+    return {names: idx.map(i=>HABITS[i]), checked: idx.map(i=>!!liveChecked[i]), closed: dayClosed};
+  }
+  const log = logForDate(dateForDay(d)), hd = log.habits_done || {};
+  const list = dayHabits(d).filter(x=>x.sched);
+  return {names: list.map(x=>x.name), checked: list.map(x=>!!hd[x.id]), closed: !!log.closed};
+}
+document.getElementById("shareBtn").addEventListener("click", ()=>shareDayCard(TODAY));
+async function shareDayCard(SD_DAY){
+  const SD = shareDayData(SD_DAY);
   playPopSound();
   const HEAD='"Cormorant Garamond"', SYS='"Montserrat"';
   try{
@@ -3623,8 +3640,8 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   const panelPadX=26, iconSize=38, iconGap=18, rowGap=22;
   measure.font="500 20px "+SYS+", sans-serif";
   const habitWrapW = cardWidth-28 - panelPadX*2 - iconSize - iconGap;
-  const SHARE_IDX=HABITS.map((h,i)=>i).filter(i=>habitScheduledOn(HABITS[i], TODAY));
-  const habitLines=SHARE_IDX.map(i=>wrapLines(measure,HABITS[i],habitWrapW));
+  const SHARE_IDX=SD.names.map((h,i)=>i);
+  const habitLines=SD.names.map(n=>wrapLines(measure,n,habitWrapW));
 
   const quoteLines=["Маленькие шаги каждый день —","путь к большим переменам"];
 
@@ -3668,7 +3685,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.fillStyle=glow2; ctx.fillRect(cardLeft,cardTop,cardWidth,gradientCardBottom-cardTop);
   ctx.restore();
 
-  const dateText=fmtDateRu(dayToDate(TODAY));
+  const dateText=fmtDateRu(dayToDate(SD_DAY));
   measure.font="600 19px "+SYS+", sans-serif";
   const dateTextW=measure.measureText(dateText).width;
   const ribbonPadX=18, ribbonW=dateTextW+ribbonPadX*2;
@@ -3687,8 +3704,8 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   ctx.font="600 18px "+SYS+", sans-serif";
   ctx.fillText("МАРАФОН «НАЧНИ СЕГОДНЯ!»", contentX, eyebrowY);
 
-  const done=doneCountForDay(TODAY);
-  const heroText=done+(window.SM_LANG==="en"?" of ":" из ")+scheduledCountForDay(TODAY);
+  const done=SD.checked.filter(Boolean).length;
+  const heroText=done+(window.SM_LANG==="en"?" of ":" из ")+SD.names.length;
   ctx.fillStyle="#fff";
   ctx.font="600 112px "+HEAD+", Georgia, serif";
   const heroOk = await drawHeroStat(ctx, heroText, contentX, heroBaseline, 112, cardWidth-80);
@@ -3696,7 +3713,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
 
   ctx.fillStyle="rgba(255,255,255,.78)";
   ctx.font="600 22px "+SYS+", sans-serif";
-  ctx.fillText("привычек сегодня", contentX, subtitleBaseline);
+  ctx.fillText(SD_DAY===TODAY ? "привычек сегодня" : (window.SM_LANG==="en" ? "habits that day" : "привычек в этот день"), contentX, subtitleBaseline);
 
   const badgeR=52, badgeCx=cardRight-16-badgeR, badgeCy=cardTop+16+badgeR;
   ctx.save();
@@ -3724,7 +3741,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
 
   ctx.fillStyle="#3F6660"; ctx.textAlign="center";
   ctx.font="600 58px "+HEAD+", Georgia, serif";
-  ctx.fillText(String(TODAY), badgeCx, badgeCy+19);
+  ctx.fillText(String(SD_DAY), badgeCx, badgeCy+19);
 
   ctx.save();
   ctx.shadowColor="rgba(51,46,61,.32)"; ctx.shadowBlur=40; ctx.shadowOffsetY=18;
@@ -3737,7 +3754,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
   SHARE_IDX.forEach((hi,i)=>{
     const chipX=panelLeft+panelPadX, chipY=y;
     const cx=chipX+iconSize/2, cy=chipY+iconSize/2;
-    if(liveChecked[hi]){
+    if(SD.checked[hi]){
       ctx.fillStyle="rgba(106,153,147,.12)";
       ctx.strokeStyle="rgba(106,153,147,.22)"; ctx.lineWidth=1.5;
       ctx.beginPath(); ctx.roundRect(chipX,chipY,iconSize,iconSize,11); ctx.fill(); ctx.stroke();
@@ -3745,7 +3762,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
       ctx.strokeStyle="#3F6660"; ctx.lineWidth=3; ctx.lineCap="round"; ctx.lineJoin="round";
       ctx.beginPath(); ctx.moveTo(cx-8,cy+1); ctx.lineTo(cx-2,cy+7); ctx.lineTo(cx+9,cy-8); ctx.stroke();
       ctx.restore();
-    } else if(dayClosed){
+    } else if(SD.closed){
       ctx.save();
       ctx.fillStyle="rgba(224,82,95,.12)";
       ctx.strokeStyle="rgba(224,82,95,.25)"; ctx.lineWidth=1.5;
@@ -3788,7 +3805,7 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
     playPopSound();
     const saveBtn = document.getElementById("saveCardBtn");
     const blob = await blobP; if(!blob) return;
-    const file = new File([blob], "serenity-moon-day-"+TODAY+".png", {type:"image/png"});
+    const file = new File([blob], "serenity-moon-day-"+SD_DAY+".png", {type:"image/png"});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       try{ await navigator.share({files:[file]}); return; }
       catch(e){ if(e && e.name==="AbortError") return; }
@@ -3812,14 +3829,14 @@ document.getElementById("shareBtn").addEventListener("click", async ()=>{
     if(!copied){
       const blob = await blobP; if(!blob) return;
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = "day-"+TODAY+".png";
+      a.href = URL.createObjectURL(blob); a.download = "day-"+SD_DAY+".png";
       document.body.appendChild(a); a.click(); a.remove();
     }
     chatBtn.textContent = copied ? T("Картинка скопирована – вставь её в чат") : T("Картинка сохранена – прикрепи её в чате");
     openChat();
     setTimeout(()=>{ chatBtn.textContent = T("Поделиться в чат"); }, 4000);
   });
-});
+}
 document.getElementById("closeShareOverlay").addEventListener("click", ()=>{ document.getElementById("shareOverlay").classList.remove("open"); playPopSound(); });
 document.getElementById("shareOverlay").addEventListener("click",e=>{if(e.target.id==="shareOverlay")e.currentTarget.classList.remove("open");});
 
