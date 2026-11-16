@@ -988,8 +988,8 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
 .pickintro{background:var(--surface);padding:0 0 16px;font-size:12.5px;color:var(--ink-soft);text-align:center;line-height:1.5}
 .pickintro p{margin:0 0 8px}
 .pickintro p:last-child{margin-bottom:0;color:var(--sage-ink);font-weight:600}
-.addhabit-btn{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--lav);border-radius:999px;
-  background:var(--surface);color:var(--lav-ink);font-size:13px;font-weight:600;padding:9px 16px;
+.addhabit-btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:999px;
+  background:linear-gradient(135deg,#FDF0CB,#F0C869 55%,#D79F42);color:#3D2F10;box-shadow:0 8px 18px -10px rgba(176,125,42,.7);font-size:13px;font-weight:600;padding:9px 16px;
   cursor:pointer;font-family:var(--sys);margin-top:6px;transition:transform .1s}
 .addhabit-btn:active{transform:scale(.97)}
 .pick-total{text-align:center;font-size:12.5px;font-weight:600;color:var(--sage-ink);margin:0 0 10px}
