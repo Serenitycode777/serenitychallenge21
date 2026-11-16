@@ -992,6 +992,14 @@ h3 .info-hint{margin-left:6px;vertical-align:middle}
   background:linear-gradient(135deg,#FDF0CB,#F0C869 55%,#D79F42);color:#3D2F10;box-shadow:0 8px 18px -10px rgba(176,125,42,.7);font-size:13px;font-weight:600;padding:9px 16px;
   cursor:pointer;font-family:var(--sys);margin-top:6px;transition:transform .1s}
 .addhabit-btn:active{transform:scale(.97)}
+.pick-cnt{display:flex;align-items:center;gap:12px;border-radius:16px;padding:12px 14px;margin:0 0 16px;background:linear-gradient(135deg,#F1F8F5,#E3F1EC);border:1.5px solid #BCD9D0}
+.pick-cnt-n{flex:none;font:600 28px/1 'Cormorant Garamond',Georgia,serif;color:#B07D2A}
+.pick-cnt-n small{font-size:16px;color:#C9A35A}
+.pick-cnt-t{flex:1;min-width:0;font-size:13px;color:var(--ink);line-height:1.35}
+.pick-cnt-t b{display:block;font-size:14px;font-weight:700}
+.pick-cnt-dots{display:flex;gap:5px;margin-top:7px}
+.pick-cnt-dots i{width:18px;height:6px;border-radius:9px;background:#CFE3DD}
+.pick-cnt-dots i.on{background:linear-gradient(90deg,#F0C869,#D79F42)}
 .pick-total{text-align:center;font-size:12.5px;font-weight:600;color:var(--sage-ink);margin:0 0 10px}
 .savepick{width:100%;border:none;background:var(--lav);color:#fff;border-radius:999px;padding:13px;font-weight:600;
   font-size:13.5px;cursor:pointer;position:sticky;bottom:0}
@@ -3306,12 +3314,26 @@ function renderPickTotal(){
   const mins = totalMinutes(pickSelection);
   el.textContent = mins > 0 ? `выбрано ${pickSelection.length} · ~${formatMinutesRu(mins)} в день` : `выбрано ${pickSelection.length}`;
 }
+function pickCountHtml(){ // «Выбрано 3 привычки из 5 · можно добавить ещё 2»
+  const n = pickSelection.length, left = Math.max(0, MAX_HABITS - n), en = window.SM_LANG === "en";
+  const ru = k => (k%10===1 && k%100!==11) ? "привычка" : ([2,3,4].includes(k%10) && ![12,13,14].includes(k%100)) ? "привычки" : "привычек";
+  let t, sub;
+  if(en){
+    t = n ? `${n} ${n===1?"habit":"habits"} selected out of ${MAX_HABITS}` : "No habits selected yet";
+    sub = !n ? `you can choose up to ${MAX_HABITS}` : left ? `you can add ${left} more` : "that’s the maximum 💚";
+  } else {
+    t = n ? `${n===1?"Выбрана":"Выбрано"} ${n} ${ru(n)} из ${MAX_HABITS}` : "Пока не выбрано ни одной привычки";
+    sub = !n ? `можно выбрать до ${MAX_HABITS}` : left ? `можно добавить ещё ${left}` : "это максимум 💚";
+  }
+  let dots = ""; for(let i=0;i<MAX_HABITS;i++) dots += `<i${i<n?' class="on"':''}></i>`;
+  return `<div class="pick-cnt"><div class="pick-cnt-n">${n}<small>/${MAX_HABITS}</small></div><div class="pick-cnt-t"><b>${t}</b>${sub}<div class="pick-cnt-dots">${dots}</div></div></div>`;
+}
 function renderPicker(){
   let html = `<div class="pickintro">
     <p>🌿 Выбери от 1 до ${MAX_HABITS} привычек, которые ты готова выполнять ежедневно в течение 21 дня.</p>
     <p>Перед тем как подтвердить свой выбор, ещё раз просмотри список. Убедись, что количество привычек и время на их выполнение реалистичны для тебя.</p>
     <p>Помни: лучше меньше, но регулярно! 💚</p>
-    </div>`;
+    </div>` + pickCountHtml();
   const customOnes = pickSelection.filter(h=>!findHabitMeta(h) || isOwnHabit(h));
   html += `<div class="pickcat"><h4>Свои привычки</h4>
     <div class="chipgrid" id="customList">${customOnes.map(chipHtml).join("")}</div>
